@@ -1,0 +1,532 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background-color: #f5f5f5;
+}
+
+.container {
+    padding: 20px;
+}
+
+.search-form {
+    max-width: 600px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+}
+
+.search-form h2 {
+    margin-bottom: 20px;
+    color: #333;
+    text-align: center;
+}
+
+.search-form input {
+    width: 70%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-right: 10px;
+}
+
+.search-form button {
+    padding: 10px 20px;
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.upload-form {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.upload-form h3 {
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+#excel-file {
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+#upload-btn {
+    width: 100%;
+    padding: 10px;
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.report-list {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.report-list h3 {
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+#report-list {
+    list-style: none;
+}
+
+#report-list li {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+
+#report-list li:hover {
+    background-color: #f5f5f5;
+}
+
+.error-message {
+    max-width: 600px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: #fee;
+    border: 1px solid #f99;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.error-message h2 {
+    color: #c33;
+    margin-bottom: 20px;
+}
+
+.error-message a {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #4a90e2;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+.report-page {
+    width: 21cm;
+    min-height: 29.7cm;
+    padding: 12pt;
+    margin: 0 auto;
+    background-color: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border: 1px solid black;
+}
+
+.report-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.report-header h1 {
+    color: #333;
+    padding-bottom: 10px;
+    font-size: 24px;
+}
+
+.section {
+    margin-bottom: 20px;
+}
+
+.section-title {
+    color: #333;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+    font-size: 18px;
+    border-bottom: none;
+}
+
+.result-title {
+    color: #c00;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+.variant-type {
+    color: #333;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+}
+
+.full-width {
+    width: 100%;
+    table-layout: fixed;
+}
+
+.info-table th {
+    background-color: #b8cce4;
+    font-weight: normal;
+    padding: 5px;
+    text-align: center;
+    border: 1px solid #000;
+    font-size: 8pt;
+}
+
+.info-table td {
+    padding: 5px;
+    text-align: center;
+    border: 1px solid #000;
+    font-size: 8pt;
+}
+
+.data-table th {
+    background-color: #b8cce4;
+    font-weight: normal;
+    padding: 4px;
+    text-align: center;
+    border: 1px solid #000;
+    font-size: 8pt;
+}
+
+.data-table td {
+    padding: 4px;
+    text-align: center;
+    border: 1px solid #000;
+    font-size: 8pt;
+}
+
+/* SNV 테이블 컴럼 너비 */
+.data-table th:nth-child(1) { width: 8%; }  /* GENE */
+.data-table th:nth-child(2) { width: 18%; } /* MUTATION TYPE */
+.data-table th:nth-child(3) { width: 15%; } /* AA CHANGE */
+.data-table th:nth-child(4) { width: 10%; } /* VAF (%) */
+.data-table th:nth-child(5) { width: 25%; } /* HGVSc */
+.data-table th:nth-child(6) { width: 24%; } /* HGVSp */
+
+/* Fusion 테이블 컴럼 너비 */
+#fusion-clinical-table th:nth-child(1),
+#fusion-unknown-table th:nth-child(1) { width: 20%; } /* GENE FUSION */
+#fusion-clinical-table th:nth-child(2),
+#fusion-unknown-table th:nth-child(2) { width: 25%; } /* BREAKPOINT 1 */
+#fusion-clinical-table th:nth-child(3),
+#fusion-unknown-table th:nth-child(3) { width: 25%; } /* BREAKPOINT 2 */
+#fusion-clinical-table th:nth-child(4),
+#fusion-unknown-table th:nth-child(4) { width: 30%; } /* FUSION SUPPORTING READS */
+
+/* CNV 테이블 컴럼 너비 */
+#cnv-clinical-table th:nth-child(1),
+#cnv-unknown-table th:nth-child(1) { width: 12%; } /* GENE */
+#cnv-clinical-table th:nth-child(2),
+#cnv-unknown-table th:nth-child(2) { width: 25%; } /* LOCATION */
+#cnv-clinical-table th:nth-child(3),
+#cnv-unknown-table th:nth-child(3) { width: 20%; } /* FOLD CHANGE */
+#cnv-clinical-table th:nth-child(4),
+#cnv-unknown-table th:nth-child(4) { width: 43%; } /* ESTIMATED COPY NUMBER */
+
+/* LR BRCA 테이블 컴럼 너비 */
+#lr-brca-clinical-table th:nth-child(1),
+#lr-brca-unknown-table th:nth-child(1) { width: 12%; } /* GENE */
+#lr-brca-clinical-table th:nth-child(2),
+#lr-brca-unknown-table th:nth-child(2) { width: 20%; } /* LOCATION */
+#lr-brca-clinical-table th:nth-child(3),
+#lr-brca-unknown-table th:nth-child(3) { width: 18%; } /* AFFECTED EXON */
+#lr-brca-clinical-table th:nth-child(4),
+#lr-brca-unknown-table th:nth-child(4) { width: 20%; } /* FOLD CHANGE */
+#lr-brca-clinical-table th:nth-child(5),
+#lr-brca-unknown-table th:nth-child(5) { width: 30%; } /* ESTIMATED COPY NUMBER */
+
+.biomarkers-table th {
+    background-color: #e2efda;
+    font-weight: normal;
+    padding: 4px;
+    text-align: center;
+    border: 1px solid #000;
+    font-size: 8pt;
+}
+
+.biomarkers-table td {
+    padding: 4px;
+    text-align: center;
+    border: 1px solid #000;
+    font-size: 8pt;
+}
+
+.comment-box {
+    border: 1px dashed #000;
+    padding: 15px;
+    min-height: 100px;
+    line-height: 1.4;
+    font-size: 8pt;
+}
+
+.comment-box p {
+    font-size: 8pt;
+    margin-bottom: 10px;
+}
+
+.comment-section {
+    border: 2px dashed #666;
+    padding: 10px;
+    margin-bottom: 20px;
+}
+
+.additional-info {
+    font-size: 8pt;
+    margin: 10px 0;
+    line-height: 1.4;
+}
+
+.additional-info p {
+    margin-bottom: 5px;
+}
+
+.comment-text {
+    font-size: 8pt;
+}
+
+.comment-text p {
+    margin-bottom: 10px;
+    font-size: 8pt;
+}
+
+.no-data {
+    color: #777;
+    font-style: italic;
+    text-align: center;
+    font-size: 8pt;
+}
+
+.specification-box, .gene-content-box {
+    text-align: center;
+    margin: 15px 0;
+}
+
+.specification-box img, .gene-content-box img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* 검사정보 스타일 */
+.info-section {
+    margin: 10px 0;
+    margin-left: 20px;
+    line-height: 1.6;
+    font-size: 8pt;
+}
+
+.info-label {
+    font-weight: bold;
+}
+
+.info-highlight {
+    font-weight: bold;
+}
+
+/* QC 간단한 테이블 스타일 */
+.qc-simple {
+    margin: 10px 0;
+    font-size: 8pt;
+}
+
+.qc-header {
+    display: flex;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.qc-row-simple {
+    display: flex;
+    margin-bottom: 1px;
+}
+
+.qc-col {
+    flex: 1;
+    padding: 1px 5px;
+    text-align: left;
+}
+
+.qc-col:first-child {
+    flex: 2;
+}
+
+/* QC 컬럼 간격 좀 더 줄인 버전 */
+.qc-col-tight {
+    padding: 1px 2px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.qc-col-tight:first-child {
+    width: 20%;
+}
+
+.qc-col-tight:nth-child(2) {
+    width: 20%;
+}
+
+.qc-col-tight:nth-child(3) {
+    width: 20%;
+}
+
+.small-text {
+    font-size: 7pt;
+    font-weight: normal;
+}
+
+/* QC 그리드 스타일 */
+.qc-grid {
+    display: grid;
+    grid-template-columns: 3fr 1fr 1fr;
+    width: 100%;
+    font-size: 8pt;
+}
+
+.qc-row {
+    display: contents;
+}
+
+.qc-cell {
+    padding: 5px;
+}
+
+.qc-row:first-child .qc-cell {
+    font-weight: bold;
+}
+
+/* 푸터 스타일 */
+.report-footer {
+    margin-top: 30px;
+    padding-top: 20px;
+}
+
+.footer-container {
+    border-top: 2px dashed #000;
+    padding: 3px;
+    font-size: 10pt;
+}
+
+.footer-row-1, .footer-row-2 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: -2px;
+    line-height: 0.8;
+}
+
+.footer-row-2 {
+    margin-bottom: -5px;
+    margin-top: -35px;
+}
+
+.footer-left-side {
+    flex: 1;
+}
+
+.footer-right-side {
+    text-align: right;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+}
+
+.footer-line-1 {
+    display: flex;
+    align-items: center;
+}
+
+.footer-tested {
+    margin-right: 60px;
+    font-size: 12pt;
+    line-height: 0.8;
+}
+
+.footer-analyzed {
+    font-size: 12pt;
+    line-height: 0.8;
+}
+
+.footer-signed {
+    font-size: 12pt;
+    line-height: 0.8;
+}
+
+.footer-number-table {
+    border: 1px solid #000;
+    border-collapse: collapse;
+    display: inline-table;
+    vertical-align: bottom;
+    margin-top: 40px;
+}
+
+.footer-number-label {
+    border: 1px solid #000;
+    padding: 4px 8px;
+    background-color: #f0f0f0;
+    font-weight: bold;
+    text-align: center;
+    font-size: 11pt;
+}
+
+.footer-number-value {
+    border: 1px solid #000;
+    padding: 4px 8px;
+    text-align: center;
+    font-size: 11pt;
+}
+
+.footer-right-side img {
+    height: 35px;
+    width: auto;
+    margin-top: 50px;
+    vertical-align: bottom;
+}
+
+.footer-bottom {
+    margin-top: -3px;
+}
+
+.footer-org {
+    font-weight: bold;
+    margin-bottom: 1px;
+    font-size: 7pt;
+    line-height: 0.9;
+}
+
+.footer-address {
+    font-size: 7pt;
+    line-height: 0.9;
+}
+
+@media print {
+    body {
+        background-color: white;
+    }
+    
+    .container {
+        padding: 0;
+    }
+    
+    .report-page {
+        width: 100%;
+        height: auto;
+        padding: 12pt;
+        margin: 0;
+        box-shadow: none;
+        border: none;
+    }
+}

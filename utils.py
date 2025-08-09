@@ -1,21 +1,69 @@
 import pandas as pd
 from typing import Tuple, List, Dict
+import warnings
+warnings.filterwarnings('ignore')
 
 class NGS_EXCEL2DB:
     def __init__(self, file):
-        self.df = pd.ExcelFile(file)
+        try:
+            # openpyxl 엔진으로 시도
+            self.df = pd.ExcelFile(file, engine='openpyxl')
+        except Exception as e:
+            print(f"openpyxl 엔진 실패, xlrd 엔진으로 재시도: {e}")
+            try:
+                # xlrd 엔진으로 재시도
+                self.df = pd.ExcelFile(file, engine='xlrd')
+            except Exception as e2:
+                print(f"xlrd 엔진도 실패, 직접 read_excel 사용: {e2}")
+                # 직접 read_excel로 시트별 로드
+                self._load_sheets_directly(file)
+                return
+                
         self.Clinical_Information = self.df.parse('clinical_information', header=None, dtype=str).fillna('')
         self.clinical_dict = dict(zip(self.Clinical_Information.iloc[:, 0], self.Clinical_Information.iloc[:, 1]))
         self.NGS_QC = self.df.parse('NGS_QC', header=None, dtype=str).fillna('')
         self.SNV = self.df.parse('SNV', dtype=str).fillna('')
         self.CNV = self.df.parse('CNV', dtype=str).fillna('')
-        self.CNVarm = self.df.parse('CNVarm', dtype=str).fillna('')
+        
+        # CNVarm 시트를 안전하게 로드
+        try:
+            self.CNVarm = self.df.parse('CNVarm', dtype=str).fillna('')
+        except Exception as e:
+            print(f"CNVarm 시트 로드 실패, 빈 DataFrame 사용: {e}")
+            self.CNVarm = pd.DataFrame()
+            
         self.CNV_allFC = self.df.parse('CNV_allFC', dtype=str).fillna('')
         self.LR_BRCA = self.df.parse('LR_BRCA', dtype=str).fillna('')
         self.Fusion = self.df.parse('Fusion', header=1, dtype=str).fillna('')
         self.Splice = self.df.parse('Splice', dtype=str).fillna('')
         self.IO = self.df.parse('IO', header=1, dtype=str).fillna('')
         self.panel = 'GE' # or SA
+    
+    def _load_sheets_directly(self, file):
+        """직접 read_excel을 사용하여 시트별로 로드"""
+        try:
+            self.Clinical_Information = pd.read_excel(file, sheet_name='clinical_information', header=None, dtype=str, engine='openpyxl').fillna('')
+            self.clinical_dict = dict(zip(self.Clinical_Information.iloc[:, 0], self.Clinical_Information.iloc[:, 1]))
+            self.NGS_QC = pd.read_excel(file, sheet_name='NGS_QC', header=None, dtype=str, engine='openpyxl').fillna('')
+            self.SNV = pd.read_excel(file, sheet_name='SNV', dtype=str, engine='openpyxl').fillna('')
+            self.CNV = pd.read_excel(file, sheet_name='CNV', dtype=str, engine='openpyxl').fillna('')
+            
+            # CNVarm 시트를 안전하게 로드
+            try:
+                self.CNVarm = pd.read_excel(file, sheet_name='CNVarm', dtype=str, engine='openpyxl').fillna('')
+            except Exception as e:
+                print(f"CNVarm 시트 로드 실패: {e}")
+                self.CNVarm = pd.DataFrame()
+                
+            self.CNV_allFC = pd.read_excel(file, sheet_name='CNV_allFC', dtype=str, engine='openpyxl').fillna('')
+            self.LR_BRCA = pd.read_excel(file, sheet_name='LR_BRCA', dtype=str, engine='openpyxl').fillna('')
+            self.Fusion = pd.read_excel(file, sheet_name='Fusion', header=1, dtype=str, engine='openpyxl').fillna('')
+            self.Splice = pd.read_excel(file, sheet_name='Splice', dtype=str, engine='openpyxl').fillna('')
+            self.IO = pd.read_excel(file, sheet_name='IO', header=1, dtype=str, engine='openpyxl').fillna('')
+            self.panel = 'GE' # or SA
+        except Exception as e:
+            print(f"마지막 시도도 실패: {e}")
+            raise e
 
     # 검체정보
     def get_Clinical_Info(self) -> Dict:
@@ -92,11 +140,11 @@ class NGS_EXCEL2DB:
     def get_Comments(self) -> List:
         SNV_Comments = self.SNV[self.SNV["Comment"] != '']["Comment"].tolist()
         CNV_Comments = self.CNV[self.CNV["Comment"] != '']["Comment"].tolist()
-        CNVarm_Comments = self.CNVarm[self.CNVarm["Comment"] != '']["Comment"].tolist()
+        # CNVarm_Comments = self.CNVarm[self.CNVarm["Comment"] != '']["Comment"].tolist()
         LR_BRCA_Comments = self.LR_BRCA[self.LR_BRCA["Comment"] != '']["Comment"].tolist()
         Fusion_Comments = self.Fusion[self.Fusion["Comment"] != '']["Comment"].tolist() 
         Splice_Comments = self.Splice[self.Splice["comment"] != '']["comment"].tolist()
-        Comments_List = SNV_Comments+CNV_Comments+CNVarm_Comments+LR_BRCA_Comments+Fusion_Comments+Splice_Comments
+        Comments_List = SNV_Comments+CNV_Comments+LR_BRCA_Comments+Fusion_Comments+Splice_Comments
         return Comments_List
     
 
@@ -168,7 +216,7 @@ class NGS_EXCEL2DB:
     def get_Diagnosis_User_Registration(self):
         return {
             'Tested by': ', '.join([self.clinical_dict[i] for i in list(self.clinical_dict.keys()) if i.startswith('Tester')]),
-            'Signed by': ', '.join([self.clinical_dict[i] for i in list(self.clinical_dict.keys()) if i.startswith('Tester')]),
+            'Signed by': ', '.join([self.clinical_dict[i] for i in list(self.clinical_dict.keys()) if i.startswith('Signed')]),
             'Analyzed by': '이청',
             '분자접수번호': self.clinical_dict["분자접수번호"]
         }
