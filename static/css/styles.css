@@ -124,7 +124,7 @@ body {
 .a4-page {
     width: 21cm;
     height: 29.7cm;
-    padding: 1.5cm;
+    padding: 1cm 0.8cm; /* 상하 1cm, 좌우 0.8cm로 줄여서 표 공간 확보 */
     margin: 0 auto 20px;
     background-color: white;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -208,7 +208,7 @@ body {
 }
 
 .section {
-    margin-bottom: 20px;
+    margin-bottom: 15px; /* 섹션 간격 줄이기 */
 }
 
 .section-title {
@@ -334,7 +334,7 @@ table {
 
 .comment-box {
     border: 1px solid #000;
-    padding: 15px;
+    padding: 10px; /* padding 줄이기 */
     min-height: 100px;
     line-height: 1.4;
     font-size: 8pt;
@@ -347,8 +347,8 @@ table {
 
 .comment-section {
     border: 2px solid #666;
-    padding: 10px;
-    margin-bottom: 20px;
+    padding: 8px; /* padding 줄이기 */
+    margin-bottom: 15px;
 }
 
 .additional-info {
@@ -382,15 +382,36 @@ table {
     margin: 15px 0;
 }
 
-.specification-box img, .gene-content-box img {
+.specification-box img {
     max-width: 100%;
     height: auto;
+}
+
+.gene-content-box img {
+    width: 100%;
+    height: auto;
+    max-width: none;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Gene Content 페이지에서만 적용되는 특별 스타일 - 삭제 */
+/* .page-3 .gene-content-box,
+.page-4 .gene-content-box {
+    margin: 15px -0.5cm;
+    width: calc(100% + 1cm);
+} */
+
+/* SA 패널의 경우 page-3, page-4 모두 적용 */
+.page-3 .gene-content-wrapper,
+.page-4 .gene-content-wrapper {
+    padding-top: 20px;
 }
 
 /* 검사정보 스타일 */
 .info-section {
     margin: 10px 0;
-    margin-left: 20px;
+    margin-left: 10px; /* 좌측 여백 줄이기 */
     line-height: 1.6;
     font-size: 8pt;
 }
@@ -599,6 +620,53 @@ table {
     padding-top: 10px;
 }
 
+/* 첫 페이지 하단 고정 컨텐츠 */
+.page-bottom-fixed {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+}
+
+/* 첫 페이지 컨텐츠 영역 */
+.page-1 .report-content {
+    height: calc(100% - 180px); /* Other Biomarkers + Footer 공간 확보 */
+    overflow: hidden;
+}
+
+/* 연속 페이지 스타일 */
+.page-continued {
+    page-break-before: always;
+}
+
+.page-continued-1::before {
+    content: "Page 1-continued";
+}
+
+.page-continued-2::before {
+    content: "Page 1-continued-2";
+}
+
+.page-continued-3::before {
+    content: "Page 1-continued-3";
+}
+
+/* 동적 페이지용 스타일 */
+.dynamic-content {
+    max-height: calc(100% - 40px);
+    overflow: hidden;
+}
+
+/* 동적으로 생성된 페이지 */
+.dynamic-page {
+    display: none;
+}
+
+.dynamic-page.active {
+    display: block;
+}
+
 /* 검사정보부터 Specification까지 한 페이지에 */
 .page-2-content {
     display: flex;
@@ -614,11 +682,36 @@ table {
     height: 100%;
 }
 
+/* 분할된 테이블 스타일 */
+.split-table-continued {
+    margin-top: 0;
+}
+
+.split-table-continued tr:first-child th {
+    background-color: #b8cce4; /* 헤더 배경색 유지 */
+    font-weight: normal;
+    padding: 4px;
+    text-align: center;
+    border: 1px solid #000;
+    font-size: 8pt;
+}
+
+/* Other Biomarkers 테이블의 경우 */
+.split-table-continued.biomarkers-table tr:first-child th {
+    background-color: #e2efda;
+}
+
+/* Gene Content 페이지 특별 스타일 */
 .gene-content-wrapper {
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    /* justify-content: center; 제거 - 세로 중간 정렬 해제 */
+    padding: 0; /* 추가 패딩 제거 */
+}
+
+.gene-content-wrapper .section {
+    margin: 0; /* Gene Content 섹션의 마진 제거 */
 }
 
 /* 페이지 하단 footer를 위한 스타일 */
@@ -650,7 +743,7 @@ table {
     .a4-page {
         width: 210mm;
         height: 297mm;
-        padding: 15mm;
+        padding: 10mm 8mm; /* 프린트 시에도 여백 줄이기 */
         margin: 0;
         box-shadow: none;
         border: none;

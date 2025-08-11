@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import Tuple, List, Dict
+from typing import Tuple, List, Dict, Any
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -188,3 +188,49 @@ class NGS_EXCEL2DB:
             'Analyzed by': '이청',
             '분자접수번호': self.clinical_dict["분자접수번호"]
         }
+
+
+def split_variants_into_pages(variants_data: Dict[str, Any], max_items_per_page: int = 5) -> List[Dict[str, Any]]:
+    """
+    변이 데이터를 페이지별로 분할합니다.
+    
+    Args:
+        variants_data: 변이 데이터 딕셔너리
+        max_items_per_page: 페이지당 최대 항목 수
+    
+    Returns:
+        페이지별로 분할된 데이터 리스트
+    """
+    pages = []
+    current_page = {'clinical': {}, 'unknown': {}}
+    item_count = 0
+    
+    # Clinical significance 변이들
+    for key in ['snv_clinical', 'fusion_clinical', 'cnv_clinical', 'lr_brca_clinical', 'splice_clinical']:
+        if key in variants_data and variants_data[key]['data']:
+            if item_count + len(variants_data[key]['data']) > max_items_per_page:
+                if current_page['clinical']:
+                    pages.append(current_page)
+                current_page = {'clinical': {}, 'unknown': {}}
+                item_count = 0
+            
+            current_page['clinical'][key] = variants_data[key]
+            item_count += len(variants_data[key]['data'])
+    
+    # Unknown significance 변이들
+    for key in ['snv_unknown', 'fusion_unknown', 'cnv_unknown', 'lr_brca_unknown', 'splice_unknown']:
+        if key in variants_data and variants_data[key]['data']:
+            if item_count + len(variants_data[key]['data']) > max_items_per_page:
+                if current_page['clinical'] or current_page['unknown']:
+                    pages.append(current_page)
+                current_page = {'clinical': {}, 'unknown': {}}
+                item_count = 0
+            
+            current_page['unknown'][key] = variants_data[key]
+            item_count += len(variants_data[key]['data'])
+    
+    # 마지막 페이지 추가
+    if current_page['clinical'] or current_page['unknown']:
+        pages.append(current_page)
+    
+    return pages

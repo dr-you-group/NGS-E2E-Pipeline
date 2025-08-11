@@ -43,219 +43,180 @@
         </div>
         {% endif %}
 
-        <!-- Page 1: 검체정보 + 일부 검사결과 + Other biomarkers + Footer -->
+        <!-- Page 1: 검체정보 + 검사결과 + Other biomarkers + Footer -->
         <div class="a4-page page-1">
-            <div style="position: relative; height: 100%;">
-                <div class="report-content">
-                    <!-- 보고서 헤더 -->
-                    <div class="report-header">
-                        <h1>NGS Panel Level II Analysis Report</h1>
-                    </div>
-                
-                    <!-- 검체 정보 -->
-                    <div class="section">
-                        <h2 class="section-title">▣ 검체 정보</h2>
-                        <table class="info-table full-width" border="1">
-                            <tr>
-                                <th>검체 정보</th>
-                                <th>성별</th>
-                                <th>나이</th>
-                                <th>Unit NO.</th>
-                                <th>환자명</th>
-                                <th>채취 장기</th>
-                                <th>원발 장기</th>
-                                <th colspan="2">진단</th>
-                            </tr>
-                            <tr>
-                                <td>{{ report_data.clinical_info['검체 정보'] }}</td>
-                                <td>{{ report_data.clinical_info.성별 }}</td>
-                                <td>{{ report_data.clinical_info.나이 }}</td>
-                                <td>{{ report_data.clinical_info['Unit NO.'] }}</td>
-                                <td>{{ report_data.clinical_info.환자명 }}</td>
-                                <td>{{ report_data.clinical_info['채취 장기'] }}</td>
-                                <td>{{ report_data.clinical_info['원발 장기'] }}</td>
-                                <td colspan="2">Non-small cell carcinoma</td>
-                            </tr>
-                            <tr>
-                                <th>의뢰의</th>
-                                <th colspan="3" style="width: 20%;">의뢰의 소속</th>
-                                <th>검체 유형</th>
-                                <th colspan="2">검체의 적절성여부</th>
-                                <th>검체접수일</th>
-                                <th>결과보고일</th>
-                            </tr>
-                            <tr>
-                                <td>{{ report_data.clinical_info['의뢰의'] }}</td>
-                                <td colspan="3" style="width: 20%;">{{ report_data.clinical_info['의뢰의 소속'] }}</td>
-                                <td>{{ report_data.clinical_info['검체 유형'] }}</td>
-                                <td colspan="2">{{ report_data.clinical_info['검체의 적절성여부'] }}</td>
-                                <td>{{ report_data.clinical_info['검체접수일'] }}</td>
-                                <td>{{ report_data.clinical_info.get('결과보고일', 'N/A') }}</td>
-                            </tr>
-                        </table>
-                    </div>
-                    
-                    <!-- 검사결과 -->
-                    <div class="section">
-                        <h2 class="section-title">▣ 검사결과</h2>
-                        
-                        <!-- 1. Variants of clinical significance -->
-                        <h3 class="result-title">1. Variants of clinical significance</h3>
-                        
-                        <!-- SNVs & Indels -->
-                        {% if report_data.snv_clinical.data %}
-                        <h4 class="variant-type">- SNVs & Indels{% if report_data.snv_clinical.highlight %}: {{ report_data.snv_clinical.highlight }}{% endif %}</h4>
-                        <table class="data-table full-width" border="1" id="snv-clinical-table">
-                            <tr>
-                                <th>GENE</th>
-                                <th>MUTATION TYPE</th>
-                                <th>AA CHANGE</th>
-                                <th>VAF (%)</th>
-                                <th>HGVSc</th>
-                                <th>HGVSp</th>
-                            </tr>
-                            {% for row in report_data.snv_clinical.data %}
-                            <tr>
-                                {% for cell in row %}
-                                <td>{{ cell }}</td>
-                                {% endfor %}
-                            </tr>
-                            {% endfor %}
-                        </table>
-                        {% else %}
-                        <h4 class="variant-type">- SNVs & Indels: None</h4>
-                        {% endif %}
-                        
-                        <!-- Fusion gene -->
-                        {% if report_data.fusion_clinical.data %}
-                        <h4 class="variant-type">- Fusion gene{% if report_data.fusion_clinical.highlight %}: {{ report_data.fusion_clinical.highlight }}{% endif %}</h4>
-                        <table class="data-table full-width" border="1" id="fusion-clinical-table">
-                            <tr>
-                                <th>GENE FUSION</th>
-                                <th>BREAKPOINT 1</th>
-                                <th>BREAKPOINT 2</th>
-                                <th>FUSION SUPPORTING READS</th>
-                            </tr>
-                            {% for row in report_data.fusion_clinical.data %}
-                            <tr>
-                                {% for cell in row %}
-                                <td>{{ cell }}</td>
-                                {% endfor %}
-                            </tr>
-                            {% endfor %}
-                        </table>
-                        {% else %}
-                        <h4 class="variant-type">- Fusion gene: None</h4>
-                        {% endif %}
-                        
-                        <!-- Copy number variation -->
-                        {% if report_data.cnv_clinical.data %}
-                        <h4 class="variant-type">- Copy number variation{% if report_data.cnv_clinical.highlight %}: {{ report_data.cnv_clinical.highlight }}{% endif %}</h4>
-                        <table class="data-table full-width" border="1" id="cnv-clinical-table">
-                            <tr>
-                                <th>GENE</th>
-                                <th>LOCATION</th>
-                                <th>FOLD CHANGE</th>
-                                <th>ESTIMATED COPY NUMBER</th>
-                            </tr>
-                            {% for row in report_data.cnv_clinical.data %}
-                            <tr>
-                                {% for cell in row %}
-                                <td>{{ cell }}</td>
-                                {% endfor %}
-                            </tr>
-                            {% endfor %}
-                        </table>
-                        {% else %}
-                        <h4 class="variant-type">- Copy number variation: None</h4>
-                        {% endif %}
-                        
-                        <!-- Large rearrangements in BRCA1/2 -->
-                        {% if report_data.lr_brca_clinical.data %}
-                        <h4 class="variant-type">- Large rearrangements in BRCA1/2{% if report_data.lr_brca_clinical.highlight %}: {{ report_data.lr_brca_clinical.highlight }}{% endif %}</h4>
-                        <table class="data-table full-width" border="1" id="lr-brca-clinical-table">
-                            <tr>
-                                <th>GENE</th>
-                                <th>LOCATION</th>
-                                <th>AFFECTED EXON</th>
-                                <th>FOLD CHANGE</th>
-                                <th>ESTIMATED COPY NUMBER</th>
-                            </tr>
-                            {% for row in report_data.lr_brca_clinical.data %}
-                            <tr>
-                                {% for cell in row %}
-                                <td>{{ cell }}</td>
-                                {% endfor %}
-                            </tr>
-                            {% endfor %}
-                        </table>
-                        {% else %}
-                        <h4 class="variant-type">- Large rearrangements in BRCA1/2: None</h4>
-                        {% endif %}
-                        
-                        <!-- Splice variant -->
-                        {% if report_data.splice_clinical.data %}
-                        <h4 class="variant-type">- Splice variant{% if report_data.splice_clinical.highlight %}: {{ report_data.splice_clinical.highlight }}{% endif %}</h4>
-                        <table class="data-table full-width" border="1" id="splice-clinical-table">
-                            <tr>
-                                <th>GENE</th>
-                                <th>AFFECTED EXON</th>
-                                <th>BREAKPOINT 1</th>
-                                <th>BREAKPOINT 2</th>
-                                <th>SPLICE SUPPORTING READS</th>
-                            </tr>
-                            {% for row in report_data.splice_clinical.data %}
-                            <tr>
-                                {% for cell in row %}
-                                <td>{{ cell }}</td>
-                                {% endfor %}
-                            </tr>
-                            {% endfor %}
-                        </table>
-                        {% else %}
-                        <h4 class="variant-type">- Splice variant: None</h4>
-                        {% endif %}
-                    </div>
-                </div>
-                
-                <!-- 첫 페이지 하단 고정 컨텐츠 -->
-                <div class="page-bottom-fixed">
-                    <!-- Other Biomarkers -->
-                    <div class="section">
-                        <h4 class="variant-type">- Other Biomarkers</h4>
-                        <table class="biomarkers-table full-width" border="1">
-                            <tr>
-                                <th>Estimated Tumor Mutation Burden (TMB)</th>
-                                <th>Microsatellite Instability (MSI) (% Unstable MSI Sites)</th>
-                            </tr>
-                            <tr>
-                                <td>{{ report_data.biomarkers.TMB }}</td>
-                                <td>{{ report_data.biomarkers.MSI }}</td>
-                            </tr>
-                        </table>
-                    </div>
-                    
-                    <!-- Footer (로고와 검사기관 정보만) -->
-                    <div class="report-footer">
-                        <div class="footer-container">
-                            <div class="footer-row">
-                                <div class="footer-left">
-                                    <div class="footer-org">검사기관 : 세브란스병원 병리과 분자병리 검사실</div>
-                                    <div class="footer-address">서울시 서대문구 연세로 50-1 (신촌동 134) 세브란스병원 병리과 Tel: 02-2228-2625</div>
-                                </div>
-                                <div class="footer-right">
-                                    <img src="/static/images/Sev_Logo.png" alt="세브란스병원">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Page 1-continued: 검사결과 나머지 부분 -->
-        <div class="a4-page page-continued page-continued-1">
             <div class="report-content">
+                <!-- 보고서 헤더 -->
+                <div class="report-header">
+                    <h1>NGS Panel Level II Analysis Report</h1>
+                </div>
+            
+            <!-- 검체 정보 -->
+            <div class="section">
+                <h2 class="section-title">▣ 검체 정보</h2>
+                <table class="info-table full-width" border="1">
+                    <tr>
+                        <th>검체 정보</th>
+                        <th>성별</th>
+                        <th>나이</th>
+                        <th>Unit NO.</th>
+                        <th>환자명</th>
+                        <th>채취 장기</th>
+                        <th>원발 장기</th>
+                        <th colspan="2">진단</th>
+                    </tr>
+                    <tr>
+                        <td>{{ report_data.clinical_info['검체 정보'] }}</td>
+                        <td>{{ report_data.clinical_info.성별 }}</td>
+                        <td>{{ report_data.clinical_info.나이 }}</td>
+                        <td>{{ report_data.clinical_info['Unit NO.'] }}</td>
+                        <td>{{ report_data.clinical_info.환자명 }}</td>
+                        <td>{{ report_data.clinical_info['채취 장기'] }}</td>
+                        <td>{{ report_data.clinical_info['원발 장기'] }}</td>
+                        <td colspan="2">Non-small cell carcinoma</td>
+                    </tr>
+                    <tr>
+                        <th>의뢰의</th>
+                        <th colspan="3" style="width: 20%;">의뢰의 소속</th>
+                        <th>검체 유형</th>
+                        <th colspan="2">검체의 적절성여부</th>
+                        <th>검체접수일</th>
+                        <th>결과보고일</th>
+                    </tr>
+                    <tr>
+                        <td>{{ report_data.clinical_info['의뢰의'] }}</td>
+                        <td colspan="3" style="width: 20%;">{{ report_data.clinical_info['의뢰의 소속'] }}</td>
+                        <td>{{ report_data.clinical_info['검체 유형'] }}</td>
+                        <td colspan="2">{{ report_data.clinical_info['검체의 적절성여부'] }}</td>
+                        <td>{{ report_data.clinical_info['검체접수일'] }}</td>
+                        <td>{{ report_data.clinical_info.get('결과보고일', 'N/A') }}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- 검사결과 -->
+            <div class="section">
+                <h2 class="section-title">▣ 검사결과</h2>
+                
+                <!-- 1. Variants of clinical significance -->
+                <h3 class="result-title">1. Variants of clinical significance</h3>
+                
+                <!-- SNVs & Indels -->
+                {% if report_data.snv_clinical.data %}
+                <h4 class="variant-type">- SNVs & Indels{% if report_data.snv_clinical.highlight %}: {{ report_data.snv_clinical.highlight }}{% endif %}</h4>
+                <table class="data-table full-width" border="1" id="snv-clinical-table">
+                    <tr>
+                        <th>GENE</th>
+                        <th>MUTATION TYPE</th>
+                        <th>AA CHANGE</th>
+                        <th>VAF (%)</th>
+                        <th>HGVSc</th>
+                        <th>HGVSp</th>
+                    </tr>
+                    {% for row in report_data.snv_clinical.data %}
+                    <tr>
+                        {% for cell in row %}
+                        <td>{{ cell }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </table>
+                {% else %}
+                <h4 class="variant-type">- SNVs & Indels: None</h4>
+                {% endif %}
+                
+                <!-- Fusion gene -->
+                {% if report_data.fusion_clinical.data %}
+                <h4 class="variant-type">- Fusion gene{% if report_data.fusion_clinical.highlight %}: {{ report_data.fusion_clinical.highlight }}{% endif %}</h4>
+                <table class="data-table full-width" border="1" id="fusion-clinical-table">
+                    <tr>
+                        <th>GENE FUSION</th>
+                        <th>BREAKPOINT 1</th>
+                        <th>BREAKPOINT 2</th>
+                        <th>FUSION SUPPORTING READS</th>
+                    </tr>
+                    {% for row in report_data.fusion_clinical.data %}
+                    <tr>
+                        {% for cell in row %}
+                        <td>{{ cell }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </table>
+                {% else %}
+                <h4 class="variant-type">- Fusion gene: None</h4>
+                {% endif %}
+                
+                <!-- Copy number variation -->
+                {% if report_data.cnv_clinical.data %}
+                <h4 class="variant-type">- Copy number variation{% if report_data.cnv_clinical.highlight %}: {{ report_data.cnv_clinical.highlight }}{% endif %}</h4>
+                <table class="data-table full-width" border="1" id="cnv-clinical-table">
+                    <tr>
+                        <th>GENE</th>
+                        <th>LOCATION</th>
+                        <th>FOLD CHANGE</th>
+                        <th>ESTIMATED COPY NUMBER</th>
+                    </tr>
+                    {% for row in report_data.cnv_clinical.data %}
+                    <tr>
+                        {% for cell in row %}
+                        <td>{{ cell }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </table>
+                {% else %}
+                <h4 class="variant-type">- Copy number variation: None</h4>
+                {% endif %}
+                
+                <!-- Large rearrangements in BRCA1/2 -->
+                {% if report_data.lr_brca_clinical.data %}
+                <h4 class="variant-type">- Large rearrangements in BRCA1/2{% if report_data.lr_brca_clinical.highlight %}: {{ report_data.lr_brca_clinical.highlight }}{% endif %}</h4>
+                <table class="data-table full-width" border="1" id="lr-brca-clinical-table">
+                    <tr>
+                        <th>GENE</th>
+                        <th>LOCATION</th>
+                        <th>AFFECTED EXON</th>
+                        <th>FOLD CHANGE</th>
+                        <th>ESTIMATED COPY NUMBER</th>
+                    </tr>
+                    {% for row in report_data.lr_brca_clinical.data %}
+                    <tr>
+                        {% for cell in row %}
+                        <td>{{ cell }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </table>
+                {% else %}
+                <h4 class="variant-type">- Large rearrangements in BRCA1/2: None</h4>
+                {% endif %}
+                
+                <!-- Splice variant -->
+                {% if report_data.splice_clinical.data %}
+                <h4 class="variant-type">- Splice variant{% if report_data.splice_clinical.highlight %}: {{ report_data.splice_clinical.highlight }}{% endif %}</h4>
+                <table class="data-table full-width" border="1" id="splice-clinical-table">
+                    <tr>
+                        <th>GENE</th>
+                        <th>AFFECTED EXON</th>
+                        <th>BREAKPOINT 1</th>
+                        <th>BREAKPOINT 2</th>
+                        <th>SPLICE SUPPORTING READS</th>
+                    </tr>
+                    {% for row in report_data.splice_clinical.data %}
+                    <tr>
+                        {% for cell in row %}
+                        <td>{{ cell }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </table>
+                {% else %}
+                <h4 class="variant-type">- Splice variant: None</h4>
+                {% endif %}
+                
+
+                
                 <!-- 2. Variants of unknown significance -->
                 <h3 class="result-title">2. Variants of unknown significance</h3>
                 
@@ -375,9 +336,22 @@
                 
                 <!-- 3. Failed gene -->
                 <h3 class="result-title">3. Failed gene: <span id="failed-gene">{{ report_data.failed_gene }}</span></h3>
+                
+                <!-- Other Biomarkers (첫 페이지로 이동) -->
+                <h4 class="variant-type">- Other Biomarkers</h4>
+                <table class="biomarkers-table full-width" border="1">
+                    <tr>
+                        <th>Estimated Tumor Mutation Burden (TMB)</th>
+                        <th>Microsatellite Instability (MSI) (% Unstable MSI Sites)</th>
+                    </tr>
+                    <tr>
+                        <td>{{ report_data.biomarkers.TMB }}</td>
+                        <td>{{ report_data.biomarkers.MSI }}</td>
+                    </tr>
+                </table>
             </div>
             
-            <!-- Comment -->
+            <!-- Comment (첫 페이지로 이동) -->
             <div class="section">
                 <h2 class="section-title">▣ Comment</h2>
                 <div class="comment-section">
@@ -401,6 +375,22 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Footer (로고와 검사기관 정보만) -->
+            <div class="report-footer">
+                <div class="footer-container">
+                    <div class="footer-row">
+                        <div class="footer-left">
+                            <div class="footer-org">검사기관 : 세브란스병원 병리과 분자병리 검사실</div>
+                            <div class="footer-address">서울시 서대문구 연세로 50-1 (신촌동 134) 세브란스병원 병리과 Tel: 02-2228-2625</div>
+                        </div>
+                        <div class="footer-right">
+                            <img src="/static/images/Sev_Logo.png" alt="세브란스병원">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         </div>
         
         <!-- Page 2: 검사정보부터 Specification까지 -->
@@ -411,7 +401,7 @@
             <div class="section">
                 <h2 class="section-title">▣ 검사정보</h2>
                 <div class="info-section">
-                    <p><span class="info-label">검사시약 :</span> {% if report_data.panel_type == 'GE' %}AllPrep DNA/RNA FFPE Kit (50) [Qiagen], TruSight™ Oncology 500 kit [Illumina]{% else %}AllPrep DNA/RNA FFPE Kit (50) [Qiagen], TruSight™ Oncology 500 kit [Illumina], TruSight™ RNA Fusion Panel [Illumina]{% endif %}</p>
+                    <p><span class="info-label">검사시약 :</span> AllPrep DNA/RNA FFPE Kit (50) [Qiagen], TruSight™ Oncology 500 kit [Illumina]</p>
                     <p><span class="info-label">검사방법 :</span> NGS targeted DNA/RNA sequencing (Library : Hybrid capture)</p>
                     <p><span class="info-label">검사기기 :</span> {{ report_data.diagnostic_info.검사기기 }}</p>
                     <p><span class="info-label">Reference genome :</span> Homo_sapiens/ UCSC/ hg19</p>
