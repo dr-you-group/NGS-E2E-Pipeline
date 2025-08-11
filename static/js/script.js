@@ -1,4 +1,47 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // A4 페이지 분할 체크 기능
+    function checkPageOverflow() {
+        const a4Pages = document.querySelectorAll('.a4-page');
+        
+        a4Pages.forEach((page, pageIndex) => {
+            // 각 페이지 내의 섹션들을 확인
+            const sections = page.querySelectorAll('.section');
+            let totalHeight = 0;
+            const pageHeight = page.clientHeight - 100; // 패딩 고려
+            
+            sections.forEach((section) => {
+                const sectionHeight = section.offsetHeight;
+                totalHeight += sectionHeight;
+                
+                // 페이지 높이를 초과하는 섹션에 대해 경고
+                if (totalHeight > pageHeight) {
+                    console.warn(`Page ${pageIndex + 1}: 컨텐츠가 A4 페이지 크기를 초과합니다!`);
+                    
+                    // 섹션 제목에 페이지 번호 추가 (필요시)
+                    const sectionTitle = section.querySelector('.section-title, .result-title, .variant-type');
+                    if (sectionTitle && !sectionTitle.textContent.includes('(1/')) {
+                        // 예: "1. Variants of clinical significance (1/2)"
+                        // 이 기능은 서버 측에서 처리하는 것이 더 적합할 수 있음
+                    }
+                }
+            });
+            
+            // 페이지 크기 초과 시 시각적 표시
+            if (totalHeight > pageHeight) {
+                page.classList.add('overflow-warning');
+            } else {
+                page.classList.remove('overflow-warning');
+            }
+        });
+    }
+    
+    // 보고서 페이지가 있을 경우에만 실행
+    if (document.querySelector('.a4-page')) {
+        checkPageOverflow();
+        
+        // 윈도우 크기 변경 시 다시 체크
+        window.addEventListener('resize', checkPageOverflow);
+    }
     // 엑셀 파일 업로드 기능
     const uploadBtn = document.getElementById('upload-btn');
     const excelFile = document.getElementById('excel-file');
@@ -77,7 +120,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // 페이지 로드 시 보고서 목록 불러오기
-    loadReportList();
+    if (document.getElementById('report-list')) {
+        loadReportList();
+    }
     
     // 보고서 인쇄 기능
     const printBtn = document.getElementById('print-report');

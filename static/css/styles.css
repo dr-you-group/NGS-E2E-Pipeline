@@ -120,14 +120,80 @@ body {
     border-radius: 4px;
 }
 
-.report-page {
+/* A4 페이지 컨테이너 */
+.a4-page {
     width: 21cm;
-    min-height: 29.7cm;
-    padding: 12pt;
-    margin: 0 auto;
+    height: 29.7cm;
+    padding: 1.5cm;
+    margin: 0 auto 20px;
     background-color: white;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    border: 1px solid black;
+    border: 2px solid #ff0000; /* 빨간색 테두리로 A4 경계 표시 */
+    position: relative;
+    page-break-after: always;
+    box-sizing: border-box;
+    overflow: auto; /* 개발 시 오버플로우 확인을 위해 auto로 변경 */
+}
+
+/* 오버플로우 경고를 위한 클래스 */
+.a4-page.overflow-warning {
+    border-color: #ff9900;
+    background-color: #fff9f0;
+}
+
+.a4-page.overflow-warning::after {
+    content: "WARNING: Content exceeds A4 size!";
+    background-color: #ff9900;
+    color: white;
+}
+
+/* A4 기준선 표시 (개발용) */
+.a4-page::after {
+    content: "A4 Page Boundary (210mm x 297mm)";
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    font-size: 10px;
+    color: #ff0000;
+    background-color: #ffe5e5;
+    border: 1px solid #ff0000;
+    padding: 3px 8px;
+    font-weight: bold;
+}
+
+/* 페이지 번호 표시를 위해 ::before 사용 */
+.a4-page.page-1::before { content: "Page 1"; }
+.a4-page.page-2::before { content: "Page 2"; }
+.a4-page.page-3::before { content: "Page 3"; }
+.a4-page.page-4::before { content: "Page 4"; }
+
+.a4-page::before {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    font-size: 10px;
+    color: #ff0000;
+    background-color: #ffe5e5;
+    border: 1px solid #ff0000;
+    padding: 3px 8px;
+    font-weight: bold;
+    z-index: 1000;
+}
+
+/* 실제 보고서 내용 */
+.report-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 페이지 번호 표시 */
+.page-number {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 10pt;
+    color: #666;
 }
 
 .report-header {
@@ -267,7 +333,7 @@ table {
 }
 
 .comment-box {
-    border: 1px dashed #000;
+    border: 1px solid #000;
     padding: 15px;
     min-height: 100px;
     line-height: 1.4;
@@ -280,7 +346,7 @@ table {
 }
 
 .comment-section {
-    border: 2px dashed #666;
+    border: 2px solid #666;
     padding: 10px;
     margin-bottom: 20px;
 }
@@ -408,72 +474,66 @@ table {
     font-weight: bold;
 }
 
-/* 푸터 스타일 */
-.report-footer {
-    margin-top: 30px;
-    padding-top: 20px;
-}
-
-.footer-container {
-    border-top: 2px dashed #000;
-    padding: 3px;
+/* 사용자 정보 스타일 (마지막 페이지에만) */
+.user-info-section {
+    margin-bottom: 20px;
     font-size: 10pt;
 }
 
-.footer-row-1, .footer-row-2 {
+/* 사용자 정보 위의 점선 */
+.user-info-divider {
+    border-top: 2px dashed #000;
+    margin-bottom: 10px;
+}
+
+.user-info-container {
+    padding: 10px 0;
+}
+
+.user-info-row-1 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: -2px;
-    line-height: 0.8;
+    margin-bottom: 10px;
 }
 
-.footer-row-2 {
-    margin-bottom: -5px;
-    margin-top: -35px;
+.user-info-row-2 {
+    margin-bottom: 10px;
 }
 
-.footer-left-side {
+.user-info-left {
     flex: 1;
 }
 
-.footer-right-side {
+.user-info-right {
     text-align: right;
-    display: flex;
-    align-items: flex-end;
-    justify-content: flex-end;
 }
 
-.footer-line-1 {
+.user-info-line {
     display: flex;
     align-items: center;
 }
 
-.footer-tested {
+.user-tested {
     margin-right: 60px;
     font-size: 12pt;
-    line-height: 0.8;
 }
 
-.footer-analyzed {
+.user-analyzed {
     font-size: 12pt;
-    line-height: 0.8;
 }
 
-.footer-signed {
+.user-signed {
     font-size: 12pt;
-    line-height: 0.8;
 }
 
-.footer-number-table {
+.user-number-table {
     border: 1px solid #000;
     border-collapse: collapse;
     display: inline-table;
-    vertical-align: bottom;
-    margin-top: 40px;
 }
 
-.footer-number-label {
+.user-number-label {
     border: 1px solid #000;
     padding: 4px 8px;
     background-color: #f0f0f0;
@@ -482,51 +542,155 @@ table {
     font-size: 11pt;
 }
 
-.footer-number-value {
+.user-number-value {
     border: 1px solid #000;
     padding: 4px 8px;
     text-align: center;
     font-size: 11pt;
 }
 
-.footer-right-side img {
-    height: 35px;
-    width: auto;
-    margin-top: 50px;
-    vertical-align: bottom;
+/* 푸터 스타일 (단순화) */
+.report-footer {
+    margin-top: 30px;
+    padding-top: 10px;
 }
 
-.footer-bottom {
-    margin-top: -3px;
+.footer-container {
+    border-top: 2px dashed #000;
+    padding: 10px 0;
+    font-size: 10pt;
+}
+
+.footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.footer-left {
+    flex: 1;
+}
+
+.footer-right {
+    text-align: right;
+}
+
+.footer-right img {
+    height: 35px;
+    width: auto;
+    vertical-align: bottom;
 }
 
 .footer-org {
     font-weight: bold;
-    margin-bottom: 1px;
+    margin-bottom: 2px;
     font-size: 7pt;
-    line-height: 0.9;
+    line-height: 1.2;
 }
 
 .footer-address {
     font-size: 7pt;
-    line-height: 0.9;
+    line-height: 1.2;
+}
+
+/* 페이지별 특별 스타일 */
+.page-1 .report-footer {
+    margin-top: auto;
+    padding-top: 10px;
+}
+
+/* 검사정보부터 Specification까지 한 페이지에 */
+.page-2-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* Gene Content 페이지 */
+.page-3-content,
+.page-4-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.gene-content-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* 페이지 하단 footer를 위한 스타일 */
+.page-footer-wrapper {
+    margin-top: auto;
+}
+
+/* 마지막 페이지의 사용자 정보는 footer 위에 표시 */
+.page-footer-wrapper .user-info-section {
+    margin-bottom: 20px;
+}
+
+/* Footer를 항상 페이지 하단에 고정 */
+.page-footer-wrapper .report-footer {
+    margin-top: 0;
 }
 
 @media print {
     body {
         background-color: white;
+        margin: 0;
+        padding: 0;
     }
     
     .container {
         padding: 0;
     }
     
-    .report-page {
-        width: 100%;
-        height: auto;
-        padding: 12pt;
+    .a4-page {
+        width: 210mm;
+        height: 297mm;
+        padding: 15mm;
         margin: 0;
         box-shadow: none;
         border: none;
+        page-break-after: always;
+        page-break-inside: avoid;
+    }
+    
+    .a4-page:last-child {
+        page-break-after: auto;
+    }
+    
+    /* A4 기준선 및 페이지 표시 숨기기 */
+    .a4-page::after,
+    .a4-page::before {
+        display: none;
+    }
+    
+    /* 프린트시 빨간 테두리 및 경고 스타일 제거 */
+    .a4-page {
+        border: none;
+        overflow: hidden;
+    }
+    
+    .a4-page.overflow-warning {
+        border-color: initial;
+        background-color: white;
+    }
+    
+    /* 프린트시 강제 페이지 나누기 */
+    .force-page-break {
+        page-break-before: always;
+    }
+    
+    /* 테이블이 페이지를 넘어가지 않도록 */
+    table {
+        page-break-inside: avoid;
+    }
+    
+    /* 섹션이 페이지를 넘어가지 않도록 */
+    .section {
+        page-break-inside: avoid;
     }
 }

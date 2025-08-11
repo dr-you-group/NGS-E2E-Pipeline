@@ -43,11 +43,13 @@
         </div>
         {% endif %}
 
-        <div class="report-page">
-            <!-- 보고서 헤더 -->
-            <div class="report-header">
-                <h1>NGS Panel Level II Analysis Report</h1>
-            </div>
+        <!-- Page 1: 검체정보 + 검사결과 + Other biomarkers + Footer -->
+        <div class="a4-page page-1">
+            <div class="report-content">
+                <!-- 보고서 헤더 -->
+                <div class="report-header">
+                    <h1>NGS Panel Level II Analysis Report</h1>
+                </div>
             
             <!-- 검체 정보 -->
             <div class="section">
@@ -213,18 +215,7 @@
                 <h4 class="variant-type">- Splice variant: None</h4>
                 {% endif %}
                 
-                <!-- Other Biomarkers -->
-                <h4 class="variant-type">- Other Biomarkers</h4>
-                <table class="biomarkers-table full-width" border="1">
-                    <tr>
-                        <th>Estimated Tumor Mutation Burden (TMB)</th>
-                        <th>Microsatellite Instability (MSI) (% Unstable MSI Sites)</th>
-                    </tr>
-                    <tr>
-                        <td>{{ report_data.biomarkers.TMB }}</td>
-                        <td>{{ report_data.biomarkers.MSI }}</td>
-                    </tr>
-                </table>
+
                 
                 <!-- 2. Variants of unknown significance -->
                 <h3 class="result-title">2. Variants of unknown significance</h3>
@@ -345,9 +336,22 @@
                 
                 <!-- 3. Failed gene -->
                 <h3 class="result-title">3. Failed gene: <span id="failed-gene">{{ report_data.failed_gene }}</span></h3>
+                
+                <!-- Other Biomarkers (첫 페이지로 이동) -->
+                <h4 class="variant-type">- Other Biomarkers</h4>
+                <table class="biomarkers-table full-width" border="1">
+                    <tr>
+                        <th>Estimated Tumor Mutation Burden (TMB)</th>
+                        <th>Microsatellite Instability (MSI) (% Unstable MSI Sites)</th>
+                    </tr>
+                    <tr>
+                        <td>{{ report_data.biomarkers.TMB }}</td>
+                        <td>{{ report_data.biomarkers.MSI }}</td>
+                    </tr>
+                </table>
             </div>
             
-            <!-- Comment -->
+            <!-- Comment (첫 페이지로 이동) -->
             <div class="section">
                 <h2 class="section-title">▣ Comment</h2>
                 <div class="comment-section">
@@ -371,6 +375,27 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Footer (로고와 검사기관 정보만) -->
+            <div class="report-footer">
+                <div class="footer-container">
+                    <div class="footer-row">
+                        <div class="footer-left">
+                            <div class="footer-org">검사기관 : 세브란스병원 병리과 분자병리 검사실</div>
+                            <div class="footer-address">서울시 서대문구 연세로 50-1 (신촌동 134) 세브란스병원 병리과 Tel: 02-2228-2625</div>
+                        </div>
+                        <div class="footer-right">
+                            <img src="/static/images/Sev_Logo.png" alt="세브란스병원">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+        
+        <!-- Page 2: 검사정보부터 Specification까지 -->
+        <div class="a4-page page-2">
+            <div class="page-2-content">
             
             <!-- 검사정보 -->
             <div class="section">
@@ -438,66 +463,141 @@
                     <img src="/static/images/{% if report_data.panel_type == 'GE' %}GE_Specification.png{% else %}SA_Specification.png{% endif %}" alt="Specification">
                 </div>
             </div>
-            
-            <!-- Gene Content -->
-            {% if report_data.panel_type == 'GE' %}
-            <div class="section">
-                <h2 class="section-title">▣ Gene Content in the TruSight Oncology 500 panel Assay</h2>
-                <div class="gene-content-box">
-                    <img src="/static/images/GE_Gene_Content_DRNA.png" alt="Gene Content">
-                </div>
             </div>
-            {% else %}
-            <!-- SA Panel - DNA -->
-            <div class="section">
-                <h2 class="section-title">▣ Gene Content in the NGS Sarcoma Panel Assay [DNA]</h2>
-                <div class="gene-content-box">
-                    <img src="/static/images/SA_Gene_Content_DNA.png" alt="Gene Content DNA">
+        </div>
+        
+        <!-- Page 3: Gene Content -->
+        {% if report_data.panel_type == 'GE' %}
+        <!-- GE: 한 페이지에 Gene Content + Footer -->
+        <div class="a4-page page-3">
+            <div class="page-3-content">
+                <div class="gene-content-wrapper">
+                    <div class="section">
+                        <h2 class="section-title">▣ Gene Content in the TruSight Oncology 500 panel Assay</h2>
+                        <div class="gene-content-box">
+                            <img src="/static/images/GE_Gene_Content_DRNA.png" alt="Gene Content">
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <!-- SA Panel - RNA -->
-            <div class="section">
-                <h2 class="section-title">▣ Gene Content in the NGS Sarcoma Panel Assay [RNA]</h2>
-                <div class="gene-content-box">
-                    <img src="/static/images/SA_Gene_Content_RNA.png" alt="Gene Content RNA">
-                </div>
-            </div>
-            {% endif %}
-            
-            <!-- Footer -->
-            <div class="report-footer">
-                <div class="footer-container">
-                    <div class="footer-row-1">
-                        <div class="footer-left-side">
-                            <div class="footer-line-1">
-                                <span class="footer-tested">Tested by: {{ report_data.diagnosis_user['Tested by'] }}</span>
-                                <span class="footer-analyzed">Analyzed by: {{ report_data.diagnosis_user['Analyzed by'] }}</span>
+                
+                <!-- 마지막 페이지: 사용자 정보 + Footer -->
+                <div class="page-footer-wrapper">
+                    <!-- 사용자 정보 (마지막 페이지에만) -->
+                    <div class="user-info-section">
+                        <div class="user-info-divider"></div>
+                        <div class="user-info-container">
+                            <div class="user-info-row-1">
+                                <div class="user-info-left">
+                                    <div class="user-info-line">
+                                        <span class="user-tested">Tested by: {{ report_data.diagnosis_user['Tested by'] }}</span>
+                                        <span class="user-analyzed">Analyzed by: {{ report_data.diagnosis_user['Analyzed by'] }}</span>
+                                    </div>
+                                </div>
+                                <div class="user-info-right">
+                                    <table class="user-number-table">
+                                        <tr>
+                                            <td class="user-number-label">분자 접수 번호</td>
+                                            <td class="user-number-value">{{ report_data.diagnosis_user['분자접수번호'] }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="user-info-row-2">
+                                <span class="user-signed">Signed by: {{ report_data.diagnosis_user['Signed by'] }}</span>
                             </div>
                         </div>
-                        <div class="footer-right-side">
-                            <table class="footer-number-table">
-                                <tr>
-                                    <td class="footer-number-label">분자 접수 번호</td>
-                                    <td class="footer-number-value">{{ report_data.diagnosis_user['분자접수번호'] }}</td>
-                                </tr>
-                            </table>
-                        </div>
                     </div>
-                    <div class="footer-row-2">
-                        <div class="footer-left-side">
-                            <span class="footer-signed">Signed by: {{ report_data.diagnosis_user['Signed by'] }}</span>
+                    
+                    <!-- Footer (로고와 검사기관 정보만) -->
+                    <div class="report-footer">
+                        <div class="footer-container">
+                            <div class="footer-row">
+                                <div class="footer-left">
+                                    <div class="footer-org">검사기관 : 세브란스병원 병리과 분자병리 검사실</div>
+                                    <div class="footer-address">서울시 서대문구 연세로 50-1 (신촌동 134) 세브란스병원 병리과 Tel: 02-2228-2625</div>
+                                </div>
+                                <div class="footer-right">
+                                    <img src="/static/images/Sev_Logo.png" alt="세브란스병원">
+                                </div>
+                            </div>
                         </div>
-                        <div class="footer-right-side">
-                            <img src="/static/images/Sev_Logo.png" alt="세브란스병원">
-                        </div>
-                    </div>
-                    <div class="footer-bottom">
-                        <div class="footer-org">검사기관 : 세브란스병원 병리과 분자병리 검사실</div>
-                        <div class="footer-address">서울시 서대문구 연세로 50-1 (신촌동 134) 세브란스병원 병리과 Tel: 02-2228-2625</div>
                     </div>
                 </div>
             </div>
         </div>
+        {% else %}
+        <!-- SA: DNA 페이지 -->
+        <div class="a4-page page-3">
+            <div class="page-3-content">
+                <div class="gene-content-wrapper">
+                    <div class="section">
+                        <h2 class="section-title">▣ Gene Content in the NGS Sarcoma Panel Assay [DNA]</h2>
+                        <div class="gene-content-box">
+                            <img src="/static/images/SA_Gene_Content_DNA.png" alt="Gene Content DNA">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- SA: RNA 페이지 + Footer -->
+        <div class="a4-page page-4">
+            <div class="page-4-content">
+                <div class="gene-content-wrapper">
+                    <div class="section">
+                        <h2 class="section-title">▣ Gene Content in the NGS Sarcoma Panel Assay [RNA]</h2>
+                        <div class="gene-content-box">
+                            <img src="/static/images/SA_Gene_Content_RNA.png" alt="Gene Content RNA">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 마지막 페이지: 사용자 정보 + Footer -->
+                <div class="page-footer-wrapper">
+                    <!-- 사용자 정보 (마지막 페이지에만) -->
+                    <div class="user-info-section">
+                        <div class="user-info-divider"></div>
+                        <div class="user-info-container">
+                            <div class="user-info-row-1">
+                                <div class="user-info-left">
+                                    <div class="user-info-line">
+                                        <span class="user-tested">Tested by: {{ report_data.diagnosis_user['Tested by'] }}</span>
+                                        <span class="user-analyzed">Analyzed by: {{ report_data.diagnosis_user['Analyzed by'] }}</span>
+                                    </div>
+                                </div>
+                                <div class="user-info-right">
+                                    <table class="user-number-table">
+                                        <tr>
+                                            <td class="user-number-label">분자 접수 번호</td>
+                                            <td class="user-number-value">{{ report_data.diagnosis_user['분자접수번호'] }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="user-info-row-2">
+                                <span class="user-signed">Signed by: {{ report_data.diagnosis_user['Signed by'] }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Footer (로고와 검사기관 정보만) -->
+                    <div class="report-footer">
+                        <div class="footer-container">
+                            <div class="footer-row">
+                                <div class="footer-left">
+                                    <div class="footer-org">검사기관 : 세브란스병원 병리과 분자병리 검사실</div>
+                                    <div class="footer-address">서울시 서대문구 연세로 50-1 (신촌동 134) 세브란스병원 병리과 Tel: 02-2228-2625</div>
+                                </div>
+                                <div class="footer-right">
+                                    <img src="/static/images/Sev_Logo.png" alt="세브란스병원">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
         {% endif %}
     </div>
     
