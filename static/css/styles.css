@@ -251,6 +251,9 @@ table {
     text-align: center;
     border: 1px solid #000;
     font-size: 8pt;
+    word-break: break-word;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .info-table td {
@@ -258,6 +261,9 @@ table {
     text-align: center;
     border: 1px solid #000;
     font-size: 8pt;
+    word-break: break-word; /* 긴 단어 자동 줄바꿈 */
+    word-wrap: break-word; /* IE 호환성 */
+    overflow-wrap: break-word; /* 표준 속성 */
 }
 
 .data-table th {
@@ -267,6 +273,9 @@ table {
     text-align: center;
     border: 1px solid #000;
     font-size: 8pt;
+    word-break: break-word;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .data-table td {
@@ -274,15 +283,30 @@ table {
     text-align: center;
     border: 1px solid #000;
     font-size: 8pt;
+    word-break: break-word; /* 긴 단어 자동 줄바꿈 */
+    word-wrap: break-word; /* IE 호환성 */
+    overflow-wrap: break-word; /* 표준 속성 */
 }
 
 /* SNV 테이블 컴럼 너비 */
-.data-table th:nth-child(1) { width: 8%; }  /* GENE */
+.data-table th:nth-child(1) { width: 10%; }  /* GENE - 8%에서 10%로 증가 */
 .data-table th:nth-child(2) { width: 18%; } /* MUTATION TYPE */
 .data-table th:nth-child(3) { width: 15%; } /* AA CHANGE */
-.data-table th:nth-child(4) { width: 10%; } /* VAF (%) */
+.data-table th:nth-child(4) { width: 8%; } /* VAF (%) - 10%에서 8%로 감소 */
 .data-table th:nth-child(5) { width: 25%; } /* HGVSc */
 .data-table th:nth-child(6) { width: 24%; } /* HGVSp */
+
+/* HGVSc와 HGVSp 컴럼에 대한 특별 처리 */
+#snv-clinical-table td:nth-child(5),
+#snv-clinical-table td:nth-child(6),
+#snv-unknown-table td:nth-child(5),
+#snv-unknown-table td:nth-child(6) {
+    word-break: break-all; /* 문자 단위로 줄바꿈 */
+    text-align: center; /* 가운데 정렬 유지 */
+    padding: 4px 6px;
+    font-size: 7pt; /* 약간 작게 */
+    line-height: 1.2;
+}
 
 /* Fusion 테이블 컴럼 너비 */
 #fusion-clinical-table th:nth-child(1),
@@ -294,6 +318,18 @@ table {
 #fusion-clinical-table th:nth-child(4),
 #fusion-unknown-table th:nth-child(4) { width: 30%; } /* FUSION SUPPORTING READS */
 
+/* Fusion Breakpoint 컴럼에 대한 특별 처리 */
+#fusion-clinical-table td:nth-child(2),
+#fusion-clinical-table td:nth-child(3),
+#fusion-unknown-table td:nth-child(2),
+#fusion-unknown-table td:nth-child(3) {
+    word-break: break-all;
+    text-align: center; /* 가운데 정렬 유지 */
+    padding: 4px 6px;
+    font-size: 7pt;
+    line-height: 1.2;
+}
+
 /* CNV 테이블 컴럼 너비 */
 #cnv-clinical-table th:nth-child(1),
 #cnv-unknown-table th:nth-child(1) { width: 12%; } /* GENE */
@@ -303,6 +339,16 @@ table {
 #cnv-unknown-table th:nth-child(3) { width: 20%; } /* FOLD CHANGE */
 #cnv-clinical-table th:nth-child(4),
 #cnv-unknown-table th:nth-child(4) { width: 43%; } /* ESTIMATED COPY NUMBER */
+
+/* CNV Location 컴럼에 대한 특별 처리 */
+#cnv-clinical-table td:nth-child(2),
+#cnv-unknown-table td:nth-child(2) {
+    word-break: break-all;
+    text-align: center; /* 가운데 정렬 유지 */
+    padding: 4px 6px;
+    font-size: 7pt;
+    line-height: 1.2;
+}
 
 /* LR BRCA 테이블 컴럼 너비 */
 #lr-brca-clinical-table th:nth-child(1),
@@ -316,6 +362,40 @@ table {
 #lr-brca-clinical-table th:nth-child(5),
 #lr-brca-unknown-table th:nth-child(5) { width: 30%; } /* ESTIMATED COPY NUMBER */
 
+/* LR BRCA Location 컴럼에 대한 특별 처리 */
+#lr-brca-clinical-table td:nth-child(2),
+#lr-brca-unknown-table td:nth-child(2) {
+    word-break: break-all;
+    text-align: center; /* 가운데 정렬 유지 */
+    padding: 4px 6px;
+    font-size: 7pt;
+    line-height: 1.2;
+}
+
+/* Splice variant 테이블 컴럼 너비 */
+#splice-clinical-table th:nth-child(1),
+#splice-unknown-table th:nth-child(1) { width: 12%; } /* GENE */
+#splice-clinical-table th:nth-child(2),
+#splice-unknown-table th:nth-child(2) { width: 18%; } /* AFFECTED EXON */
+#splice-clinical-table th:nth-child(3),
+#splice-unknown-table th:nth-child(3) { width: 25%; } /* BREAKPOINT 1 */
+#splice-clinical-table th:nth-child(4),
+#splice-unknown-table th:nth-child(4) { width: 25%; } /* BREAKPOINT 2 */
+#splice-clinical-table th:nth-child(5),
+#splice-unknown-table th:nth-child(5) { width: 20%; } /* SPLICE SUPPORTING READS */
+
+/* Splice Breakpoint 컴럼에 대한 특별 처리 */
+#splice-clinical-table td:nth-child(3),
+#splice-clinical-table td:nth-child(4),
+#splice-unknown-table td:nth-child(3),
+#splice-unknown-table td:nth-child(4) {
+    word-break: break-all;
+    text-align: center; /* 가운데 정렬 유지 */
+    padding: 4px 6px;
+    font-size: 7pt;
+    line-height: 1.2;
+}
+
 .biomarkers-table th {
     background-color: #e2efda;
     font-weight: normal;
@@ -323,6 +403,9 @@ table {
     text-align: center;
     border: 1px solid #000;
     font-size: 8pt;
+    word-break: break-word;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .biomarkers-table td {
@@ -330,6 +413,9 @@ table {
     text-align: center;
     border: 1px solid #000;
     font-size: 8pt;
+    word-break: break-word; /* 긴 단어 자동 줄바꿈 */
+    word-wrap: break-word; /* IE 호환성 */
+    overflow-wrap: break-word; /* 표준 속성 */
 }
 
 .comment-box {
