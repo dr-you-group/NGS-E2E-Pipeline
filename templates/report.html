@@ -375,29 +375,29 @@
                 
                 <!-- 3. Failed gene -->
                 <h3 class="result-title">3. Failed gene: <span id="failed-gene">{{ report_data.failed_gene }}</span></h3>
-            </div>
-            
-            <!-- Comment -->
-            <div class="section">
-                <h2 class="section-title">▣ Comment</h2>
-                <div class="comment-section">
-                    <div id="comments" class="comment-box">
-                        {% if report_data.comments %}
-                            <div class="comment-text">
-                                {% for comment in report_data.comments %}
-                                    <p>{{ comment }}</p>
-                                    {% if not loop.last %}<br>{% endif %}
-                                {% endfor %}
-                            </div>
-                            <br>
-                        {% endif %}
-                        <p>본 가이드는 환자의 암과 관련된 분자 이상(COSMIC Cancer e-Journals) 판단 근거와 참고문헌을 제공합니다. ASCO 가이드라인에 따라 Strong Clinical Significance (Tier I), Unknown Clinical Significance (Tier II), Benign or Likely Benign을 판별하여 유전자 변이의 임상적 중요도를 평가하였습니다. Standards and Guidelines for the Interpretation and Reporting of Sequence Variants in Cancer: A Joint Consensus Recommendation of the Association for Molecular Pathology, American Society of Clinical Oncology, and College of American Pathologists. J Mol Diagn 2017; 19(1):4-23.</p>
-                    </div>
-                    
-                    <!-- 추가 안내사항 -->
-                    <div class="additional-info">
-                        <p>• 본 검사의 raw data (BAM, FASTQ, VCF) 파일은 분자 병리 검사실 내 병리과 서버 컴퓨터에서 보관, 관리되고 있습니다.</p>
-                        <p>• 본 검사의 결과는 검체에 포함된 정상세포와 암세포의 비율에 따라 위음성의 결과를 배제 할 수 없습니다.</p>
+                
+                <!-- Comment -->
+                <div class="section" style="margin-top: 20px;">
+                    <h2 class="section-title">▣ Comment</h2>
+                    <div class="comment-section">
+                        <div id="comments" class="comment-box">
+                            {% if report_data.comments %}
+                                <div class="comment-text">
+                                    {% for comment in report_data.comments %}
+                                        <p>{{ comment }}</p>
+                                        {% if not loop.last %}<br>{% endif %}
+                                    {% endfor %}
+                                </div>
+                                <br>
+                            {% endif %}
+                            <p>본 가이드는 환자의 암과 관련된 분자 이상(COSMIC Cancer e-Journals) 판단 근거와 참고문헌을 제공합니다. ASCO 가이드라인에 따라 Strong Clinical Significance (Tier I), Unknown Clinical Significance (Tier II), Benign or Likely Benign을 판별하여 유전자 변이의 임상적 중요도를 평가하였습니다. Standards and Guidelines for the Interpretation and Reporting of Sequence Variants in Cancer: A Joint Consensus Recommendation of the Association for Molecular Pathology, American Society of Clinical Oncology, and College of American Pathologists. J Mol Diagn 2017; 19(1):4-23.</p>
+                        </div>
+                        
+                        <!-- 추가 안내사항 -->
+                        <div class="additional-info">
+                            <p>• 본 검사의 raw data (BAM, FASTQ, VCF) 파일은 분자 병리 검사실 내 병리과 서버 컴퓨터에서 보관, 관리되고 있습니다.</p>
+                            <p>• 본 검사의 결과는 검체에 포함된 정상세포와 암세포의 비율에 따라 위음성의 결과를 배제 할 수 없습니다.</p>
+                        </div>
                     </div>
                 </div>
             </div>
