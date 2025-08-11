@@ -257,8 +257,24 @@ async def upload_excel(file: UploadFile = File(...)):
         # 데이터베이스에 저장
         specimen_id = report_data["clinical_info"]["검체 정보"]
         
+        print(f"\n=== 업로드 디버깅 ===")
+        print(f"업로드 파일명: {file.filename}")
+        print(f"추출된 specimen_id: {specimen_id}")
+        print(f"병리번호 (clinical_dict): {parser.clinical_dict.get('병리번호', 'NOT FOUND')}")
+        
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
+        
+        # 기존 데이터 확인
+        cursor.execute("SELECT specimen_id FROM reports WHERE specimen_id = ?", (specimen_id,))
+        existing = cursor.fetchone()
+        if existing:
+            print(f"경고: {specimen_id}는 이미 존재합니다. 덮어쓰기됩니다.")
+        
+        # 저장 전 전체 데이터 확인
+        cursor.execute("SELECT COUNT(*) as count FROM reports")
+        before_count = cursor.fetchone()[0]
+        print(f"저장 전 전체 보고서 수: {before_count}")
         
         cursor.execute(
             "INSERT OR REPLACE INTO reports (specimen_id, report_data) VALUES (?, ?)",
@@ -266,9 +282,21 @@ async def upload_excel(file: UploadFile = File(...)):
         )
         
         conn.commit()
+        
+        # 저장 후 전체 데이터 확인
+        cursor.execute("SELECT COUNT(*) as count FROM reports")
+        after_count = cursor.fetchone()[0]
+        print(f"저장 후 전체 보고서 수: {after_count}")
+        
+        # 현재 저장된 모든 specimen_id 출력
+        cursor.execute("SELECT specimen_id FROM reports ORDER BY created_at DESC LIMIT 10")
+        all_ids = cursor.fetchall()
+        print(f"최근 10개 specimen_id: {[row[0] for row in all_ids]}")
+        
         conn.close()
         
         print(f"데이터베이스에 저장 완료: {specimen_id}")
+        print(f"==================\n")
         
         # JSON 파일로도 저장
         json_saved = save_json_file(specimen_id, report_data)
@@ -305,7 +333,19 @@ async def get_reports():
     
     conn.close()
     
-    return JSONResponse({"success": True, "reports": reports})
+    # JSON 파일 목록도 확인
+    json_files = []
+    if os.path.exists(JSON_DIR):
+        json_files = [f for f in os.listdir(JSON_DIR) if f.endswith('.json')]
+    
+    print(f"\n=== 보고서 목록 호출 ===")
+    print(f"DB에 저장된 보고서 수: {len(reports)}")
+    print(f"JSON 파일 수: {len(json_files)}")
+    print(f"DB specimen_ids: {[r['specimen_id'] for r in reports[:10]]}")
+    print(f"JSON 파일명: {json_files[:10]}")
+    print(f"==================\n")
+    
+    return JSONResponse({"success": True, "reports": reports, "json_files": json_files})
 
 if __name__ == "__main__":
     import uvicorn

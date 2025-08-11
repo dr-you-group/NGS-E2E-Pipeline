@@ -250,41 +250,86 @@ document.addEventListener('DOMContentLoaded', function() {
     const excelFile = document.getElementById('excel-file');
     
     if (uploadBtn) {
-        uploadBtn.addEventListener('click', function() {
+        uploadBtn.addEventListener('click', async function() {
             if (!excelFile.files.length) {
                 alert('엑셀 파일을 선택해주세요.');
                 return;
             }
             
-            const formData = new FormData();
-            formData.append('file', excelFile.files[0]);
+            const files = Array.from(excelFile.files);
+            const totalFiles = files.length;
+            let successCount = 0;
+            let failedFiles = [];
+            let uploadedSpecimenIds = [];
             
             uploadBtn.disabled = true;
-            uploadBtn.textContent = '업로드 중...';
+            uploadBtn.textContent = `업로드 중... (0/${totalFiles})`;
             
-            fetch('/api/upload-excel', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                uploadBtn.disabled = false;
-                uploadBtn.textContent = '업로드';
+            // 파일들을 순차적으로 업로드
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const formData = new FormData();
+                formData.append('file', file);
                 
-                if (data.success) {
-                    const jsonStatus = data.json_saved ? "JSON 파일 저장 성공" : "JSON 파일 저장 실패";
-                    alert(`보고서가 성공적으로 업로드되었습니다. (${jsonStatus})`);
-                    loadReportList();
-                    window.location.href = '/generate-report?specimen_id=' + data.specimen_id;
-                } else {
-                    alert('업로드 실패: ' + data.error);
+                uploadBtn.textContent = `업로드 중... (${i}/${totalFiles})`;
+                
+                try {
+                    const response = await fetch('/api/upload-excel', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        successCount++;
+                        uploadedSpecimenIds.push(data.specimen_id);
+                    } else {
+                        failedFiles.push({
+                            filename: file.name,
+                            error: data.error
+                        });
+                    }
+                } catch (error) {
+                    failedFiles.push({
+                        filename: file.name,
+                        error: error.toString()
+                    });
                 }
-            })
-            .catch(error => {
-                uploadBtn.disabled = false;
-                uploadBtn.textContent = '업로드';
-                alert('업로드 중 오류가 발생했습니다: ' + error);
-            });
+                
+                uploadBtn.textContent = `업로드 중... (${i + 1}/${totalFiles})`;
+            }
+            
+            // 업로드 완료 후 결과 표시
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = '업로드';
+            
+            let resultMessage = `전체 ${totalFiles}개 파일 중 ${successCount}개 업로드 성공\n`;
+            
+            if (uploadedSpecimenIds.length > 0) {
+                resultMessage += `\n업로드된 검체 ID: ${uploadedSpecimenIds.join(', ')}\n`;
+            }
+            
+            if (failedFiles.length > 0) {
+                resultMessage += '\n실패한 파일들:\n';
+                failedFiles.forEach(failed => {
+                    resultMessage += `- ${failed.filename}: ${failed.error}\n`;
+                });
+            }
+            
+            alert(resultMessage);
+            
+            // 목록 새로고침
+            loadReportList();
+            
+            // 파일 입력 필드 초기화
+            excelFile.value = '';
+            
+            // 파일이 1개일 때만 해당 보고서로 이동
+            if (totalFiles === 1 && uploadedSpecimenIds.length === 1) {
+                window.location.href = '/generate-report?specimen_id=' + uploadedSpecimenIds[0];
+            }
+            // 여러 파일 업로드 시에는 현재 페이지에 머물기
         });
     }
     
@@ -293,7 +338,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const reportList = document.getElementById('report-list');
         if (!reportList) return;
         
-        fetch('/api/reports')
+        // 캐시 방지를 위해 timestamp 추가
+        fetch(`/api/reports?t=${Date.now()}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
