@@ -496,23 +496,19 @@
                     <div class="user-info-section">
                         <div class="user-info-divider"></div>
                         <div class="user-info-container">
-                            <div class="user-info-row-1">
-                                <div class="user-info-left">
-                                    <div class="user-info-line">
-                                        <span class="user-tested">Tested by: {{ report_data.diagnosis_user['Tested by'] }}</span>
-                                        <span class="user-analyzed">Analyzed by: {{ report_data.diagnosis_user['Analyzed by'] }}</span>
-                                    </div>
-                                </div>
-                                <div class="user-info-right">
-                                    <table class="user-number-table">
-                                        <tr>
-                                            <td class="user-number-label">분자 접수 번호</td>
-                                            <td class="user-number-value">{{ report_data.diagnosis_user['분자접수번호'] }}</td>
-                                        </tr>
-                                    </table>
-                                </div>
+                            <div class="user-info-number-row">
+                                <table class="user-number-table">
+                                    <tr>
+                                        <td class="user-number-label">분자 접수 번호</td>
+                                        <td class="user-number-value">{{ report_data.diagnosis_user['분자접수번호'] }}</td>
+                                    </tr>
+                                </table>
                             </div>
-                            <div class="user-info-row-2">
+                            <div class="user-info-tested-row">
+                                <span class="user-tested">Tested by: {{ report_data.diagnosis_user['Tested by'] }}</span>
+                                <span class="user-analyzed">Analyzed by: {{ report_data.diagnosis_user['Analyzed by'] }}</span>
+                            </div>
+                            <div class="user-info-signed-row">
                                 <span class="user-signed">Signed by: {{ report_data.diagnosis_user['Signed by'] }}</span>
                             </div>
                         </div>
@@ -568,23 +564,19 @@
                     <div class="user-info-section">
                         <div class="user-info-divider"></div>
                         <div class="user-info-container">
-                            <div class="user-info-row-1">
-                                <div class="user-info-left">
-                                    <div class="user-info-line">
-                                        <span class="user-tested">Tested by: {{ report_data.diagnosis_user['Tested by'] }}</span>
-                                        <span class="user-analyzed">Analyzed by: {{ report_data.diagnosis_user['Analyzed by'] }}</span>
-                                    </div>
-                                </div>
-                                <div class="user-info-right">
-                                    <table class="user-number-table">
-                                        <tr>
-                                            <td class="user-number-label">분자 접수 번호</td>
-                                            <td class="user-number-value">{{ report_data.diagnosis_user['분자접수번호'] }}</td>
-                                        </tr>
-                                    </table>
-                                </div>
+                            <div class="user-info-number-row">
+                                <table class="user-number-table">
+                                    <tr>
+                                        <td class="user-number-label">분자 접수 번호</td>
+                                        <td class="user-number-value">{{ report_data.diagnosis_user['분자접수번호'] }}</td>
+                                    </tr>
+                                </table>
                             </div>
-                            <div class="user-info-row-2">
+                            <div class="user-info-tested-row">
+                                <span class="user-tested">Tested by: {{ report_data.diagnosis_user['Tested by'] }}</span>
+                                <span class="user-analyzed">Analyzed by: {{ report_data.diagnosis_user['Analyzed by'] }}</span>
+                            </div>
+                            <div class="user-info-signed-row">
                                 <span class="user-signed">Signed by: {{ report_data.diagnosis_user['Signed by'] }}</span>
                             </div>
                         </div>

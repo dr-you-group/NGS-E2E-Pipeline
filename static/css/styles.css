@@ -497,42 +497,40 @@ table {
 
 /* 사용자 정보 스타일 (마지막 페이지에만) */
 .user-info-section {
-    margin-bottom: 20px;
+    margin-bottom: 5px; /* 더 줄이기 */
     font-size: 10pt;
 }
 
 /* 사용자 정보 위의 점선 */
 .user-info-divider {
     border-top: 2px dashed #000;
-    margin-bottom: 5px; /* 간격 줄이기 */
+    margin-bottom: 0; /* 5px에서 0으로 줄이기 */
 }
 
 .user-info-container {
     padding: 0; /* 패딩 제거 */
+    position: relative; /* 분자 접수 번호의 절대 위치 기준 */
+    padding-top: 20px; /* 분자 접수 번호 테이블을 위한 공간 줄이기 */
 }
 
-.user-info-row-1 {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 5px; /* 간격 줄이기 */
+/* 분자 접수 번호 행 - 독립적 위치 */
+.user-info-number-row {
+    position: absolute;
+    right: 0;
+    top: 5px; /* 점선 아래 적절한 위치에 고정 */
 }
 
-.user-info-row-2 {
-    margin-bottom: 5px; /* Tested by와 위 점선 사이 거리와 동일하게 설정 */
-}
-
-.user-info-left {
-    flex: 1;
-}
-
-.user-info-right {
-    text-align: right;
-}
-
-.user-info-line {
+/* Tested by / Analyzed by 행 */
+.user-info-tested-row {
     display: flex;
     align-items: center;
+    margin-top: -12px; /* 점선에 더 가까이, 분자 접수 번호와 비슷한 높이로 */
+    margin-bottom: 2px;
+}
+
+/* Signed by 행 */
+.user-info-signed-row {
+    margin-bottom: 2px;
 }
 
 .user-tested {
@@ -572,8 +570,8 @@ table {
 
 /* 푸터 스타일 (단순화) */
 .report-footer {
-    margin-top: 30px;
-    padding-top: 10px;
+    margin-top: 5px; /* 더 줄이기 */
+    padding-top: 2px; /* 더 줄이기 */
 }
 
 /* 페이지 하단 wrapper에서의 푸터 */
@@ -731,6 +729,7 @@ table {
 /* 마지막 페이지의 사용자 정보는 footer 위에 표시 */
 .page-footer-wrapper .user-info-section {
     margin-bottom: 0; /* Signed by와 Footer 사이 공간 제거 */
+    margin-top: -25px; /* 사용자 정보 전체를 더 위로 올리기 */
 }
 
 /* Footer를 항상 페이지 하단에 고정 - 삭제 */
