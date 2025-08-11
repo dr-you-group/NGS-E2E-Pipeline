@@ -5,20 +5,7 @@ warnings.filterwarnings('ignore')
 
 class NGS_EXCEL2DB:
     def __init__(self, file):
-        try:
-            # openpyxl 엔진으로 시도
-            self.df = pd.ExcelFile(file, engine='openpyxl')
-        except Exception as e:
-            print(f"openpyxl 엔진 실패, xlrd 엔진으로 재시도: {e}")
-            try:
-                # xlrd 엔진으로 재시도
-                self.df = pd.ExcelFile(file, engine='xlrd')
-            except Exception as e2:
-                print(f"xlrd 엔진도 실패, 직접 read_excel 사용: {e2}")
-                # 직접 read_excel로 시트별 로드
-                self._load_sheets_directly(file)
-                return
-                
+        self.df = pd.ExcelFile(file, engine='openpyxl')
         self.Clinical_Information = self.df.parse('clinical_information', header=None, dtype=str).fillna('')
         self.clinical_dict = dict(zip(self.Clinical_Information.iloc[:, 0], self.Clinical_Information.iloc[:, 1]))
         self.NGS_QC = self.df.parse('NGS_QC', header=None, dtype=str).fillna('')
@@ -37,33 +24,9 @@ class NGS_EXCEL2DB:
         self.Fusion = self.df.parse('Fusion', header=1, dtype=str).fillna('')
         self.Splice = self.df.parse('Splice', dtype=str).fillna('')
         self.IO = self.df.parse('IO', header=1, dtype=str).fillna('')
-        self.panel = 'GE' # or SA
+        self.panel = 'SA' if '.SA.' in self.clinical_dict["검체 유형"] else 'GE'
     
-    def _load_sheets_directly(self, file):
-        """직접 read_excel을 사용하여 시트별로 로드"""
-        try:
-            self.Clinical_Information = pd.read_excel(file, sheet_name='clinical_information', header=None, dtype=str, engine='openpyxl').fillna('')
-            self.clinical_dict = dict(zip(self.Clinical_Information.iloc[:, 0], self.Clinical_Information.iloc[:, 1]))
-            self.NGS_QC = pd.read_excel(file, sheet_name='NGS_QC', header=None, dtype=str, engine='openpyxl').fillna('')
-            self.SNV = pd.read_excel(file, sheet_name='SNV', dtype=str, engine='openpyxl').fillna('')
-            self.CNV = pd.read_excel(file, sheet_name='CNV', dtype=str, engine='openpyxl').fillna('')
-            
-            # CNVarm 시트를 안전하게 로드
-            try:
-                self.CNVarm = pd.read_excel(file, sheet_name='CNVarm', dtype=str, engine='openpyxl').fillna('')
-            except Exception as e:
-                print(f"CNVarm 시트 로드 실패: {e}")
-                self.CNVarm = pd.DataFrame()
-                
-            self.CNV_allFC = pd.read_excel(file, sheet_name='CNV_allFC', dtype=str, engine='openpyxl').fillna('')
-            self.LR_BRCA = pd.read_excel(file, sheet_name='LR_BRCA', dtype=str, engine='openpyxl').fillna('')
-            self.Fusion = pd.read_excel(file, sheet_name='Fusion', header=1, dtype=str, engine='openpyxl').fillna('')
-            self.Splice = pd.read_excel(file, sheet_name='Splice', dtype=str, engine='openpyxl').fillna('')
-            self.IO = pd.read_excel(file, sheet_name='IO', header=1, dtype=str, engine='openpyxl').fillna('')
-            self.panel = 'GE' # or SA
-        except Exception as e:
-            print(f"마지막 시도도 실패: {e}")
-            raise e
+    
 
     # 검체정보
     def get_Clinical_Info(self) -> Dict:
@@ -89,7 +52,12 @@ class NGS_EXCEL2DB:
         SNV_Data = self.SNV[self.SNV['Clinical_significance'] == data_type]
         SNV_Highlight = ', '.join(SNV_Data[SNV_Data["highlight"] != '']['highlight'].tolist())
         SNV_Row = ['Gene', 'Consequence', 'AA Change', 'VAF', 'HGVSc', 'HGVSp']
-        return SNV_Highlight, [SNV_Row] + SNV_Data[SNV_Row].values.tolist()
+        # VAF 값 소수 2번째 자리까지 반올림 처리
+        SNV_Data_processed = SNV_Data[SNV_Row].copy()
+        SNV_Data_processed['VAF'] = SNV_Data_processed['VAF'].apply(
+            lambda x: f"{float(x):.2f}" if pd.notna(x) else x
+        )
+        return SNV_Highlight, [SNV_Row] + SNV_Data_processed.values.tolist()
     
 
     # Fusion Gene

@@ -100,6 +100,7 @@
                 <h3 class="result-title">1. Variants of clinical significance</h3>
                 
                 <!-- SNVs & Indels -->
+                {% if report_data.snv_clinical.data %}
                 <h4 class="variant-type">- SNVs & Indels{% if report_data.snv_clinical.highlight %}: {{ report_data.snv_clinical.highlight }}{% endif %}</h4>
                 <table class="data-table full-width" border="1" id="snv-clinical-table">
                     <tr>
@@ -110,20 +111,20 @@
                         <th>HGVSc</th>
                         <th>HGVSp</th>
                     </tr>
-                    {% if report_data.snv_clinical.data %}
-                        {% for row in report_data.snv_clinical.data %}
-                        <tr>
-                            {% for cell in row %}
-                            <td>{{ cell }}</td>
-                            {% endfor %}
-                        </tr>
+                    {% for row in report_data.snv_clinical.data %}
+                    <tr>
+                        {% for cell in row %}
+                        <td>{{ cell }}</td>
                         {% endfor %}
-                    {% else %}
-                        <tr><td colspan="6" class="no-data">데이터 없음</td></tr>
-                    {% endif %}
+                    </tr>
+                    {% endfor %}
                 </table>
+                {% else %}
+                <h4 class="variant-type">- SNVs & Indels: None</h4>
+                {% endif %}
                 
                 <!-- Fusion gene -->
+                {% if report_data.fusion_clinical.data %}
                 <h4 class="variant-type">- Fusion gene{% if report_data.fusion_clinical.highlight %}: {{ report_data.fusion_clinical.highlight }}{% endif %}</h4>
                 <table class="data-table full-width" border="1" id="fusion-clinical-table">
                     <tr>
@@ -132,20 +133,20 @@
                         <th>BREAKPOINT 2</th>
                         <th>FUSION SUPPORTING READS</th>
                     </tr>
-                    {% if report_data.fusion_clinical.data %}
-                        {% for row in report_data.fusion_clinical.data %}
-                        <tr>
-                            {% for cell in row %}
-                            <td>{{ cell }}</td>
-                            {% endfor %}
-                        </tr>
+                    {% for row in report_data.fusion_clinical.data %}
+                    <tr>
+                        {% for cell in row %}
+                        <td>{{ cell }}</td>
                         {% endfor %}
-                    {% else %}
-                        <tr><td colspan="4" class="no-data">데이터 없음</td></tr>
-                    {% endif %}
+                    </tr>
+                    {% endfor %}
                 </table>
+                {% else %}
+                <h4 class="variant-type">- Fusion gene: None</h4>
+                {% endif %}
                 
                 <!-- Copy number variation -->
+                {% if report_data.cnv_clinical.data %}
                 <h4 class="variant-type">- Copy number variation{% if report_data.cnv_clinical.highlight %}: {{ report_data.cnv_clinical.highlight }}{% endif %}</h4>
                 <table class="data-table full-width" border="1" id="cnv-clinical-table">
                     <tr>
@@ -154,20 +155,20 @@
                         <th>FOLD CHANGE</th>
                         <th>ESTIMATED COPY NUMBER</th>
                     </tr>
-                    {% if report_data.cnv_clinical.data %}
-                        {% for row in report_data.cnv_clinical.data %}
-                        <tr>
-                            {% for cell in row %}
-                            <td>{{ cell }}</td>
-                            {% endfor %}
-                        </tr>
+                    {% for row in report_data.cnv_clinical.data %}
+                    <tr>
+                        {% for cell in row %}
+                        <td>{{ cell }}</td>
                         {% endfor %}
-                    {% else %}
-                        <tr><td colspan="4" class="no-data">데이터 없음</td></tr>
-                    {% endif %}
+                    </tr>
+                    {% endfor %}
                 </table>
+                {% else %}
+                <h4 class="variant-type">- Copy number variation: None</h4>
+                {% endif %}
                 
                 <!-- Large rearrangements in BRCA1/2 -->
+                {% if report_data.lr_brca_clinical.data %}
                 <h4 class="variant-type">- Large rearrangements in BRCA1/2{% if report_data.lr_brca_clinical.highlight %}: {{ report_data.lr_brca_clinical.highlight }}{% endif %}</h4>
                 <table class="data-table full-width" border="1" id="lr-brca-clinical-table">
                     <tr>
@@ -177,20 +178,20 @@
                         <th>FOLD CHANGE</th>
                         <th>ESTIMATED COPY NUMBER</th>
                     </tr>
-                    {% if report_data.lr_brca_clinical.data %}
-                        {% for row in report_data.lr_brca_clinical.data %}
-                        <tr>
-                            {% for cell in row %}
-                            <td>{{ cell }}</td>
-                            {% endfor %}
-                        </tr>
+                    {% for row in report_data.lr_brca_clinical.data %}
+                    <tr>
+                        {% for cell in row %}
+                        <td>{{ cell }}</td>
                         {% endfor %}
-                    {% else %}
-                        <tr><td colspan="5" class="no-data">데이터 없음</td></tr>
-                    {% endif %}
+                    </tr>
+                    {% endfor %}
                 </table>
+                {% else %}
+                <h4 class="variant-type">- Large rearrangements in BRCA1/2: None</h4>
+                {% endif %}
                 
                 <!-- Splice variant -->
+                {% if report_data.splice_clinical.data %}
                 <h4 class="variant-type">- Splice variant{% if report_data.splice_clinical.highlight %}: {{ report_data.splice_clinical.highlight }}{% endif %}</h4>
                 <table class="data-table full-width" border="1" id="splice-clinical-table">
                     <tr>
@@ -200,18 +201,17 @@
                         <th>BREAKPOINT 2</th>
                         <th>SPLICE SUPPORTING READS</th>
                     </tr>
-                    {% if report_data.splice_clinical.data %}
-                        {% for row in report_data.splice_clinical.data %}
-                        <tr>
-                            {% for cell in row %}
-                            <td>{{ cell }}</td>
-                            {% endfor %}
-                        </tr>
+                    {% for row in report_data.splice_clinical.data %}
+                    <tr>
+                        {% for cell in row %}
+                        <td>{{ cell }}</td>
                         {% endfor %}
-                    {% else %}
-                        <tr><td colspan="5" class="no-data">데이터 없음</td></tr>
-                    {% endif %}
+                    </tr>
+                    {% endfor %}
                 </table>
+                {% else %}
+                <h4 class="variant-type">- Splice variant: None</h4>
+                {% endif %}
                 
                 <!-- Other Biomarkers -->
                 <h4 class="variant-type">- Other Biomarkers</h4>
@@ -230,6 +230,7 @@
                 <h3 class="result-title">2. Variants of unknown significance</h3>
                 
                 <!-- SNVs & Indels -->
+                {% if report_data.snv_unknown.data %}
                 <h4 class="variant-type">- SNVs & Indels{% if report_data.snv_unknown.highlight %}: {{ report_data.snv_unknown.highlight }}{% endif %}</h4>
                 <table class="data-table full-width" border="1" id="snv-unknown-table">
                     <tr>
@@ -240,20 +241,20 @@
                         <th>HGVSc</th>
                         <th>HGVSp</th>
                     </tr>
-                    {% if report_data.snv_unknown.data %}
-                        {% for row in report_data.snv_unknown.data %}
-                        <tr>
-                            {% for cell in row %}
-                            <td>{{ cell }}</td>
-                            {% endfor %}
-                        </tr>
+                    {% for row in report_data.snv_unknown.data %}
+                    <tr>
+                        {% for cell in row %}
+                        <td>{{ cell }}</td>
                         {% endfor %}
-                    {% else %}
-                        <tr><td colspan="6" class="no-data">데이터 없음</td></tr>
-                    {% endif %}
+                    </tr>
+                    {% endfor %}
                 </table>
+                {% else %}
+                <h4 class="variant-type">- SNVs & Indels: None</h4>
+                {% endif %}
                 
                 <!-- Fusion gene -->
+                {% if report_data.fusion_unknown.data %}
                 <h4 class="variant-type">- Fusion gene{% if report_data.fusion_unknown.highlight %}: {{ report_data.fusion_unknown.highlight }}{% endif %}</h4>
                 <table class="data-table full-width" border="1" id="fusion-unknown-table">
                     <tr>
@@ -262,20 +263,20 @@
                         <th>BREAKPOINT 2</th>
                         <th>FUSION SUPPORTING READS</th>
                     </tr>
-                    {% if report_data.fusion_unknown.data %}
-                        {% for row in report_data.fusion_unknown.data %}
-                        <tr>
-                            {% for cell in row %}
-                            <td>{{ cell }}</td>
-                            {% endfor %}
-                        </tr>
+                    {% for row in report_data.fusion_unknown.data %}
+                    <tr>
+                        {% for cell in row %}
+                        <td>{{ cell }}</td>
                         {% endfor %}
-                    {% else %}
-                        <tr><td colspan="4" class="no-data">데이터 없음</td></tr>
-                    {% endif %}
+                    </tr>
+                    {% endfor %}
                 </table>
+                {% else %}
+                <h4 class="variant-type">- Fusion gene: None</h4>
+                {% endif %}
                 
                 <!-- Copy number variation -->
+                {% if report_data.cnv_unknown.data %}
                 <h4 class="variant-type">- Copy number variation{% if report_data.cnv_unknown.highlight %}: {{ report_data.cnv_unknown.highlight }}{% endif %}</h4>
                 <table class="data-table full-width" border="1" id="cnv-unknown-table">
                     <tr>
@@ -284,20 +285,20 @@
                         <th>FOLD CHANGE</th>
                         <th>ESTIMATED COPY NUMBER</th>
                     </tr>
-                    {% if report_data.cnv_unknown.data %}
-                        {% for row in report_data.cnv_unknown.data %}
-                        <tr>
-                            {% for cell in row %}
-                            <td>{{ cell }}</td>
-                            {% endfor %}
-                        </tr>
+                    {% for row in report_data.cnv_unknown.data %}
+                    <tr>
+                        {% for cell in row %}
+                        <td>{{ cell }}</td>
                         {% endfor %}
-                    {% else %}
-                        <tr><td colspan="4" class="no-data">데이터 없음</td></tr>
-                    {% endif %}
+                    </tr>
+                    {% endfor %}
                 </table>
+                {% else %}
+                <h4 class="variant-type">- Copy number variation: None</h4>
+                {% endif %}
                 
                 <!-- Large rearrangements in BRCA1/2 -->
+                {% if report_data.lr_brca_unknown.data %}
                 <h4 class="variant-type">- Large rearrangements in BRCA1/2{% if report_data.lr_brca_unknown.highlight %}: {{ report_data.lr_brca_unknown.highlight }}{% endif %}</h4>
                 <table class="data-table full-width" border="1" id="lr-brca-unknown-table">
                     <tr>
@@ -307,20 +308,20 @@
                         <th>FOLD CHANGE</th>
                         <th>ESTIMATED COPY NUMBER</th>
                     </tr>
-                    {% if report_data.lr_brca_unknown.data %}
-                        {% for row in report_data.lr_brca_unknown.data %}
-                        <tr>
-                            {% for cell in row %}
-                            <td>{{ cell }}</td>
-                            {% endfor %}
-                        </tr>
+                    {% for row in report_data.lr_brca_unknown.data %}
+                    <tr>
+                        {% for cell in row %}
+                        <td>{{ cell }}</td>
                         {% endfor %}
-                    {% else %}
-                        <tr><td colspan="5" class="no-data">데이터 없음</td></tr>
-                    {% endif %}
+                    </tr>
+                    {% endfor %}
                 </table>
+                {% else %}
+                <h4 class="variant-type">- Large rearrangements in BRCA1/2: None</h4>
+                {% endif %}
                 
                 <!-- Splice variant -->
+                {% if report_data.splice_unknown.data %}
                 <h4 class="variant-type">- Splice variant{% if report_data.splice_unknown.highlight %}: {{ report_data.splice_unknown.highlight }}{% endif %}</h4>
                 <table class="data-table full-width" border="1" id="splice-unknown-table">
                     <tr>
@@ -330,18 +331,17 @@
                         <th>BREAKPOINT 2</th>
                         <th>SPLICE SUPPORTING READS</th>
                     </tr>
-                    {% if report_data.splice_unknown.data %}
-                        {% for row in report_data.splice_unknown.data %}
-                        <tr>
-                            {% for cell in row %}
-                            <td>{{ cell }}</td>
-                            {% endfor %}
-                        </tr>
+                    {% for row in report_data.splice_unknown.data %}
+                    <tr>
+                        {% for cell in row %}
+                        <td>{{ cell }}</td>
                         {% endfor %}
-                    {% else %}
-                        <tr><td colspan="5" class="no-data">데이터 없음</td></tr>
-                    {% endif %}
+                    </tr>
+                    {% endfor %}
                 </table>
+                {% else %}
+                <h4 class="variant-type">- Splice variant: None</h4>
+                {% endif %}
                 
                 <!-- 3. Failed gene -->
                 <h3 class="result-title">3. Failed gene: <span id="failed-gene">{{ report_data.failed_gene }}</span></h3>
@@ -440,12 +440,29 @@
             </div>
             
             <!-- Gene Content -->
+            {% if report_data.panel_type == 'GE' %}
             <div class="section">
                 <h2 class="section-title">▣ Gene Content in the TruSight Oncology 500 panel Assay</h2>
                 <div class="gene-content-box">
-                    <img src="/static/images/{% if report_data.panel_type == 'GE' %}GE_Gene_Content_DRNA.png{% else %}SA_Gene_Content_DNA.png{% endif %}" alt="Gene Content">
+                    <img src="/static/images/GE_Gene_Content_DRNA.png" alt="Gene Content">
                 </div>
             </div>
+            {% else %}
+            <!-- SA Panel - DNA -->
+            <div class="section">
+                <h2 class="section-title">▣ Gene Content in the NGS Sarcoma Panel Assay [DNA]</h2>
+                <div class="gene-content-box">
+                    <img src="/static/images/SA_Gene_Content_DNA.png" alt="Gene Content DNA">
+                </div>
+            </div>
+            <!-- SA Panel - RNA -->
+            <div class="section">
+                <h2 class="section-title">▣ Gene Content in the NGS Sarcoma Panel Assay [RNA]</h2>
+                <div class="gene-content-box">
+                    <img src="/static/images/SA_Gene_Content_RNA.png" alt="Gene Content RNA">
+                </div>
+            </div>
+            {% endif %}
             
             <!-- Footer -->
             <div class="report-footer">
