@@ -519,7 +519,7 @@ table {
 }
 
 .user-info-row-2 {
-    margin-bottom: 0; /* 마지막 행 마진 제거 */
+    margin-bottom: 5px; /* Tested by와 위 점선 사이 거리와 동일하게 설정 */
 }
 
 .user-info-left {
@@ -686,6 +686,7 @@ table {
     display: flex;
     flex-direction: column;
     height: 100%;
+    padding: 0; /* 패딩 제거 */
 }
 
 /* 분할된 테이블 스타일 */
@@ -714,7 +715,7 @@ table {
     flex-direction: column;
     /* justify-content: center; 제거 - 세로 중간 정렬 해제 */
     padding: 0; /* 추가 패딩 제거 */
-    margin-top: -40px; /* 더 위로 올리기 */
+    margin-top: -10px; /* 요청에 따라 -10px로 변경 */
 }
 
 .gene-content-wrapper .section {
@@ -724,6 +725,7 @@ table {
 /* 페이지 하단 footer를 위한 스타일 */
 .page-footer-wrapper {
     margin-top: auto;
+    padding-top: 0; /* 상단 패딩 제거 */
 }
 
 /* 마지막 페이지의 사용자 정보는 footer 위에 표시 */
