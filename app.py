@@ -58,8 +58,37 @@ def process_table_data(rows):
     return {"headers": headers, "data": data}
 
 @app.get("/", response_class=HTMLResponse)
-async def read_item(request: Request):
-    return templates.TemplateResponse("report.html", {"request": request})
+async def main_page(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/report/{specimen_id}", response_class=HTMLResponse)
+async def show_report(request: Request, specimen_id: str):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT report_data FROM reports WHERE specimen_id = ?", (specimen_id,))
+    result = cursor.fetchone()
+    
+    if result:
+        report_data = json.loads(result["report_data"])
+        return templates.TemplateResponse(
+            "report.html", 
+            {
+                "request": request, 
+                "specimen_id": specimen_id,
+                "report_data": report_data,
+                "debug": False
+            }
+        )
+    else:
+        return templates.TemplateResponse(
+            "index.html", 
+            {
+                "request": request,
+                "error": f"보고서를 찾을 수 없습니다: {specimen_id}"
+            }
+        )
 
 @app.post("/generate-report", response_class=HTMLResponse)
 async def generate_report(request: Request, specimen_id: str = Form(...)):
@@ -78,46 +107,12 @@ async def generate_report(request: Request, specimen_id: str = Form(...)):
                 "request": request, 
                 "specimen_id": specimen_id,
                 "report_data": report_data,
-                "show_report": True,
-                "debug": False  # 디버그 모드 설정
+                "debug": False
             }
         )
     else:
         return templates.TemplateResponse(
-            "report.html", 
-            {
-                "request": request,
-                "error": f"보고서를 찾을 수 없습니다: {specimen_id}"
-            }
-        )
-
-@app.get("/generate-report", response_class=HTMLResponse)
-async def get_generate_report(request: Request, specimen_id: str = None):
-    if not specimen_id:
-        return templates.TemplateResponse("report.html", {"request": request})
-    
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT report_data FROM reports WHERE specimen_id = ?", (specimen_id,))
-    result = cursor.fetchone()
-    
-    if result:
-        report_data = json.loads(result["report_data"])
-        return templates.TemplateResponse(
-            "report.html", 
-            {
-                "request": request, 
-                "specimen_id": specimen_id,
-                "report_data": report_data,
-                "show_report": True,
-                "debug": False  # 디버그 모드 설정
-            }
-        )
-    else:
-        return templates.TemplateResponse(
-            "report.html", 
+            "index.html", 
             {
                 "request": request,
                 "error": f"보고서를 찾을 수 없습니다: {specimen_id}"
@@ -320,6 +315,46 @@ async def upload_excel(file: UploadFile = File(...)):
         
         return JSONResponse({"success": False, "error": str(e)})
 
+@app.get("/api/search")
+async def search_reports(q: str = ""):
+    if not q or len(q.strip()) < 1:
+        return JSONResponse({"success": True, "results": []})
+    
+    search_term = q.strip().lower()
+    
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    # specimen_id에 검색어가 포함된 보고서 찾기
+    cursor.execute(
+        "SELECT specimen_id, report_data FROM reports WHERE LOWER(specimen_id) LIKE ? ORDER BY specimen_id LIMIT 10",
+        (f"%{search_term}%",)
+    )
+    rows = cursor.fetchall()
+    
+    results = []
+    for row in rows:
+        try:
+            report_data = json.loads(row["report_data"])
+            clinical_info = report_data.get("clinical_info", {})
+            diagnosis_user = report_data.get("diagnosis_user", {})
+            
+            result_item = {
+                "specimen_id": row["specimen_id"],
+                "원발장기": clinical_info.get("원발 장기", "N/A"),
+                "진단": clinical_info.get("진단", "N/A"),
+                "signed1": diagnosis_user.get("Signed by", "N/A").split(", ")[1] if ", " in diagnosis_user.get("Signed by", "") else diagnosis_user.get("Signed by", "N/A")
+            }
+            results.append(result_item)
+        except (json.JSONDecodeError, KeyError) as e:
+            print(f"데이터 파싱 오류: {e}")
+            continue
+    
+    conn.close()
+    
+    return JSONResponse({"success": True, "results": results})
+
 @app.get("/api/reports")
 async def get_reports():
     conn = sqlite3.connect(DB_PATH)
@@ -349,4 +384,4 @@ async def get_reports():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True, workers=1)
+    uvicorn.run("app:app", host="0.0.0.0", port=1234, reload=True, workers=1)

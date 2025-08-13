@@ -1,4 +1,271 @@
+// POST 요청으로 보고서로 이동하는 함수 (URL에 specimen_id 노출 방지)
+function redirectToReport(specimenId) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/generate-report';
+    
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'specimen_id';
+    input.value = specimenId;
+    
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // 실시간 검색 기능
+    const searchInput = document.getElementById('search-input');
+    const searchResults = document.getElementById('search-results');
+    let searchTimeout;
+    
+    if (searchInput && searchResults) {
+        searchInput.addEventListener('input', function() {
+            const query = this.value.trim();
+            
+            // 디바운스로 요청 뚜기 제한
+            clearTimeout(searchTimeout);
+            
+            if (query.length < 1) {
+                hideSearchResults();
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                performSearch(query);
+            }, 300); // 300ms 딘레이
+        });
+        
+        // 검색창 외부 클릭 시 드롭다운 숨기기
+        document.addEventListener('click', function(event) {
+            if (!searchInput.contains(event.target) && !searchResults.contains(event.target)) {
+                hideSearchResults();
+            }
+        });
+        
+        // 검색창 포커스 시 드롭다운 다시 보이기
+        searchInput.addEventListener('focus', function() {
+            if (this.value.trim().length >= 1 && searchResults.children.length > 0) {
+                showSearchResults();
+            }
+        });
+    }
+    
+    async function performSearch(query) {
+        try {
+            const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                displaySearchResults(data.results);
+            } else {
+                displayNoResults();
+            }
+        } catch (error) {
+            console.error('검색 오류:', error);
+            displayNoResults();
+        }
+    }
+    
+    function displaySearchResults(results) {
+        searchResults.innerHTML = '';
+        
+        if (results.length === 0) {
+            displayNoResults();
+            return;
+        }
+        
+        results.forEach(result => {
+            const item = document.createElement('div');
+            item.className = 'search-result-item';
+            
+            item.innerHTML = `
+                <div class="result-main">${result.specimen_id}</div>
+                <div class="result-details">
+                    <span class="result-detail">원발장기: ${result.원발장기}</span>
+                    <span class="result-detail">진단: ${result.진단}</span>
+                    <span class="result-detail">사인자: ${result.signed1}</span>
+                </div>
+            `;
+            
+            item.addEventListener('click', function() {
+                redirectToReport(result.specimen_id);
+            });
+            
+            searchResults.appendChild(item);
+        });
+        
+        showSearchResults();
+    }
+    
+    function displayNoResults() {
+        searchResults.innerHTML = '<div class="no-results">검색 결과가 없습니다.</div>';
+        showSearchResults();
+    }
+    
+    function showSearchResults() {
+        searchResults.classList.add('show');
+    }
+    
+    function hideSearchResults() {
+        searchResults.classList.remove('show');
+    }
+    
+    // 파일 업로드 기능
+    const uploadArea = document.getElementById('upload-area');
+    const fileInput = document.getElementById('file-input');
+    const uploadProgress = document.getElementById('upload-progress');
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.querySelector('.progress-text');
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    function highlight(e) {
+        if (uploadArea) {
+            uploadArea.classList.add('dragover');
+        }
+    }
+    
+    function unhighlight(e) {
+        if (uploadArea) {
+            uploadArea.classList.remove('dragover');
+        }
+    }
+    
+    function handleDrop(e) {
+        const files = Array.from(e.dataTransfer.files).filter(file => 
+            file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
+        );
+        
+        if (files.length === 0) {
+            alert('엑셀 파일만 업로드 가능합니다.');
+            return;
+        }
+        
+        handleFiles(files);
+    }
+    
+    if (uploadArea && fileInput) {
+        // 클릭으로 파일 선택
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        // 파일 입력 변경 시
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFiles(e.target.files);
+            }
+        });
+        
+        // Drag and Drop 이벤트
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        uploadArea.addEventListener('drop', handleDrop, false);
+    }
+    
+    async function handleFiles(files) {
+        const fileArray = Array.from(files);
+        const totalFiles = fileArray.length;
+        let successCount = 0;
+        let failedFiles = [];
+        let uploadedSpecimenIds = [];
+        
+        // 진행률 표시
+        uploadProgress.style.display = 'block';
+        progressFill.style.width = '0%';
+        
+        // 파일 목록 표시
+        const uploadedFilesDiv = document.createElement('div');
+        uploadedFilesDiv.className = 'uploaded-files';
+        uploadProgress.appendChild(uploadedFilesDiv);
+        
+        // 각 파일에 대한 상태 표시
+        fileArray.forEach(file => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.innerHTML = `
+                <span class="file-name">${file.name}</span>
+                <span class="file-status processing">대기중...</span>
+            `;
+            uploadedFilesDiv.appendChild(fileItem);
+        });
+        
+        // 파일들을 순차적으로 업로드
+        for (let i = 0; i < fileArray.length; i++) {
+            const file = fileArray[i];
+            const fileItem = uploadedFilesDiv.children[i];
+            const statusSpan = fileItem.querySelector('.file-status');
+            
+            progressText.textContent = `업로드 중... (${i + 1}/${totalFiles})`;
+            statusSpan.textContent = '업로드 중...';
+            statusSpan.className = 'file-status processing';
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/upload-excel', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    successCount++;
+                    uploadedSpecimenIds.push(data.specimen_id);
+                    statusSpan.textContent = `성공 (${data.specimen_id})`;
+                    statusSpan.className = 'file-status success';
+                } else {
+                    failedFiles.push({
+                        filename: file.name,
+                        error: data.error
+                    });
+                    statusSpan.textContent = `실패: ${data.error}`;
+                    statusSpan.className = 'file-status error';
+                }
+            } catch (error) {
+                failedFiles.push({
+                    filename: file.name,
+                    error: error.toString()
+                });
+                statusSpan.textContent = `오류: ${error.message}`;
+                statusSpan.className = 'file-status error';
+            }
+            
+            // 진행률 업데이트
+            const progress = ((i + 1) / totalFiles) * 100;
+            progressFill.style.width = `${progress}%`;
+        }
+        
+        // 업로드 완료
+        progressText.textContent = `업로드 완료! 성공: ${successCount}, 실패: ${failedFiles.length}`;
+        
+        // 파일 입력 초기화
+        fileInput.value = '';
+        
+        // 3초 후 진행률 숨기기
+        setTimeout(() => {
+            uploadProgress.style.display = 'none';
+            uploadedFilesDiv.remove();
+        }, 3000);
+    }
     // 동적 페이지 분할 기능
     function dynamicPageSplit() {
         const continuedPages = document.querySelectorAll('.page-continued');
@@ -244,140 +511,5 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 윈도우 크기 변경 시 다시 체크
         window.addEventListener('resize', checkPageOverflow);
-    }
-    // 엑셀 파일 업로드 기능
-    const uploadBtn = document.getElementById('upload-btn');
-    const excelFile = document.getElementById('excel-file');
-    
-    if (uploadBtn) {
-        uploadBtn.addEventListener('click', async function() {
-            if (!excelFile.files.length) {
-                alert('엑셀 파일을 선택해주세요.');
-                return;
-            }
-            
-            const files = Array.from(excelFile.files);
-            const totalFiles = files.length;
-            let successCount = 0;
-            let failedFiles = [];
-            let uploadedSpecimenIds = [];
-            
-            uploadBtn.disabled = true;
-            uploadBtn.textContent = `업로드 중... (0/${totalFiles})`;
-            
-            // 파일들을 순차적으로 업로드
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const formData = new FormData();
-                formData.append('file', file);
-                
-                uploadBtn.textContent = `업로드 중... (${i}/${totalFiles})`;
-                
-                try {
-                    const response = await fetch('/api/upload-excel', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        successCount++;
-                        uploadedSpecimenIds.push(data.specimen_id);
-                    } else {
-                        failedFiles.push({
-                            filename: file.name,
-                            error: data.error
-                        });
-                    }
-                } catch (error) {
-                    failedFiles.push({
-                        filename: file.name,
-                        error: error.toString()
-                    });
-                }
-                
-                uploadBtn.textContent = `업로드 중... (${i + 1}/${totalFiles})`;
-            }
-            
-            // 업로드 완료 후 결과 표시
-            uploadBtn.disabled = false;
-            uploadBtn.textContent = '업로드';
-            
-            let resultMessage = `전체 ${totalFiles}개 파일 중 ${successCount}개 업로드 성공\n`;
-            
-            if (uploadedSpecimenIds.length > 0) {
-                resultMessage += `\n업로드된 검체 ID: ${uploadedSpecimenIds.join(', ')}\n`;
-            }
-            
-            if (failedFiles.length > 0) {
-                resultMessage += '\n실패한 파일들:\n';
-                failedFiles.forEach(failed => {
-                    resultMessage += `- ${failed.filename}: ${failed.error}\n`;
-                });
-            }
-            
-            alert(resultMessage);
-            
-            // 목록 새로고침
-            loadReportList();
-            
-            // 파일 입력 필드 초기화
-            excelFile.value = '';
-            
-            // 파일이 1개일 때만 해당 보고서로 이동
-            if (totalFiles === 1 && uploadedSpecimenIds.length === 1) {
-                window.location.href = '/generate-report?specimen_id=' + uploadedSpecimenIds[0];
-            }
-            // 여러 파일 업로드 시에는 현재 페이지에 머물기
-        });
-    }
-    
-    // 보고서 목록 불러오기
-    function loadReportList() {
-        const reportList = document.getElementById('report-list');
-        if (!reportList) return;
-        
-        // 캐시 방지를 위해 timestamp 추가
-        fetch(`/api/reports?t=${Date.now()}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    reportList.innerHTML = '';
-                    
-                    if (data.reports.length === 0) {
-                        reportList.innerHTML = '<li>저장된 보고서가 없습니다.</li>';
-                        return;
-                    }
-                    
-                    data.reports.forEach(report => {
-                        const li = document.createElement('li');
-                        li.textContent = `${report.specimen_id} (${report.created_at})`;
-                        li.addEventListener('click', function() {
-                            window.location.href = `/generate-report?specimen_id=${report.specimen_id}`;
-                        });
-                        reportList.appendChild(li);
-                    });
-                } else {
-                    reportList.innerHTML = '<li>보고서 목록을 불러오는 데 실패했습니다.</li>';
-                }
-            })
-            .catch(error => {
-                reportList.innerHTML = '<li>보고서 목록을 불러오는 중 오류가 발생했습니다.</li>';
-                console.error('Error:', error);
-            });
-    }
-    
-    // 페이지 로드 시 보고서 목록 불러오기
-    if (document.getElementById('report-list')) {
-        loadReportList();
-    }
-    
-    // 보고서 인쇄 기능
-    const printBtn = document.getElementById('print-report');
-    if (printBtn) {
-        printBtn.addEventListener('click', function() {
-            window.print();
-        });
     }
 });

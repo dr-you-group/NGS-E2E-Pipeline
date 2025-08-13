@@ -8,33 +8,6 @@
 </head>
 <body>
     <div class="container">
-        {% if not show_report %}
-        <div class="search-form">
-            <h2>NGS 보고서 검색</h2>
-            <form action="/generate-report" method="post">
-                <input type="text" name="specimen_id" placeholder="병리번호 입력" required>
-                <button type="submit">검색</button>
-            </form>
-            
-            <div class="upload-form">
-                <h3>엑셀 파일 업로드</h3>
-                <form id="upload-form" enctype="multipart/form-data">
-                    <input type="file" id="excel-file" accept=".xlsx" multiple required>
-                    <button type="button" id="upload-btn">업로드</button>
-                </form>
-            </div>
-            
-            <div class="report-list">
-                <h3>저장된 보고서 목록</h3>
-                <ul id="report-list"></ul>
-            </div>
-        </div>
-        {% elif error %}
-        <div class="error-message">
-            <h2>{{ error }}</h2>
-            <a href="/">돌아가기</a>
-        </div>
-        {% else %}
         <!-- 디버그 정보 (개발 중에만 사용) -->
         {% if debug %}
         <div class="debug-info">
@@ -74,7 +47,7 @@
                                 <td>{{ report_data.clinical_info.환자명 }}</td>
                                 <td>{{ report_data.clinical_info['채취 장기'] }}</td>
                                 <td>{{ report_data.clinical_info['원발 장기'] }}</td>
-                                <td colspan="2">Non-small cell carcinoma</td>
+                                <td colspan="2">{{ report_data.clinical_info.진단 }}</td>
                             </tr>
                             <tr>
                                 <th>의뢰의</th>
@@ -599,7 +572,6 @@
                 </div>
             </div>
         </div>
-        {% endif %}
         {% endif %}
     </div>
     

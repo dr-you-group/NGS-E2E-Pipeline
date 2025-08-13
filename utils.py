@@ -38,9 +38,10 @@ class NGS_EXCEL2DB:
             "환자명": self.clinical_dict["환자명"],
             "채취 장기": self.clinical_dict["채취 장기"],
             "원발 장기": self.clinical_dict["원발 장기"],
+            "진단":self.clinical_dict["진단"],
             "의뢰의": self.clinical_dict["의뢰의"],
             "의뢰의 소속": self.clinical_dict["의뢰의 소속"],
-            "검체 유형": self.clinical_dict["검체 유형"],
+            "검체 유형": self.clinical_dict["검체 유형"].split('.')[0],
             "검체의 적절성여부": self.clinical_dict["검체의 적절성"],
             "검체접수일": self.clinical_dict["검체접수일"],
             "결과보고일": self.clinical_dict["Report date"],
@@ -118,7 +119,7 @@ class NGS_EXCEL2DB:
 
     # 검사 정보
     def get_Diagnostic_Info(self) -> Dict:
-        InstrumentType = self.NGS_QC[4][1]
+        InstrumentType = self.NGS_QC[4][1] + " Dx [Illumina]"
         if self.panel == 'GE':
             di = {
                 "검사시약":"AllPrep DNA/RNA FFPE Kit (50) [Qiagen], TruSight™ Oncology 500 kit [Illumina]",
@@ -183,8 +184,8 @@ class NGS_EXCEL2DB:
     # Tested, Signed, Analyzed by, 분자 접수 번호
     def get_Diagnosis_User_Registration(self):
         return {
-            'Tested by': ', '.join([self.clinical_dict[i] for i in list(self.clinical_dict.keys()) if i.startswith('Tester')]),
-            'Signed by': ', '.join([self.clinical_dict[i] for i in list(self.clinical_dict.keys()) if i.startswith('Signed')]),
+            'Tested by': f'{self.clinical_dict["Tester1"]}, {self.clinical_dict["Tester2"]}',
+            'Signed by': f'{self.clinical_dict["Signed2"]}, {self.clinical_dict["Signed1"]}',
             'Analyzed by': '이청',
             '분자접수번호': self.clinical_dict["분자접수번호"]
         }
