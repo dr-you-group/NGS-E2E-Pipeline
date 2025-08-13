@@ -671,49 +671,54 @@
         // 검체 ID를 JavaScript로 전달
         window.specimenId = '{{ specimen_id }}';
         
-        // 모든 테이블 분할 로직
+        // 정확한 콘텐츠 배치 및 필요시만 분할
         function checkAndSplitTables() {
-            const page1 = document.querySelector('.page-1 .report-content');
+            const page1Content = document.querySelector('.page-1 .report-content');
             const otherBiomarkers = document.querySelector('.page-bottom-fixed');
+            
+            // Other Biomarkers가 다른 콘텐츠와 격치는지 체크
+            const otherBiomarkersRect = otherBiomarkers.getBoundingClientRect();
+            
+            // 모든 splittable-section들을 체크
             const splittableSections = document.querySelectorAll('.splittable-section');
             
-            if (splittableSections.length === 0) return;
-            
-            let needsSplit = false;
-            let splitSection = null;
-            
-            // 각 섹션을 체크하여 분할이 필요한지 확인
-            splittableSections.forEach(section => {
+            for (let section of splittableSections) {
                 const sectionRect = section.getBoundingClientRect();
-                const otherBiomarkersRect = otherBiomarkers.getBoundingClientRect();
                 
-                // Other Biomarkers와 격치는지 체크
-                const availableSpace = otherBiomarkersRect.top - sectionRect.bottom - 30; // 30px 여유 공간
-                
-                console.log(`Section ${section.dataset.sectionName}: available space = ${availableSpace}`);
-                
-                if (availableSpace < 0 && !needsSplit) {
-                    needsSplit = true;
-                    splitSection = section;
+                // 섹션이 Other Biomarkers와 격치는지 체크
+                if (sectionRect.bottom > otherBiomarkersRect.top - 20) { // 20px 여유공간
+                    console.log(`Section ${section.dataset.sectionName} overlaps with Other Biomarkers`);
+                    
+                    // 이 섹션만 처리하고 나머지는 그대로 둘기
+                    handleOverlappingSection(section);
+                    break; // 첫 번째 격치는 섹션만 처리
                 }
-            });
-            
-            if (needsSplit && splitSection) {
-                splitTable(splitSection);
             }
         }
         
-        function splitTable(section) {
-            const sectionId = section.id;
+        function handleOverlappingSection(section) {
             const sectionName = section.dataset.sectionName;
             const tableType = section.dataset.tableType;
             const table = section.querySelector('table');
             const dataRows = table.querySelectorAll('tbody tr');
             
-            if (dataRows.length <= 2) return; // 행이 2개 이하면 분할 불필요
+            console.log(`Handling overlapping section: ${sectionName} with ${dataRows.length} rows`);
             
-            // 첫 번째 페이지에 들어갈 행 수 계산
-            const splitPoint = Math.max(1, Math.min(2, dataRows.length - 1));
+            // 행이 충분히 많으면 분할, 적으면 전체 이동
+            if (dataRows.length > 3) {
+                // 테이블 분할
+                splitSingleTable(section, dataRows, sectionName, tableType);
+            } else {
+                // 전체 섹션을 다음 페이지로 이동
+                moveWholeSection(section);
+            }
+        }
+        
+        function splitSingleTable(section, dataRows, sectionName, tableType) {
+            // 테이블을 반으로 나누기
+            const splitPoint = Math.ceil(dataRows.length / 2);
+            
+            console.log(`Splitting table ${sectionName}: ${splitPoint} rows on page 1, ${dataRows.length - splitPoint} rows on page 2`);
             
             // 첫 번째 페이지 제목에 (1/2) 추가
             const titleElement = section.querySelector('.variant-type');
@@ -722,34 +727,114 @@
                 titleElement.innerHTML = titleText.replace(`- ${sectionName}`, `- ${sectionName} (1/2)`);
             }
             
-            // 분할된 페이지 생성
-            createContinuedPage(section, dataRows, splitPoint, sectionName, tableType);
+            // 다음 페이지에 나머지 테이블 + 그 다음 모든 콘텐츠 추가
+            createContinuedPageWithRemainingContent(section, dataRows, splitPoint, sectionName, tableType);
             
-            // 첫 번째 페이지에서 분할점 이후 행들 제거
+            // 첫 번째 페이지에서 초과하는 행들 제거
             for (let i = splitPoint; i < dataRows.length; i++) {
                 dataRows[i].remove();
             }
         }
         
-        function createContinuedPage(originalSection, allRows, splitPoint, sectionName, tableType) {
-            // 첫 번째 페이지 다음에 삽입할 위치 찾기
-            const page1 = document.querySelector('.page-1');
+        function moveWholeSection(section) {
+            console.log(`Moving whole section: ${section.dataset.sectionName}`);
             
+            // 현재 섹션부터 끝까지의 모든 콘텐츠를 다음 페이지로 이동
+            const allRemainingContent = [];
+            let currentElement = section;
+            
+            // 현재 요소부터 끝까지 모든 형제 요소들을 수집
+            while (currentElement) {
+                if (currentElement.classList && 
+                    (currentElement.classList.contains('section') || 
+                     currentElement.classList.contains('splittable-section') ||
+                     currentElement.tagName === 'H3')) {
+                    allRemainingContent.push(currentElement);
+                }
+                currentElement = currentElement.nextElementSibling;
+            }
+            
+            moveContentToNewPage(allRemainingContent);
+        }
+        
+        function moveContentToNewPage(sections) {
             // 새로운 페이지 생성
+            const page1 = document.querySelector('.page-1');
             const continuedPage = document.createElement('div');
-            continuedPage.className = 'a4-page page-table-continued';
+            continuedPage.className = 'a4-page page-content-continued';
             
-            // 페이지 컨텐츠 생성
-            const pageContent = createPageContent(originalSection, allRows, splitPoint, sectionName, tableType);
-            continuedPage.innerHTML = pageContent;
+            // 섹션들의 HTML 추출
+            let sectionsHTML = '';
+            sections.forEach(section => {
+                sectionsHTML += section.outerHTML;
+                if (section.parentNode) {
+                    section.parentNode.removeChild(section);
+                }
+            });
+            
+            continuedPage.innerHTML = `
+                <div class="page-border">
+                    <div class="report-content">
+                        ${sectionsHTML}
+                    </div>
+                </div>
+            `;
             
             // 첫 번째 페이지 다음에 삽입
             page1.parentNode.insertBefore(continuedPage, page1.nextSibling);
             
-            console.log(`${sectionName} table split successfully`);
+            console.log('Moved content to new page');
         }
         
-        function createPageContent(originalSection, allRows, splitPoint, sectionName, tableType) {
+        function createContinuedPageWithRemainingContent(originalSection, allRows, splitPoint, sectionName, tableType) {
+            const page1 = document.querySelector('.page-1');
+            
+            // 분할된 테이블 HTML 생성
+            const splitTableHTML = createSplitTableHTML(originalSection, allRows, splitPoint, sectionName, tableType);
+            
+            // 현재 섹션 다음부터 끝까지의 모든 콘텐츠 수집
+            const allRemainingContent = [];
+            let currentElement = originalSection.nextElementSibling;
+            
+            while (currentElement) {
+                if (currentElement.classList && 
+                    (currentElement.classList.contains('section') || 
+                     currentElement.classList.contains('splittable-section') ||
+                     currentElement.tagName === 'H3')) {
+                    allRemainingContent.push(currentElement);
+                }
+                currentElement = currentElement.nextElementSibling;
+            }
+            
+            // 나머지 콘텐츠 HTML 생성
+            let remainingSectionsHTML = '';
+            allRemainingContent.forEach(element => {
+                remainingSectionsHTML += element.outerHTML;
+                if (element.parentNode) {
+                    element.parentNode.removeChild(element);
+                }
+            });
+            
+            // 새로운 페이지 생성
+            const continuedPage = document.createElement('div');
+            continuedPage.className = 'a4-page page-content-continued';
+            
+            continuedPage.innerHTML = `
+                <div class="page-border">
+                    <div class="report-content">
+                        ${splitTableHTML}
+                        ${remainingSectionsHTML}
+                    </div>
+                </div>
+            `;
+            
+            // 첫 번째 페이지 다음에 삽입
+            page1.parentNode.insertBefore(continuedPage, page1.nextSibling);
+            
+            console.log(`${sectionName} table split and all remaining content moved successfully`);
+        }
+        
+        function createSplitTableHTML(originalSection, allRows, splitPoint, sectionName, tableType) {
             // 원본 제목에서 highlight 정보 추출
             const originalTitle = originalSection.querySelector('.variant-type');
             const highlightElement = originalTitle ? originalTitle.querySelector('.clinical-highlight') : null;
@@ -770,20 +855,16 @@
             }
             
             return `
-                <div class="page-border">
-                    <div class="report-content">
-                        <div class="continued-section">
-                            <h4 class="variant-type">- ${sectionName} (2/2)${highlightText}</h4>
-                            <table class="data-table full-width split-table-continued ${tableType}-split" border="1">
-                                <thead>
-                                    <tr>${headerHTML}</tr>
-                                </thead>
-                                <tbody>
-                                    ${rowsHTML}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                <div class="continued-section">
+                    <h4 class="variant-type">- ${sectionName} (2/2)${highlightText}</h4>
+                    <table class="data-table full-width split-table-continued ${tableType}-split" border="1">
+                        <thead>
+                            <tr>${headerHTML}</tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHTML}
+                        </tbody>
+                    </table>
                 </div>
             `;
         }
