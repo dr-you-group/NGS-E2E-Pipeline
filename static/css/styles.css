@@ -1,4 +1,7 @@
-* {
+/* 분할 가능한 섹션 스타일 */
+.splittable-section {
+    position: relative;
+}* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -948,6 +951,16 @@ table td {
     word-break: break-word;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    border-top: 1px solid #000;
+    border-bottom: 1px solid #000;
+    border-left: none;
+    border-right: none;
+}
+
+/* CNV 분할 테이블의 중요한 데이터는 빨간색 + bold */
+.split-table-continued td {
+    color: #c00 !important;
+    font-weight: bold !important;
 }
 
 /* Other Biomarkers 테이블의 경우 */
@@ -967,6 +980,39 @@ table td {
     overflow-wrap: break-word;
 }
 
+/* 분할된 테이블을 위한 일반적인 페이지 스타일 */
+.page-table-continued {
+    page-break-before: always;
+}
+
+.page-table-continued::before {
+    content: "Page 1-Table-continued";
+}
+
+/* 분할된 테이블 페이지의 컨텐츠 영역 */
+.page-table-continued .report-content {
+    height: calc(100% - 180px); /* Other Biomarkers + Footer 공간 확보 */
+    overflow: hidden;
+}
+
+/* 분할된 섹션 스타일 */
+.continued-section {
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+
+.continued-section .variant-type {
+    margin-bottom: 10px;
+    font-size: 16px;
+    color: #000;
+    font-weight: bold;
+}
+
+.continued-section .clinical-highlight {
+    color: #c00;
+    font-weight: bold;
+}
+
 /* Gene Content 페이지 특별 스타일 */
 .gene-content-wrapper {
     flex: 1;
@@ -975,6 +1021,24 @@ table td {
     /* justify-content: center; 제거 - 세로 중간 정렬 해제 */
     padding: 0; /* 추가 패딩 제거 */
     margin-top: -10px; /* 요청에 따라 -10px로 변경 */
+}
+
+/* CNV 분할 섹션 내부 스타일 */
+#cnv-continued-section {
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+
+#cnv-continued-section .variant-type {
+    margin-bottom: 10px;
+    font-size: 16px;
+    color: #000;
+    font-weight: bold;
+}
+
+#cnv-continued-section .clinical-highlight {
+    color: #c00;
+    font-weight: bold;
 }
 
 .gene-content-wrapper .section {
@@ -1052,6 +1116,11 @@ table td {
     .a4-page.overflow-warning {
         border-color: initial;
         background-color: white;
+    }
+    
+    /* 분할된 테이블 페이지도 프린트 시 디버깅 요소 숨김 */
+    .page-table-continued::before {
+        display: none;
     }
     
     /* 프린트시 강제 페이지 나누기 */

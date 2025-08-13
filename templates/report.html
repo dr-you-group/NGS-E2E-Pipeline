@@ -82,73 +82,91 @@
                             <!-- 1. Variants of clinical significance -->
                             <h3 class="result-title">1. Variants of clinical significance</h3>
                             
-                            <!-- SNVs & Indels -->
+                            <!-- SNVs & Indels (분할 가능) -->
                             {% if report_data.snv_clinical.data %}
-                            <h4 class="variant-type">- SNVs & Indels{% if report_data.snv_clinical.highlight %}<span class="clinical-highlight">: {{ report_data.snv_clinical.highlight }}</span>{% endif %}</h4>
+                            <div id="snv-clinical-section" class="splittable-section" data-section-name="SNVs & Indels" data-table-type="clinical">
+                                <h4 class="variant-type snv-title">- SNVs & Indels{% if report_data.snv_clinical.highlight %}<span class="clinical-highlight">: {{ report_data.snv_clinical.highlight }}</span>{% endif %}</h4>
                             <table class="data-table full-width" border="1" id="snv-clinical-table">
+                            <thead>
                                 <tr>
                                     <th>GENE</th>
                                     <th>MUTATION TYPE</th>
                                     <th>AA CHANGE</th>
                                     <th>VAF (%)</th>
-                                    <th>HGVSc</th>
-                                    <th>HGVSp</th>
-                                </tr>
+                                        <th>HGVSc</th>
+                                        <th>HGVSp</th>
+                                    </tr>
+                            </thead>
+                            <tbody>
                                 {% for row in report_data.snv_clinical.data %}
-                                <tr>
-                                    {% for cell in row %}
-                                    <td>{{ cell }}</td>
-                                    {% endfor %}
-                                </tr>
-                                {% endfor %}
-                            </table>
-                            {% else %}
-                            <h4 class="variant-type">- SNVs & Indels<span class="none-text">: None</span></h4>
-                            {% endif %}
+                                    <tr class="snv-data-row">
+                                        {% for cell in row %}
+                                            <td>{{ cell }}</td>
+                                            {% endfor %}
+                                        </tr>
+                                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <h4 class="variant-type">- SNVs & Indels<span class="none-text">: None</span></h4>
+            {% endif %}
                             
-                            <!-- Fusion gene -->
+                            <!-- Fusion gene (분할 가능) -->
                             {% if report_data.fusion_clinical.data %}
-                            <h4 class="variant-type">- Fusion gene{% if report_data.fusion_clinical.highlight %}<span class="clinical-highlight">: {{ report_data.fusion_clinical.highlight }}</span>{% endif %}</h4>
+                            <div id="fusion-clinical-section" class="splittable-section" data-section-name="Fusion gene" data-table-type="clinical">
+                                <h4 class="variant-type fusion-title">- Fusion gene{% if report_data.fusion_clinical.highlight %}<span class="clinical-highlight">: {{ report_data.fusion_clinical.highlight }}</span>{% endif %}</h4>
                             <table class="data-table full-width" border="1" id="fusion-clinical-table">
+                            <thead>
                                 <tr>
                                     <th>GENE FUSION</th>
                                     <th>BREAKPOINT 1</th>
-                                    <th>BREAKPOINT 2</th>
-                                    <th>FUSION SUPPORTING READS</th>
-                                </tr>
+                                        <th>BREAKPOINT 2</th>
+                                        <th>FUSION SUPPORTING READS</th>
+                                    </tr>
+                            </thead>
+                            <tbody>
                                 {% for row in report_data.fusion_clinical.data %}
-                                <tr>
-                                    {% for cell in row %}
-                                    <td>{{ cell }}</td>
-                                    {% endfor %}
-                                </tr>
-                                {% endfor %}
-                            </table>
-                            {% else %}
-                            <h4 class="variant-type">- Fusion gene<span class="none-text">: None</span></h4>
-                            {% endif %}
+                                    <tr class="fusion-data-row">
+                                        {% for cell in row %}
+                                            <td>{{ cell }}</td>
+                                            {% endfor %}
+                                        </tr>
+                                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <h4 class="variant-type">- Fusion gene<span class="none-text">: None</span></h4>
+            {% endif %}
                             
-                            <!-- Copy number variation -->
+                            <!-- Copy number variation (분할 가능) -->
                             {% if report_data.cnv_clinical.data %}
-                            <h4 class="variant-type">- Copy number variation{% if report_data.cnv_clinical.highlight %}<span class="clinical-highlight">: {{ report_data.cnv_clinical.highlight }}</span>{% endif %}</h4>
+                            <div id="cnv-clinical-section" class="splittable-section" data-section-name="Copy number variation">
+                                <h4 class="variant-type cnv-title">- Copy number variation{% if report_data.cnv_clinical.highlight %}<span class="clinical-highlight">: {{ report_data.cnv_clinical.highlight }}</span>{% endif %}</h4>
                             <table class="data-table full-width" border="1" id="cnv-clinical-table">
+                            <thead>
                                 <tr>
                                     <th>GENE</th>
                                     <th>LOCATION</th>
-                                    <th>FOLD CHANGE</th>
-                                    <th>ESTIMATED COPY NUMBER</th>
-                                </tr>
+                                        <th>FOLD CHANGE</th>
+                                        <th>ESTIMATED COPY NUMBER</th>
+                                    </tr>
+                            </thead>
+                            <tbody>
                                 {% for row in report_data.cnv_clinical.data %}
-                                <tr>
-                                    {% for cell in row %}
-                                    <td>{{ cell }}</td>
-                                    {% endfor %}
-                                </tr>
-                                {% endfor %}
-                            </table>
-                            {% else %}
-                            <h4 class="variant-type">- Copy number variation<span class="none-text">: None</span></h4>
-                            {% endif %}
+                                    <tr class="cnv-data-row">
+                                        {% for cell in row %}
+                                            <td>{{ cell }}</td>
+                                            {% endfor %}
+                                        </tr>
+                                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <h4 class="variant-type">- Copy number variation<span class="none-text">: None</span></h4>
+            {% endif %}
                             
                             <!-- Large rearrangements in BRCA1/2 -->
                             {% if report_data.lr_brca_clinical.data %}
@@ -592,10 +610,224 @@
         {% endif %}
     </div>
     
+    <!-- 분할된 CNV 테이블을 위한 추가 페이지 (필요시 동적 생성) -->
+    <div class="a4-page page-cnv-continued" id="cnv-continued-page" style="display: none;">
+        <div class="page-border">
+            <div class="report-content">
+                <!-- CNV 분할 테이블 (2/2) -->
+                <div id="cnv-continued-section">
+                    <!-- JavaScript로 동적 생성 -->
+                </div>
+            </div>
+            
+            <!-- 첫 페이지 하단 고정 컨텐츠 복사 -->
+            <div class="page-bottom-fixed">
+                <!-- Other Biomarkers -->
+                <div class="section">
+                    <h4 class="variant-type">- Other Biomarkers</h4>
+                    <table class="biomarkers-table full-width" border="1">
+                        <tr>
+                            <th>Estimated Tumor Mutation Burden (TMB)</th>
+                            <th>Microsatellite Instability (MSI) (% Unstable MSI Sites)</th>
+                        </tr>
+                        <tr>
+                            <td>{{ report_data.biomarkers.TMB }}</td>
+                            <td>{{ report_data.biomarkers.MSI }}</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <!-- Footer (로고와 검사기관 정보만) -->
+                <div class="report-footer">
+                    <div class="footer-container">
+                        <div class="footer-row">
+                            <div class="footer-left">
+                                <div class="footer-org">검사기관 : 세브란스병원 병리과 분자병리 검사실</div>
+                                <div class="footer-address">서울시 서대문구 연세로 50-1 (신촌동 134) 세브란스병원 병리과 Tel: 02-2228-2625</div>
+                            </div>
+                            <div class="footer-right">
+                                <img src="/static/images/Sev_Logo.png" alt="세브란스병원">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <script>
         // 검체 ID를 JavaScript로 전달
         window.specimenId = '{{ specimen_id }}';
+        
+        // 모든 테이블 분할 로직
+        function checkAndSplitTables() {
+            const page1 = document.querySelector('.page-1 .report-content');
+            const otherBiomarkers = document.querySelector('.page-bottom-fixed');
+            const splittableSections = document.querySelectorAll('.splittable-section');
+            
+            if (splittableSections.length === 0) return;
+            
+            let needsSplit = false;
+            let splitSection = null;
+            
+            // 각 섹션을 체크하여 분할이 필요한지 확인
+            splittableSections.forEach(section => {
+                const sectionRect = section.getBoundingClientRect();
+                const otherBiomarkersRect = otherBiomarkers.getBoundingClientRect();
+                
+                // Other Biomarkers와 격치는지 체크
+                const availableSpace = otherBiomarkersRect.top - sectionRect.bottom - 30; // 30px 여유 공간
+                
+                console.log(`Section ${section.dataset.sectionName}: available space = ${availableSpace}`);
+                
+                if (availableSpace < 0 && !needsSplit) {
+                    needsSplit = true;
+                    splitSection = section;
+                }
+            });
+            
+            if (needsSplit && splitSection) {
+                splitTable(splitSection);
+            }
+        }
+        
+        function splitTable(section) {
+            const sectionId = section.id;
+            const sectionName = section.dataset.sectionName;
+            const tableType = section.dataset.tableType;
+            const table = section.querySelector('table');
+            const dataRows = table.querySelectorAll('tbody tr');
+            
+            if (dataRows.length <= 2) return; // 행이 2개 이하면 분할 불필요
+            
+            // 첫 번째 페이지에 들어갈 행 수 계산
+            const splitPoint = Math.max(1, Math.min(2, dataRows.length - 1));
+            
+            // 첫 번째 페이지 제목에 (1/2) 추가
+            const titleElement = section.querySelector('.variant-type');
+            if (titleElement && !titleElement.textContent.includes('(1/2)')) {
+                const titleText = titleElement.innerHTML;
+                titleElement.innerHTML = titleText.replace(`- ${sectionName}`, `- ${sectionName} (1/2)`);
+            }
+            
+            // 분할된 페이지 생성
+            createContinuedPage(section, dataRows, splitPoint, sectionName, tableType);
+            
+            // 첫 번째 페이지에서 분할점 이후 행들 제거
+            for (let i = splitPoint; i < dataRows.length; i++) {
+                dataRows[i].remove();
+            }
+        }
+        
+        function createContinuedPage(originalSection, allRows, splitPoint, sectionName, tableType) {
+            // 첫 번째 페이지 다음에 삽입할 위치 찾기
+            const page1 = document.querySelector('.page-1');
+            
+            // 새로운 페이지 생성
+            const continuedPage = document.createElement('div');
+            continuedPage.className = 'a4-page page-table-continued';
+            
+            // 페이지 컨텐츠 생성
+            const pageContent = createPageContent(originalSection, allRows, splitPoint, sectionName, tableType);
+            continuedPage.innerHTML = pageContent;
+            
+            // 첫 번째 페이지 다음에 삽입
+            page1.parentNode.insertBefore(continuedPage, page1.nextSibling);
+            
+            console.log(`${sectionName} table split successfully`);
+        }
+        
+        function createPageContent(originalSection, allRows, splitPoint, sectionName, tableType) {
+            // 원본 제목에서 highlight 정보 추출
+            const originalTitle = originalSection.querySelector('.variant-type');
+            const highlightElement = originalTitle ? originalTitle.querySelector('.clinical-highlight') : null;
+            const highlightText = highlightElement ? highlightElement.outerHTML : '';
+            
+            // 테이블 헤더 추출
+            const originalTable = originalSection.querySelector('table');
+            const originalHeader = originalTable.querySelector('thead tr');
+            let headerHTML = '';
+            if (originalHeader) {
+                headerHTML = originalHeader.innerHTML;
+            }
+            
+            // 나머지 행들 HTML 생성
+            let rowsHTML = '';
+            for (let i = splitPoint; i < allRows.length; i++) {
+                rowsHTML += allRows[i].outerHTML;
+            }
+            
+            return `
+                <div class="page-border">
+                    <div class="report-content">
+                        <div class="continued-section">
+                            <h4 class="variant-type">- ${sectionName} (2/2)${highlightText}</h4>
+                            <table class="data-table full-width split-table-continued ${tableType}-split" border="1">
+                                <thead>
+                                    <tr>${headerHTML}</tr>
+                                </thead>
+                                <tbody>
+                                    ${rowsHTML}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- 첫 페이지 하단 고정 컨텐츠 복사 -->
+                    <div class="page-bottom-fixed">
+                        <!-- Other Biomarkers -->
+                        <div class="section">
+                            <h4 class="variant-type">- Other Biomarkers</h4>
+                            <table class="biomarkers-table full-width" border="1">
+                                <tr>
+                                    <th>Estimated Tumor Mutation Burden (TMB)</th>
+                                    <th>Microsatellite Instability (MSI) (% Unstable MSI Sites)</th>
+                                </tr>
+                                <tr>
+                                    <td>{{ report_data.biomarkers.TMB }}</td>
+                                    <td>{{ report_data.biomarkers.MSI }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <!-- Footer (로고와 검사기관 정보만) -->
+                        <div class="report-footer">
+                            <div class="footer-container">
+                                <div class="footer-row">
+                                    <div class="footer-left">
+                                        <div class="footer-org">검사기관 : 세브란스병원 병리과 분자병리 검사실</div>
+                                        <div class="footer-address">서울시 서대문구 연세로 50-1 (신촌동 134) 세브란스병원 병리과 Tel: 02-2228-2625</div>
+                                    </div>
+                                    <div class="footer-right">
+                                        <img src="/static/images/Sev_Logo.png" alt="세브란스병원">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 페이지 로드 후 테이블 분할 체크
+        document.addEventListener('DOMContentLoaded', function() {
+            // 약간의 지연을 두어 레이아웃이 완전히 로드된 후 실행
+            setTimeout(checkAndSplitTables, 500); // 지연 시간 증가
+        });
+        
+        // 윈도우 리사이즈 시에도 체크
+        window.addEventListener('resize', function() {
+            setTimeout(checkAndSplitTables, 300);
+        });
+        
+        // 이미지 로드 완료 후에도 체크
+        window.addEventListener('load', function() {
+            setTimeout(checkAndSplitTables, 500);
+        });
     </script>
     <script src="/static/js/script.js"></script>
+    
+    <!-- PDF 다운로드 스크립트 -->
+    <script src="/static/js/report.js"></script>
 </body>
 </html>
