@@ -991,7 +991,7 @@ table td {
 
 /* 분할된 테이블 페이지의 컨텐츠 영역 */
 .page-table-continued .report-content {
-    height: calc(100% - 180px); /* Other Biomarkers + Footer 공간 확보 */
+    height: 100%; /* Other Biomarkers + Footer 공간 확보 불필요 */
     overflow: hidden;
 }
 
