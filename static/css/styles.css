@@ -123,7 +123,7 @@ body {
 /* 각 페이지 전체를 둘러싸는 검은색 테두리 */
 .page-border {
     border: 2px solid #000;
-    padding: 10px;
+    padding: 2px; /* 패딩을 최소화 (10px → 2px) */
     margin: 0; /* 과감하게 제거! */
     height: 100%; /* 전체 페이지 100% 활용 */
     box-sizing: border-box;
@@ -133,7 +133,7 @@ body {
 .a4-page {
     width: 21cm;
     height: 29.7cm;
-    padding: 1cm 0.8cm; /* 상하 1cm, 좌우 0.8cm로 줄여서 표 공간 확보 */
+    padding: 0.2cm 0.2cm; /* 패딩을 최소화 (0.5cm → 0.2cm) */
     margin: 0 auto 20px;
     background-color: white;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);

@@ -453,9 +453,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const bottomFixed = firstPage.querySelector('.page-bottom-fixed');
         const bottomFixedHeight = bottomFixed ? bottomFixed.offsetHeight : 0;
         
-        // 첫 페이지 컨텐츠 영역의 최대 높이 (최대한 공간 활용)
+        // 첫 페이지 컨텐츠 영역의 최대 높이 (패딩 최소화에 맞춰 조정)
         const pageHeight = firstPage.clientHeight;
-        const maxContentHeight = pageHeight - bottomFixedHeight - 40; // 여백을 최소화 (80px → 40px)
+        const maxContentHeight = pageHeight - bottomFixedHeight - 20; // 패딩이 줄어든 만큼 여백도 줄임 (40px → 20px)
         
         console.log(`첫 페이지 전체 높이: ${pageHeight}px, 하단 고정: ${bottomFixedHeight}px, 사용 가능: ${maxContentHeight}px`);
         
@@ -478,12 +478,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // 4번째 요소부터는 공간 체크
-            if (currentHeight + elementHeight > maxContentHeight - 20) { // 20px 여백만 남김
+            if (currentHeight + elementHeight > maxContentHeight - 10) { // 여백을 더 줄임 (20px → 10px)
                 console.log(`⚠️ 오버플로우! 요소 ${i}부터 다음 페이지로 이동 (필요: ${currentHeight + elementHeight}px, 사용가능: ${maxContentHeight}px)`);
                 
                 // 테이블인 경우 행별로 분할 시도
                 if (element.tagName === 'TABLE' && currentHeight > 0) {
-                    const availableSpace = maxContentHeight - currentHeight - 50; // 50px 여백 남김
+                    const availableSpace = maxContentHeight - currentHeight - 10; // 여백 조정 (50px → 10px)
                     const result = tryTableSplit(element, availableSpace);
                     if (result.canSplit) {
                         console.log(`✂️ 테이블 분할: ${result.splitRowIndex}번째 행에서 분할`);
