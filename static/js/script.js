@@ -1,8 +1,9 @@
-// POST 요청으로 보고서로 이동하는 함수 (URL에 specimen_id 노출 방지)
+// POST 요청으로 보고서를 새 탭에서 여는 함수 (URL에 specimen_id 노출 방지)
 function redirectToReport(specimenId) {
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = '/generate-report';
+    form.target = '_blank';  // 새 탭에서 열기
     
     const input = document.createElement('input');
     input.type = 'hidden';
@@ -12,6 +13,9 @@ function redirectToReport(specimenId) {
     form.appendChild(input);
     document.body.appendChild(form);
     form.submit();
+    
+    // form 제거
+    document.body.removeChild(form);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
