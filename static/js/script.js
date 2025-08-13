@@ -441,135 +441,206 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // 첫 페이지 처리를 위한 함수 - 개선된 버전
+    // 첫 페이지 처리를 위한 함수 - 순서 유지 버전
     function handleFirstPage() {
         const firstPage = document.querySelector('.page-1');
         if (!firstPage) return;
         
         const content = firstPage.querySelector('.report-content');
+        if (!content) return;
+        
+        // 하단 고정 컨텐츠 확인
         const bottomFixed = firstPage.querySelector('.page-bottom-fixed');
-        if (!content || !bottomFixed) return;
+        const bottomFixedHeight = bottomFixed ? bottomFixed.offsetHeight : 0;
         
-        // 하단 고정 컨텐츠의 높이
-        const bottomFixedHeight = bottomFixed.offsetHeight;
+        // 첫 페이지 컨텐츠 영역의 최대 높이 (최대한 공간 활용)
+        const pageHeight = firstPage.clientHeight;
+        const maxContentHeight = pageHeight - bottomFixedHeight - 40; // 여백을 최소화 (80px → 40px)
         
-        // 첫 페이지 컨텐츠 영역의 최대 높이
-        const maxHeight = firstPage.clientHeight - bottomFixedHeight - 100; // 여백 포함
+        console.log(`첫 페이지 전체 높이: ${pageHeight}px, 하단 고정: ${bottomFixedHeight}px, 사용 가능: ${maxContentHeight}px`);
         
+        // 원래 순서대로 모든 children 처리
         const elements = Array.from(content.children);
         let currentHeight = 0;
         let elementsToMove = [];
-        let tableToSplit = null;
         
-        // 각 요소의 높이를 실제로 측정하며 체크
         for (let i = 0; i < elements.length; i++) {
             const element = elements[i];
             const elementHeight = element.offsetHeight;
             
-            // 테이블 처리
-            if (element.tagName === 'TABLE') {
-                const rows = Array.from(element.querySelectorAll('tr'));
-                const headerRow = rows[0];
-                let accumulatedTableHeight = headerRow ? headerRow.offsetHeight : 0;
-                let splitAtRow = -1;
-                
-                for (let j = 1; j < rows.length; j++) {
-                    const rowHeight = rows[j].offsetHeight;
-                    
-                    if (currentHeight + accumulatedTableHeight + rowHeight > maxHeight) {
-                        if (j > 1) {
-                            splitAtRow = j;
-                            break;
-                        }
-                    }
-                    accumulatedTableHeight += rowHeight;
-                }
-                
-                if (splitAtRow > 0) {
-                    tableToSplit = {
-                        originalTable: element,
-                        splitRowIndex: splitAtRow,
-                        headerRow: headerRow.cloneNode(true)
-                    };
-                    
-                    // 현재 페이지에 남을 높이 계산
-                    let keepHeight = headerRow.offsetHeight;
-                    for (let k = 1; k < splitAtRow; k++) {
-                        keepHeight += rows[k].offsetHeight;
-                    }
-                    currentHeight += keepHeight;
-                    
-                    elementsToMove = elements.slice(i + 1);
-                    break;
-                }
+            console.log(`요소 ${i}: ${element.tagName}${element.className ? '.' + element.className : ''} - 높이: ${elementHeight}px, 누적: ${currentHeight}px + ${elementHeight}px = ${currentHeight + elementHeight}px`);
+            
+            // 처음 4개 요소는 무조건 첫 페이지에 유지 (Variants of clinical significance 포함)
+            if (i < 4) {
+                currentHeight += elementHeight;
+                console.log(`필수 요소 ${i} 첫 페이지에 강제 유지, 누적 높이: ${currentHeight}px`);
+                continue;
             }
             
-            if (currentHeight + elementHeight > maxHeight && currentHeight > 0) {
-                elementsToMove = elements.slice(i);
+            // 4번째 요소부터는 공간 체크
+            if (currentHeight + elementHeight > maxContentHeight - 20) { // 20px 여백만 남김
+                console.log(`⚠️ 오버플로우! 요소 ${i}부터 다음 페이지로 이동 (필요: ${currentHeight + elementHeight}px, 사용가능: ${maxContentHeight}px)`);
+                
+                // 테이블인 경우 행별로 분할 시도
+                if (element.tagName === 'TABLE' && currentHeight > 0) {
+                    const availableSpace = maxContentHeight - currentHeight - 50; // 50px 여백 남김
+                    const result = tryTableSplit(element, availableSpace);
+                    if (result.canSplit) {
+                        console.log(`✂️ 테이블 분할: ${result.splitRowIndex}번째 행에서 분할`);
+                        
+                        // 테이블 분할 실행
+                        const newTable = splitTableAtRow(element, result.splitRowIndex);
+                        elementsToMove.push(newTable);
+                        
+                        // 분할 후 남은 요소들도 이동
+                        elementsToMove.push(...elements.slice(i + 1));
+                        break;
+                    }
+                }
+                
+                // 테이블 분할이 안 되거나 일반 요소인 경우 전체 이동
+                elementsToMove.push(...elements.slice(i));
                 break;
             }
             
             currentHeight += elementHeight;
+            console.log(`✅ 요소 ${i} 첫 페이지에 유지, 누적 높이: ${currentHeight}px`);
         }
         
-        // 첫 페이지에서 넘겨야 할 컨텐츠가 있는 경우
-        if (elementsToMove.length > 0 || tableToSplit) {
-            const continuedPage = document.querySelector('.page-continued-1');
-            if (continuedPage && continuedPage.querySelector('.report-content')) {
-                const continuedContent = continuedPage.querySelector('.report-content');
-                const existingElements = Array.from(continuedContent.children);
-                
-                // 테이블 분할이 필요한 경우
-                if (tableToSplit) {
-                    const { originalTable, splitRowIndex, headerRow } = tableToSplit;
-                    const rows = Array.from(originalTable.querySelectorAll('tr'));
-                    
-                    const newTable = originalTable.cloneNode(false);
-                    
-                    // 원본 테이블의 모든 속성 복사
-                    Array.from(originalTable.attributes).forEach(attr => {
-                        if (attr.name !== 'id') {
-                            newTable.setAttribute(attr.name, attr.value);
-                        }
-                    });
-                    originalTable.classList.forEach(className => {
-                        newTable.classList.add(className);
-                    });
-                    newTable.classList.add('split-table-continued');
-                    
-                    newTable.appendChild(headerRow);
-                    
-                    const rowsToMove = [];
-                    for (let i = splitRowIndex; i < rows.length; i++) {
-                        rowsToMove.push(rows[i]);
-                    }
-                    
-                    rowsToMove.forEach(row => {
-                        newTable.appendChild(row);
-                    });
-                    
-                    // 기존 컨텐츠의 맨 앞에 추가
-                    continuedContent.insertBefore(newTable, existingElements[0] || null);
-                }
-                
-                // 나머지 요소들 이동
-                elementsToMove.forEach(element => {
-                    continuedContent.insertBefore(element, existingElements[0] || null);
-                });
-            }
+        // 다음 페이지로 이동할 요소가 있으면 이동
+        if (elementsToMove.length > 0) {
+            moveElementsToNextPage(elementsToMove, '.page-continued-1');
+            console.log(`${elementsToMove.length}개 요소를 다음 페이지로 이동`);
         }
     }
     
-    // 보고서 페이지가 있을 경우에만 실행
+    // 테이블 분할 가능성 채크
+    function tryTableSplit(table, availableHeight) {
+        const rows = Array.from(table.querySelectorAll('tr'));
+        if (rows.length <= 1) return { canSplit: false };
+        
+        const headerRow = rows[0];
+        let accumulatedHeight = headerRow.offsetHeight;
+        
+        // 헤더 + 최소 1개 행은 들어가야 함
+        for (let i = 1; i < rows.length; i++) {
+            const rowHeight = rows[i].offsetHeight;
+            
+            if (accumulatedHeight + rowHeight > availableHeight) {
+                if (i > 1) { // 헤더 + 1개 이상 행이 들어가면 분할 가능
+                    return { canSplit: true, splitRowIndex: i };
+                } else {
+                    return { canSplit: false }; // 헤더 + 1행도 안 들어가면 분할 불가
+                }
+            }
+            
+            accumulatedHeight += rowHeight;
+        }
+        
+        return { canSplit: false }; // 전체 테이블이 들어가면 분할 불필요
+    }
+    
+    // 테이블 분할 실행
+    function splitTableAtRow(originalTable, splitRowIndex) {
+        const rows = Array.from(originalTable.querySelectorAll('tr'));
+        const headerRow = rows[0];
+        
+        // 새 테이블 생성
+        const newTable = originalTable.cloneNode(false);
+        
+        // 원본 테이블의 모든 속성 복사
+        Array.from(originalTable.attributes).forEach(attr => {
+            if (attr.name !== 'id') {
+                newTable.setAttribute(attr.name, attr.value);
+            }
+        });
+        originalTable.classList.forEach(className => {
+            newTable.classList.add(className);
+        });
+        newTable.classList.add('split-table-continued');
+        
+        // 헤더 추가
+        newTable.appendChild(headerRow.cloneNode(true));
+        
+        // 분할점 이후의 행들을 새 테이블로 이동
+        for (let i = splitRowIndex; i < rows.length; i++) {
+            newTable.appendChild(rows[i]);
+        }
+        
+        return newTable;
+    }
+    
+    // 요소들을 다음 페이지로 이동
+    function moveElementsToNextPage(elements, nextPageSelector) {
+        let nextPage = document.querySelector(nextPageSelector);
+        
+        // 다음 페이지가 없으면 생성
+        if (!nextPage) {
+            nextPage = createNewPage(nextPageSelector);
+        }
+        
+        const nextContent = nextPage.querySelector('.report-content');
+        if (!nextContent) return;
+        
+        // 요소들을 다음 페이지로 이동
+        elements.forEach(element => {
+            nextContent.appendChild(element);
+        });
+    }
+    
+    // 새 페이지 생성
+    function createNewPage(pageSelector) {
+        const pageClass = pageSelector.replace('.', '');
+        const pageNumber = pageClass.includes('continued-') ? 
+            pageClass.split('continued-')[1] : '1';
+        
+        const newPage = document.createElement('div');
+        newPage.className = `a4-page page-continued ${pageClass}`;
+        
+        const pageContent = document.createElement('div');
+        pageContent.className = 'page-border';
+        const reportContent = document.createElement('div');
+        reportContent.className = 'report-content';
+        
+        pageContent.appendChild(reportContent);
+        newPage.appendChild(pageContent);
+        
+        // 적절한 위치에 삽입
+        const firstPage = document.querySelector('.page-1');
+        if (firstPage) {
+            firstPage.parentNode.insertBefore(newPage, firstPage.nextSibling);
+        }
+        
+        return newPage;
+    }
+    
+    // 보고서 페이지가 있을 경우에만 실행 - 개선된 버전
     if (document.querySelector('.a4-page')) {
-        // 첫 페이지 처리
-        handleFirstPage();
-        // 동적 페이지 분할 적용
-        dynamicPageSplit();
-        checkPageOverflow();
+        // DOM이 완전히 렌더링된 후 페이지 분할 처리
+        setTimeout(() => {
+            // 첫 페이지 처리
+            handleFirstPage();
+            // 동적 페이지 분할 적용
+            dynamicPageSplit();
+            // 오버플로우 체크
+            checkPageOverflow();
+            
+            // 추가적인 체크를 위해 조금 더 기다린 후 한 번 더
+            setTimeout(() => {
+                handleFirstPage();
+                dynamicPageSplit();
+                checkPageOverflow();
+            }, 500);
+        }, 100);
         
         // 윈도우 크기 변경 시 다시 체크
-        window.addEventListener('resize', checkPageOverflow);
+        window.addEventListener('resize', () => {
+            setTimeout(() => {
+                handleFirstPage();
+                dynamicPageSplit();
+                checkPageOverflow();
+            }, 100);
+        });
     }
     
     // PDF 다운로드 버튼 기능

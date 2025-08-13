@@ -263,10 +263,25 @@ body {
     font-weight: bold;
 }
 
-/* Clinical significance section - 데이터 테이블만 빨간색 + bold */
-.page-1 .data-table td {
-    color: #c00;
-    font-weight: bold;
+/* Clinical significance section - clinical 테이블만 빨간색 + bold */
+#snv-clinical-table td,
+#fusion-clinical-table td,
+#cnv-clinical-table td,
+#lr-brca-clinical-table td,
+#splice-clinical-table td {
+    color: #c00 !important;
+    font-weight: bold !important;
+}
+
+/* Unknown 및 Failed gene 테이블은 기본 색상 */
+#snv-unknown-table td,
+#fusion-unknown-table td,
+#cnv-unknown-table td,
+#lr-brca-unknown-table td,
+#splice-unknown-table td,
+.data-table td {
+    color: #000 !important;
+    font-weight: normal !important;
 }
 
 /* Failed gene text - black */
