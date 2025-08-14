@@ -483,7 +483,135 @@
                     <div class="section">
                         <h2 class="section-title">▣ Specification</h2>
                         <div class="specification-box">
-                            <img src="/static/images/{% if report_data.panel_type == 'GE' %}GE_Specification.png{% else %}SA_Specification.png{% endif %}" alt="Specification">
+                            {% if report_data.panel_type == 'GE' %}
+                            <!-- GE 패널 Specification -->
+                            <table class="specification-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>TruSight Oncology 500</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>System</td>
+                                        <td>NextSeq 550Dx or NovaSeq 6000Dx (research mode)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Panel size</td>
+                                        <td>1.94 Mb DNA, 358 kb RNA</td>
+                                    </tr>
+                                    <tr>
+                                        <td>DNA input requirement</td>
+                                        <td>40 ng total</td>
+                                    </tr>
+                                    <tr>
+                                        <td>RNA input requirement</td>
+                                        <td>40 ng total</td>
+                                    </tr>
+                                    <tr>
+                                        <td>FFPE input requirement</td>
+                                        <td>Minimum recommendation of 0.65㎣ from FFPE tissue samples (5 slides cut at 10 microns thick)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Total assay time</td>
+                                        <td>3-4 days from nucleic acid to variant report</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Sequence run time</td>
+                                        <td>24 hours</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Sequence run</td>
+                                        <td>2 X 101 cycles</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Kit size</td>
+                                        <td>24 or 48 samples</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Sample throughput</td>
+                                        <td>8 or 16 or 32 samples per run</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Limit of detection</td>
+                                        <td>5% VAF for small variants<br>5 copies per ng RNA input for fusions<br>1.5x fold-change for CNVs</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Analytical sensitivity</td>
+                                        <td>>96% (for all variant types at 5% VAF)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Analytical specificity</td>
+                                        <td>>99.99%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            {% else %}
+                            <!-- SA 패널 Specification -->
+                            <table class="specification-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>TruSight Oncology 500 / TruSight RNA Fusion Panel</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>System</td>
+                                        <td>NextSeq 550Dx or NovaSeq 6000Dx (research mode)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Panel size</td>
+                                        <td>1.94 Mb DNA, 358 kb RNA / 1.44Mb RNA</td>
+                                    </tr>
+                                    <tr>
+                                        <td>DNA input requirement</td>
+                                        <td>40 ng total</td>
+                                    </tr>
+                                    <tr>
+                                        <td>RNA input requirement</td>
+                                        <td>40 ng total</td>
+                                    </tr>
+                                    <tr>
+                                        <td>FFPE input requirement</td>
+                                        <td>Minimum recommendation of 0.65㎣ from FFPE tissue samples (5 slides cut at 10 microns thick)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Total assay time</td>
+                                        <td>3-4 days from nucleic acid to variant report</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Sequence run time</td>
+                                        <td>24 or 19 hours</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Sequence run</td>
+                                        <td>2 X 101 cycles</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Kit size</td>
+                                        <td>24 or 48 samples</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Sample throughput</td>
+                                        <td>8 or 16 or 32 samples per run</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Limit of detection</td>
+                                        <td>5% VAF for small variants<br>5 copies per ng RNA input for fusions<br>1.5x fold-change for CNVs</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Analytical sensitivity</td>
+                                        <td>>96% (for all variant types at 5% VAF)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Analytical specificity</td>
+                                        <td>>99.99%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
