@@ -1069,7 +1069,7 @@ table td {
 @media print {
     @page {
         size: A4;
-        margin: 0.2cm; /* 웹과 동일하게 변경 */
+        margin: 0.2cm;
     }
     
     body {
@@ -1087,13 +1087,14 @@ table td {
     .a4-page {
         width: 21cm;
         height: 29.7cm;
-        padding: 0.2cm 0.2cm; /* 웹과 동일하게 변경 */
+        padding: 0.2cm 0.2cm;
         margin: 0;
         box-shadow: none;
-        border: none;
+        border: none; /* 개발용 빨간색 테두리는 인쇄 시 제거 */
         page-break-after: always;
         page-break-inside: avoid;
         box-sizing: border-box;
+        /* overflow는 화면과 동일하게 auto로 유지 */
     }
     
     .a4-page:last-child {
@@ -1108,19 +1109,21 @@ table td {
     /* A4 기준선 및 페이지 표시 숨기기 */
     .a4-page::after,
     .a4-page::before {
-        display: none;
+        display: none !important;
     }
     
-    /* 프린트시 빨간 테두리 및 경고 스타일 제거 */
-    .a4-page {
-        border: none;
-        overflow: visible; /* hidden에서 visible로 변경 */
-    }
-    
+    /* 오버플로우 경고 스타일 제거 */
     .a4-page.overflow-warning {
-        border-color: initial;
+        border: none;
         background-color: white;
     }
+    
+    .a4-page.overflow-warning::after {
+        display: none !important;
+    }
+    
+    /* 프린트시 화면과 동일하게 유지 */
+    /* overflow를 visible로 변경하지 않고 화면 설정 유지 */
     
     /* 분할된 콘텐츠 페이지도 프린트 시 디버깅 요소 숨김 */
     .page-content-continued::before {
@@ -1151,10 +1154,10 @@ table td {
         box-sizing: border-box;
     }
     
-    /* 첫 페이지 컨텐츠 영역 높이 유지 */
+    /* 첫 페이지 컨텐츠 영역 - 화면과 동일하게 유지 */
     .page-1 .report-content {
         height: calc(100% - 180px);
-        overflow: visible;
+        overflow: hidden; /* 화면과 동일하게 hidden 유지 */
     }
     
     /* 인쇄 시에도 하단 고정 요소 위치 유지 */
@@ -1166,17 +1169,7 @@ table td {
         width: 100%;
     }
     
-    /* 테이블 스타일 인쇄 시 유지 */
-    table th, table td {
-        height: 2.8em !important;
-        line-height: 1.4 !important;
-        padding: 2px 1px !important;
-        font-size: 8pt !important;
-        overflow: hidden !important;
-        word-break: break-word !important;
-        word-wrap: break-word !important;
-        overflow-wrap: break-word !important;
-    }
+    /* 테이블 스타일 - 화면과 동일하게 유지, 강제 스타일 제거 */
     
     /* 테이블 헤더 배경색 유지 */
     .data-table th, .info-table th {
@@ -1203,10 +1196,8 @@ table td {
         print-color-adjust: exact;
     }
     
-    /* 컨텐츠 영역 오버플로 방지 */
-    .report-content {
-        overflow: visible !important;
-    }
+    /* 컨텐츠 영역 - 화면과 동일하게 유지 */
+    /* overflow를 강제로 visible로 변경하지 않음 */
     
     /* 분할된 테이블 스타일 유지 */
     .split-table-continued {
@@ -1232,24 +1223,7 @@ table td {
         print-color-adjust: exact;
     }
     
-    /* 테이블 레이아웃 고정 */
-    .full-width {
-        table-layout: fixed !important;
-    }
-    
-    /* 테이블 커럼 너비 유지 */
-    .data-table th:nth-child(1),
-    .data-table td:nth-child(1) { width: 10% !important; }
-    .data-table th:nth-child(2),
-    .data-table td:nth-child(2) { width: 18% !important; }
-    .data-table th:nth-child(3),
-    .data-table td:nth-child(3) { width: 15% !important; }
-    .data-table th:nth-child(4),
-    .data-table td:nth-child(4) { width: 8% !important; }
-    .data-table th:nth-child(5),
-    .data-table td:nth-child(5) { width: 25% !important; }
-    .data-table th:nth-child(6),
-    .data-table td:nth-child(6) { width: 24% !important; }
+    /* 테이블 레이아웃과 커럼 너비 - 화면과 동일하게 유지, 강제 스타일 제거 */
     
     /* 보고서 테두리 유지 */
     .page-border {
@@ -1270,11 +1244,7 @@ table td {
         margin: 0 auto !important;
     }
     
-    /* body에 printing 클래스가 있을 때 특별 처리 */
-    body.printing {
-        margin: 0 !important;
-        padding: 0 !important;
-    }
+    /* body.printing 클래스 관련 스타일 제거 - 화면과 동일하게 유지 */
     
     /* 인쇄 시 Comment 박스 스타일 유지 */
     .comment-section {

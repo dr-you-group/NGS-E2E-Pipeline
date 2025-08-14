@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Form, File, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import os
@@ -429,6 +429,21 @@ async def get_reports():
     print(f"==================\n")
     
     return JSONResponse({"success": True, "reports": reports, "json_files": json_files})
+
+@app.get("/api/specification/{panel_type}")
+async def get_specification(panel_type: str):
+    """
+    패널 타입에 따른 Specification HTML 반환
+    """
+    if panel_type not in ['GE', 'SA']:
+        return JSONResponse({"error": "Invalid panel type"}, status_code=400)
+    
+    spec_file = os.path.join(BASE_DIR, "templates", f"{panel_type}_Specification.html")
+    
+    if not os.path.exists(spec_file):
+        return JSONResponse({"error": "Specification file not found"}, status_code=404)
+    
+    return FileResponse(spec_file, media_type="text/html")
 
 if __name__ == "__main__":
     import uvicorn
