@@ -647,18 +647,54 @@ document.addEventListener('DOMContentLoaded', function() {
     const pdfDownloadBtn = document.getElementById('pdf-download-btn');
     if (pdfDownloadBtn) {
         pdfDownloadBtn.addEventListener('click', function() {
+            // 인쇄 전 테이블 분할 재확인
+            handleFirstPage();
+            dynamicPageSplit();
+            
+            // 인쇄용 클래스 추가
+            document.body.classList.add('printing');
+            
+            // 모든 테이블의 레이아웃 강제 적용
+            const tables = document.querySelectorAll('table');
+            tables.forEach(table => {
+                table.style.tableLayout = 'fixed';
+                table.style.width = '100%';
+            });
+            
+            // 테이블 셀의 높이 강제 적용
+            const cells = document.querySelectorAll('table th, table td');
+            cells.forEach(cell => {
+                cell.style.height = '2.8em';
+                cell.style.lineHeight = '1.4';
+                cell.style.overflow = 'hidden';
+            });
+            
             // 검체 정보를 파일명으로 사용
             const originalTitle = document.title;
             const specimenId = window.specimenId || 'NGS_보고서';
             document.title = specimenId;
             
-            // 인쇄 다이얼로그 열기
-            window.print();
-            
-            // 제목 복원
+            // 약간의 지연 후 인쇄 다이얼로그 열기
             setTimeout(() => {
-                document.title = originalTitle;
-            }, 1000);
+                window.print();
+                
+                // 인쇄 후 클래스 제거 및 제목 복원
+                setTimeout(() => {
+                    document.body.classList.remove('printing');
+                    document.title = originalTitle;
+                    
+                    // 강제 적용한 스타일 제거
+                    tables.forEach(table => {
+                        table.style.tableLayout = '';
+                        table.style.width = '';
+                    });
+                    cells.forEach(cell => {
+                        cell.style.height = '';
+                        cell.style.lineHeight = '';
+                        cell.style.overflow = '';
+                    });
+                }, 100);
+            }, 500);
         });
     }
 });
