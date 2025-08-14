@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="result-details">
                     <span class="result-detail">원발장기: ${result.원발장기}</span>
                     <span class="result-detail">진단: ${result.진단}</span>
-                    <span class="result-detail">사인자: ${result.signed1}</span>
+                    <span class="result-detail">판독의: ${result.signed1}</span>
                 </div>
             `;
             

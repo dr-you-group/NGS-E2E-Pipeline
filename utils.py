@@ -6,6 +6,7 @@ warnings.filterwarnings('ignore')
 class NGS_EXCEL2DB:
     def __init__(self, file):
         self.df = pd.ExcelFile(file, engine='openpyxl')
+        self._file_path = file
         self.Clinical_Information = self.df.parse('clinical_information', header=None, dtype=str).fillna('')
         self.clinical_dict = dict(zip(self.Clinical_Information.iloc[:, 0], self.Clinical_Information.iloc[:, 1]))
         self.NGS_QC = self.df.parse('NGS_QC', header=None, dtype=str).fillna('')
@@ -26,6 +27,20 @@ class NGS_EXCEL2DB:
         self.IO = self.df.parse('IO', header=1, dtype=str).fillna('')
         self.panel = 'SA' if '.SA.' in self.clinical_dict["검체 유형"] else 'GE'
     
+    def close(self):
+        """Excel 파일을 명시적으로 닫아 파일 잠금을 해제합니다."""
+        try:
+            if hasattr(self.df, 'close'):
+                self.df.close()
+            print(f"Excel 파일 닫기 완료: {self._file_path}")
+        except Exception as e:
+            print(f"Excel 파일 닫기 실패: {e}")
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
     
 
     # 검체정보

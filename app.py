@@ -6,6 +6,7 @@ import os
 import sqlite3
 import json
 import traceback
+import time
 from utils import NGS_EXCEL2DB
 
 app = FastAPI()
@@ -19,10 +20,15 @@ templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 # SQLite 데이터베이스 설정
 DB_PATH = os.path.join(BASE_DIR, "ngs_reports.db")
 JSON_DIR = os.path.join(BASE_DIR, "json")
+TMP_DIR = os.path.join(BASE_DIR, "tmp")
 
-# JSON 디렉토리 확인 및 생성
+# 디렉토리 확인 및 생성
 if not os.path.exists(JSON_DIR):
     os.makedirs(JSON_DIR)
+
+if not os.path.exists(TMP_DIR):
+    os.makedirs(TMP_DIR)
+    print(f"임시 파일 디렉토리 생성: {TMP_DIR}")
 
 def init_db():
     if not os.path.exists(DB_PATH):
@@ -42,6 +48,39 @@ def init_db():
         conn.close()
 
 init_db()
+
+def safe_remove_file(file_path: str, max_retries: int = 5, delay: float = 0.5) -> bool:
+    """
+    파일을 안전하게 삭제하는 함수 (Windows 파일 잠금 문제 해결)
+    
+    Args:
+        file_path: 삭제할 파일 경로
+        max_retries: 최대 재시도 횟수
+        delay: 재시도 간격 (초)
+    
+    Returns:
+        bool: 삭제 성공 여부
+    """
+    if not os.path.exists(file_path):
+        return True
+    
+    for attempt in range(max_retries):
+        try:
+            os.remove(file_path)
+            print(f"임시 파일 삭제 완료: {file_path}")
+            return True
+        except PermissionError as e:
+            if attempt < max_retries - 1:
+                print(f"파일 삭제 재시도 {attempt + 1}/{max_retries}: {file_path}")
+                time.sleep(delay)
+            else:
+                print(f"파일 삭제 실패 (최대 재시도 도달): {file_path} - {e}")
+                return False
+        except Exception as e:
+            print(f"파일 삭제 중 예상치 못한 오류: {file_path} - {e}")
+            return False
+    
+    return False
 
 # 테이블 데이터 처리 함수
 def process_table_data(rows):
@@ -134,7 +173,7 @@ def save_json_file(specimen_id, report_data):
 
 @app.post("/api/upload-excel")
 async def upload_excel(file: UploadFile = File(...)):
-    temp_file_path = os.path.join(BASE_DIR, f"temp_{file.filename}")
+    temp_file_path = os.path.join(TMP_DIR, f"temp_{file.filename}")
     
     try:
         # 임시 파일에 저장
@@ -296,8 +335,11 @@ async def upload_excel(file: UploadFile = File(...)):
         # JSON 파일로도 저장
         json_saved = save_json_file(specimen_id, report_data)
         
+        # Excel 파일 닫기 (파일 잠금 해제)
+        parser.close()
+        
         # 임시 파일 삭제
-        os.remove(temp_file_path)
+        safe_remove_file(temp_file_path)
         
         return JSONResponse({
             "success": True, 
@@ -306,9 +348,15 @@ async def upload_excel(file: UploadFile = File(...)):
         })
     
     except Exception as e:
-        # 오류 발생 시 임시 파일 삭제
+        # 오류 발생 시 Excel 파일 닫기 및 임시 파일 삭제
+        try:
+            if 'parser' in locals():
+                parser.close()
+        except:
+            pass
+        
         if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
+            safe_remove_file(temp_file_path)
         
         print(f"엑셀 업로드 중 오류 발생: {str(e)}")
         traceback.print_exc()

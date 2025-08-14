@@ -1,5 +1,6 @@
 ngs_reports.db
 json/
+tmp/
 BACKUP/
 sample_data/
 .DS_Store
