@@ -146,7 +146,13 @@ body {
     position: relative;
     page-break-after: always;
     box-sizing: border-box;
-    overflow: auto; /* 개발 시 오버플로우 확인을 위해 auto로 변경 */
+    overflow: hidden; /* 스크롤 제거 */
+}
+
+/* 모든 내용이 페이지 너비를 넘지 않도록 추가 안전장치 */
+.a4-page * {
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 /* 오버플로우 경고를 위한 클래스 */

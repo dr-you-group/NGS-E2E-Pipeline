@@ -445,6 +445,23 @@ async def get_specification(panel_type: str):
     
     return FileResponse(spec_file, media_type="text/html")
 
+@app.get("/api/gene-content/{content_type}")
+async def get_gene_content(content_type: str):
+    """
+    Gene Content HTML 반환
+    """
+    valid_types = ['GE_Gene_Content_DRNA', 'SA_Gene_Content_DNA', 'SA_Gene_Content_RNA']
+    
+    if content_type not in valid_types:
+        return JSONResponse({"error": "Invalid content type"}, status_code=400)
+    
+    gene_content_file = os.path.join(BASE_DIR, "templates", f"{content_type}.html")
+    
+    if not os.path.exists(gene_content_file):
+        return JSONResponse({"error": "Gene content file not found"}, status_code=404)
+    
+    return FileResponse(gene_content_file, media_type="text/html")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app:app", host="0.0.0.0", port=1234, reload=True, workers=1)

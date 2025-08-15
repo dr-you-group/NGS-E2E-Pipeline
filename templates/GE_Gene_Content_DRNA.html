@@ -1,28 +1,43 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        table {
-            border-collapse: collapse;
-            border: 1px solid black;
-            table-layout: fixed;  /* 고정 레이아웃 사용 */
-        }
-        th, td {
-            padding: 5px;
-            text-align: center;
-            width: 90px;  /* 가장 긴 문자열(MAP3K13 등) 기준으로 설정 */
-            overflow: hidden;  /* 넘치는 내용 숨김 */
-        }
-        th {
-            background-color: #D5E4F1;  /* 연한 파란색으로 변경 */
-        }
-    </style>
-</head>
-<body>
-    <table>
-        <tr>
-            <th colspan="11">DNA Content</th>
-        </tr>
+<style>
+    .gene-content-container {
+        text-align: center;
+        width: 100%;
+    }
+    .gene-content-table {
+        border-collapse: collapse;
+        border: none;
+        table-layout: fixed;
+        width: 95%;
+        font-size: 9px;
+        margin: 0 auto;
+        max-width: calc(100% - 30px);
+        display: inline-table;
+    }
+    .gene-content-table th, .gene-content-table td {
+        padding: 4px;
+        margin: 0;
+        text-align: center;
+        overflow: hidden;
+        border: none;
+        word-wrap: break-word;
+        line-height: 0.9;
+        height: 16px;
+        vertical-align: middle;
+    }
+    .gene-content-table th {
+        background-color: #D5E4F1;
+        font-weight: bold;
+    }
+    .gene-content-table tr td {
+        width: 9.09%; /* 11개 컬럼이므로 100/11 */
+    }
+</style>
+
+<div class="gene-content-container">
+<table class="gene-content-table">
+    <tr>
+        <th colspan="11">DNA Content</th>
+    </tr>
         <tr>
             <td>ABL1</td>
             <td>BSCD4</td>
@@ -643,7 +658,7 @@
             <td>SYK</td>
         </tr>
         <tr>
-            <th colspan="12">RNA Content</th>
+            <th colspan="11">RNA Content</th>
         </tr>
         <tr>
             <td>ABL1</td>
@@ -711,5 +726,4 @@
             <td>TMPRSS2</td>
         </tr>
     </table>
-</body>
-</html>
+</div>

@@ -419,7 +419,7 @@
         <!-- Page 2: 검사정보부터 Specification까지 -->
         <div class="a4-page page-2">
             <div class="page-border">
-                <div class="page-2-content">
+                <div class="page-2-content" style="margin-top: 15px;">
                     <!-- 검사정보 -->
                     <div class="section">
                         <h2 class="section-title">▣ 검사정보</h2>
@@ -496,11 +496,11 @@
         <div class="a4-page page-3">
             <div class="page-border">
                 <div class="page-3-content">
-                    <div class="gene-content-wrapper">
+                    <div class="gene-content-wrapper" style="margin-top: 15px;">
                         <div class="section">
                             <h2 class="section-title">▣ Gene Content in the TruSight Oncology 500 panel Assay</h2>
-                            <div class="gene-content-box">
-                                <img src="/static/images/GE_Gene_Content_DRNA.png" alt="Gene Content">
+                            <div class="gene-content-box" id="ge-gene-content">
+                                <!-- 동적으로 로드됨 -->
                             </div>
                         </div>
                     </div>
@@ -552,11 +552,11 @@
         <div class="a4-page page-3">
             <div class="page-border">
                 <div class="page-3-content">
-                    <div class="gene-content-wrapper">
+                    <div class="gene-content-wrapper" style="margin-top: 15px;">
                         <div class="section">
                             <h2 class="section-title">▣ Gene Content in the NGS Sarcoma Panel Assay [DNA]</h2>
-                            <div class="gene-content-box">
-                                <img src="/static/images/SA_Gene_Content_DNA.png" alt="Gene Content DNA">
+                            <div class="gene-content-box" id="sa-gene-content-dna">
+                                <!-- 동적으로 로드됨 -->
                             </div>
                         </div>
                     </div>
@@ -568,11 +568,11 @@
         <div class="a4-page page-4">
             <div class="page-border">
                 <div class="page-4-content">
-                    <div class="gene-content-wrapper">
+                    <div class="gene-content-wrapper" style="margin-top: 15px;">
                         <div class="section">
                             <h2 class="section-title">▣ Gene Content in the NGS Sarcoma Panel Assay [RNA]</h2>
-                            <div class="gene-content-box">
-                                <img src="/static/images/SA_Gene_Content_RNA.png" alt="Gene Content RNA">
+                            <div class="gene-content-box" id="sa-gene-content-rna">
+                                <!-- 동적으로 로드됨 -->
                             </div>
                         </div>
                     </div>
@@ -691,9 +691,78 @@
             }
         }
         
-        // 페이지 로드 시 Specification 로드
+        // Gene Content 동적 로드
+        async function loadGeneContent() {
+            if (!window.panelType) return;
+            
+            if (window.panelType === 'GE') {
+                await loadGEGeneContent();
+            } else if (window.panelType === 'SA') {
+                await loadSAGeneContent();
+            }
+        }
+        
+        // GE Gene Content 로드
+        async function loadGEGeneContent() {
+            const container = document.getElementById('ge-gene-content');
+            if (!container) return;
+            
+            try {
+                const response = await fetch('/api/gene-content/GE_Gene_Content_DRNA');
+                if (response.ok) {
+                    const html = await response.text();
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p style="text-align: center; color: #999;">Gene Content 데이터를 불러올 수 없습니다.</p>';
+                }
+            } catch (error) {
+                console.error('GE Gene Content 로드 오류:', error);
+                container.innerHTML = '<p style="text-align: center; color: #999;">Gene Content 데이터 로드 중 오류가 발생했습니다.</p>';
+            }
+        }
+        
+        // SA Gene Content 로드
+        async function loadSAGeneContent() {
+            const dnaContainer = document.getElementById('sa-gene-content-dna');
+            const rnaContainer = document.getElementById('sa-gene-content-rna');
+            
+            // DNA Content 로드
+            if (dnaContainer) {
+                try {
+                    const response = await fetch('/api/gene-content/SA_Gene_Content_DNA');
+                    if (response.ok) {
+                        const html = await response.text();
+                        dnaContainer.innerHTML = html;
+                    } else {
+                        dnaContainer.innerHTML = '<p style="text-align: center; color: #999;">DNA Gene Content 데이터를 불러올 수 없습니다.</p>';
+                    }
+                } catch (error) {
+                    console.error('SA DNA Gene Content 로드 오류:', error);
+                    dnaContainer.innerHTML = '<p style="text-align: center; color: #999;">DNA Gene Content 데이터 로드 중 오류가 발생했습니다.</p>';
+                }
+            }
+            
+            // RNA Content 로드
+            if (rnaContainer) {
+                try {
+                    const response = await fetch('/api/gene-content/SA_Gene_Content_RNA');
+                    if (response.ok) {
+                        const html = await response.text();
+                        rnaContainer.innerHTML = html;
+                    } else {
+                        rnaContainer.innerHTML = '<p style="text-align: center; color: #999;">RNA Gene Content 데이터를 불러올 수 없습니다.</p>';
+                    }
+                } catch (error) {
+                    console.error('SA RNA Gene Content 로드 오류:', error);
+                    rnaContainer.innerHTML = '<p style="text-align: center; color: #999;">RNA Gene Content 데이터 로드 중 오류가 발생했습니다.</p>';
+                }
+            }
+        }
+        
+        // 페이지 로드 시 Specification과 Gene Content 로드
         document.addEventListener('DOMContentLoaded', function() {
             loadSpecification();
+            loadGeneContent();
         });
         
         // 정확한 DOM 순서 기반 콘텐츠 배치 및 분할
