@@ -620,8 +620,8 @@ table td {
 /* Gene Content 페이지에서만 적용되는 특별 스타일 */
 .page-3 .gene-content-box,
 .page-4 .gene-content-box {
-    margin: 15px -0.5cm; /* 좌우 여백 확장 */
-    width: calc(100% + 1cm); /* 표와 동일한 가로 길이 */
+    margin: 15px 0; /* 좌우 여백 제거 */
+    width: 100%; /* 부모 컨테이너 전체 너비 사용 */
 }
 
 /* SA 패널의 경우 page-3, page-4 모두 적용 */
