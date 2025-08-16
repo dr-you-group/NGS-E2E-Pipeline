@@ -1008,18 +1008,19 @@ table td {
 .page-content-continued .report-content {
     height: 100%; /* 전체 페이지 활용 */
     overflow: hidden;
+    padding-top: 15px;  /* 상단 패딩 추가하여 안정성 향상 */
 }
 
 /* 분할된 섹션 스타일 */
 .continued-section {
-    margin-top: 20px;
+    margin-top: 10px;  /* 20px에서 10px로 줄임 - 공간 효율화 */
     margin-bottom: 15px;
 }
 
 .continued-section .variant-type {
     margin-bottom: 10px;
-    font-size: 16px;
-    color: #000;
+    font-size: 14px;  /* 16px에서 14px로 줄임 - 원본과 동일하게 */
+    color: #333;  /* #000에서 #333으로 - 원본과 동일하게 */
     font-weight: bold;
 }
 

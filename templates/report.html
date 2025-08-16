@@ -811,7 +811,7 @@
                 const elementInfo = element.classList ? element.classList.toString() : element.tagName;
                 console.log(`Element ${i} (${elementInfo}): bottom=${elementRect.bottom}, otherBiomarkersTop=${otherBiomarkersTop}`);
                 
-                if (elementRect.bottom > otherBiomarkersTop - 30) { // 30px 여유공간
+                if (elementRect.bottom > otherBiomarkersTop - 10) { // 10px 여유공간
                     overflowElement = element;
                     overflowIndex = i;
                     console.log(`Found overflow at element ${i}:`, element);
@@ -848,9 +848,22 @@
                 
                 console.log('Found splittable section with', dataRows.length, 'rows');
                 
-                if (dataRows.length > 3) {
+                // 남은 공간 계산
+                const elementRect = element.getBoundingClientRect();
+                const otherBiomarkers = document.querySelector('.page-bottom-fixed');
+                const otherBiomarkersRect = otherBiomarkers.getBoundingClientRect();
+                const availableSpace = otherBiomarkersRect.top - elementRect.top - 10;
+                
+                // 테이블 행들의 실제 공간 활용도 계산
+                const result = calculateOptimalSplit(table, availableSpace);
+                
+                if (result.canSplit && result.splitRowIndex > 0) {
                     // 테이블 분할
-                    console.log('DECISION: Splitting table');
+                    console.log('DECISION: Splitting table at row', result.splitRowIndex);
+                    splitTableAndMoveRest(element, allElements, overflowIndex, result.splitRowIndex);
+                } else if (dataRows.length > 3) {
+                    // 기본 분할 (반으로)
+                    console.log('DECISION: Default splitting table');
                     splitTableAndMoveRest(element, allElements, overflowIndex);
                 } else {
                     // 전체 이동
@@ -864,14 +877,14 @@
             }
         }
         
-        function splitTableAndMoveRest(tableElement, allElements, overflowIndex) {
+        function splitTableAndMoveRest(tableElement, allElements, overflowIndex, customSplitPoint = null) {
             const sectionName = tableElement.dataset.sectionName;
             const tableType = tableElement.dataset.tableType;
             const table = tableElement.querySelector('table');
             const dataRows = table.querySelectorAll('tbody tr');
             
-            // 테이블을 반으로 나누기
-            const splitPoint = Math.ceil(dataRows.length / 2);
+            // 커스텀 분할점이 있으면 사용, 없으면 반으로 나누기
+            const splitPoint = customSplitPoint || Math.ceil(dataRows.length / 2);
             
             console.log(`Splitting ${sectionName}: keeping ${splitPoint} rows, moving ${dataRows.length - splitPoint} rows`);
             
@@ -907,7 +920,7 @@
             const continuedPage = document.createElement('div');
             continuedPage.className = 'a4-page page-content-continued';
             
-            // 섹션들의 HTML 추출
+            // 섹션들의 HTML 추출 - 모든 클래스와 속성 유지
             let sectionsHTML = '';
             sections.forEach(section => {
                 sectionsHTML += section.outerHTML;
@@ -944,9 +957,10 @@
             // 분할된 테이블 HTML 생성
             const splitTableHTML = createSplitTableHTML(originalTableElement, allRows, splitPoint, sectionName, tableType);
             
-            // 나머지 요소들 HTML 생성
+            // 나머지 요소들 HTML 생성  
             let otherElementsHTML = '';
             otherElements.forEach(element => {
+                // 다른 요소들도 그대로 복사
                 otherElementsHTML += element.outerHTML;
             });
             
@@ -975,6 +989,13 @@
             const highlightElement = originalTitle ? originalTitle.querySelector('.clinical-highlight') : null;
             const highlightText = highlightElement ? highlightElement.outerHTML : '';
             
+            // 원본 제목의 모든 클래스들을 가져오기
+            let titleClasses = 'variant-type';
+            if (originalTitle) {
+                // 원본 제목의 모든 클래스를 그대로 복사
+                titleClasses = originalTitle.className;
+            }
+            
             // 테이블 헤더 추출
             const originalTable = originalSection.querySelector('table');
             const originalHeader = originalTable.querySelector('thead tr');
@@ -991,7 +1012,7 @@
             
             return `
                 <div class="continued-section">
-                    <h4 class="variant-type">- ${sectionName} (2/2)${highlightText}</h4>
+                    <h4 class="${titleClasses}">- ${sectionName} (2/2)${highlightText}</h4>
                     <table class="data-table full-width split-table-continued ${tableType}-split" border="1">
                         <thead>
                             <tr>${headerHTML}</tr>
@@ -1002,6 +1023,40 @@
                     </table>
                 </div>
             `;
+        }
+        
+        // 최적화된 테이블 분할 위치 계산
+        function calculateOptimalSplit(table, availableSpace) {
+            if (!table) return { canSplit: false };
+            
+            const thead = table.querySelector('thead');
+            const tbody = table.querySelector('tbody');
+            const rows = tbody ? tbody.querySelectorAll('tr') : [];
+            
+            if (rows.length <= 1) return { canSplit: false };
+            
+            // 헤더 높이 계산
+            const headerHeight = thead ? thead.offsetHeight : 0;
+            let currentHeight = headerHeight;
+            
+            // 각 행의 높이를 계산하면서 최적 분할점 찾기
+            for (let i = 0; i < rows.length; i++) {
+                const rowHeight = rows[i].offsetHeight;
+                currentHeight += rowHeight;
+                
+                // 현재 높이가 사용 가능한 공간을 초과하면
+                if (currentHeight > availableSpace) {
+                    // 최소 1개 행은 첫 페이지에 남겨야 함
+                    if (i > 0) {
+                        return { canSplit: true, splitRowIndex: i };
+                    } else {
+                        return { canSplit: false };
+                    }
+                }
+            }
+            
+            // 모든 행이 들어가면 분할 불필요
+            return { canSplit: false };
         }
         
         // 페이지 로드 후 테이블 분할 체크
@@ -1032,6 +1087,6 @@
     <script src="/static/js/script.js"></script>
     
     <!-- PDF 다운로드 스크립트 -->
-    <script src="/static/js/report.js"></script>
+    <!-- <script src="/static/js/report.js"></script> -->
 </body>
 </html>
