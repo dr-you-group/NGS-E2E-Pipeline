@@ -183,51 +183,51 @@ class NGS_EXCEL2DB:
         return "DRAGEN TSO500 ( Workflow Version : 2.5.2 )"
     
 
-    # Specification
-    def get_Specification(self) -> Dict:
-        if self.panel == 'GE':
-            specification = {
-                'Parameter': 'TruSight Oncology 500',
-                'System': 'NextSeq 550Dx or NovaSeq 6000Dx (research mode)',
-                'Panel Size': '1.94 Mb DNA, 358 kb RNA',
-                'DNA input requirement': '40 ng total',
-                'RNA input requirement': '40 ng total',
-                'FFPE input requirement': 'Minimum recommendation of 0.65㎣ from FFPE tissue samples (5 slides cut at 10 microns thick)',
-                'Total assay time': '3-4 days from nucleic acid to variant report',
-                'Sequence run time': '24 hours',
-                'Sequence run': '2 X 101 cycles',
-                'Kit size': '24 or 48 samples',
-                'Sample throughput': '8 or 16 or 32 samples per run',
-                'Limit of detection': '5% VAF for small variants 5 copies per ng RNA input for fusions 1.5x fold-change for CNVs',
-                'Analytical sensitivity': '>96% (for all variant types at 5% VAF)',
-                'Analytical specificity': '>99.99%'
-            }
-        else:  # SA
-            specification = {
-                'Parameter': 'TruSight Oncology 500 / TruSight RNA Fusion Panel',
-                'System': 'NextSeq 550Dx or NovaSeq 6000Dx (research mode)',
-                'Panel Size': '1.94 Mb DNA, 358 kb RNA',
-                'DNA input requirement': '40 ng total',
-                'RNA input requirement': '40 ng total',
-                'FFPE input requirement': 'Minimum recommendation of 0.65㎣ from FFPE tissue samples (5 slides cut at 10 microns thick)',
-                'Total assay time': '3-4 days from nucleic acid to variant report',
-                'Sequence run time': '24 or 19 hours',
-                'Sequence run': '2 X 101 cycles',
-                'Kit size': '24 or 48 samples',
-                'Sample throughput': '8 or 16 or 32 samples per run',
-                'Limit of detection': '5% VAF for small variants 5 copies per ng RNA input for fusions 1.5x fold-change for CNVs',
-                'Analytical sensitivity': '>96% (for all variant types at 5% VAF)',
-                'Analytical specificity': '>99.99%'
-            }
-        return specification
+    # # Specification
+    # def get_Specification(self) -> Dict:
+    #     if self.panel == 'GE':
+    #         specification = {
+    #             'Parameter': 'TruSight Oncology 500',
+    #             'System': 'NextSeq 550Dx or NovaSeq 6000Dx (research mode)',
+    #             'Panel Size': '1.94 Mb DNA, 358 kb RNA',
+    #             'DNA input requirement': '40 ng total',
+    #             'RNA input requirement': '40 ng total',
+    #             'FFPE input requirement': 'Minimum recommendation of 0.65㎣ from FFPE tissue samples (5 slides cut at 10 microns thick)',
+    #             'Total assay time': '3-4 days from nucleic acid to variant report',
+    #             'Sequence run time': '24 hours',
+    #             'Sequence run': '2 X 101 cycles',
+    #             'Kit size': '24 or 48 samples',
+    #             'Sample throughput': '8 or 16 or 32 samples per run',
+    #             'Limit of detection': '5% VAF for small variants 5 copies per ng RNA input for fusions 1.5x fold-change for CNVs',
+    #             'Analytical sensitivity': '>96% (for all variant types at 5% VAF)',
+    #             'Analytical specificity': '>99.99%'
+    #         }
+    #     else:  # SA
+    #         specification = {
+    #             'Parameter': 'TruSight Oncology 500 / TruSight RNA Fusion Panel',
+    #             'System': 'NextSeq 550Dx or NovaSeq 6000Dx (research mode)',
+    #             'Panel Size': '1.94 Mb DNA, 358 kb RNA',
+    #             'DNA input requirement': '40 ng total',
+    #             'RNA input requirement': '40 ng total',
+    #             'FFPE input requirement': 'Minimum recommendation of 0.65㎣ from FFPE tissue samples (5 slides cut at 10 microns thick)',
+    #             'Total assay time': '3-4 days from nucleic acid to variant report',
+    #             'Sequence run time': '24 or 19 hours',
+    #             'Sequence run': '2 X 101 cycles',
+    #             'Kit size': '24 or 48 samples',
+    #             'Sample throughput': '8 or 16 or 32 samples per run',
+    #             'Limit of detection': '5% VAF for small variants 5 copies per ng RNA input for fusions 1.5x fold-change for CNVs',
+    #             'Analytical sensitivity': '>96% (for all variant types at 5% VAF)',
+    #             'Analytical specificity': '>99.99%'
+    #         }
+    #     return specification
 
 
-    # GeneContent
-    def get_GeneContent(self) -> List:
-        if self.panel == 'GE':
-            return [open('images/GE_Gene_Content_DRNA.png','rb').read()]
-        else: # SA
-            return [open('images/SA_Gene_Content_DNA.png', 'rb').read(), open('images/SA_Gene_Content_RNA.png', 'rb').read()]
+    # # GeneContent
+    # def get_GeneContent(self) -> List:
+    #     if self.panel == 'GE':
+    #         return [open('images/GE_Gene_Content_DRNA.png','rb').read()]
+    #     else: # SA
+    #         return [open('images/SA_Gene_Content_DNA.png', 'rb').read(), open('images/SA_Gene_Content_RNA.png', 'rb').read()]
 
 
     # Tested, Signed, Analyzed by, 분자 접수 번호
