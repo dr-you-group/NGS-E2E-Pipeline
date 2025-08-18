@@ -1,6 +1,24 @@
-/* 분할 가능한 섹션 스타일 */
+/* 분할 가능한 섹션 스타일 - 개선 */
 .splittable-section {
     position: relative;
+    page-break-inside: auto; /* 페이지 분할 허용으로 변경 */
+    break-inside: auto; /* 표준 속성 - 필요시 분할 허용 */
+}
+
+/* 첫 페이지 하단 고정 콘텐츠 - flexbox 방식으로 개선 */
+.page-bottom-fixed {
+    flex-shrink: 0; /* 축소 방지 */
+    width: 100%;
+    background-color: white;
+    z-index: 10;
+    margin-top: auto; /* 하단으로 밀기 */
+}
+
+/* 테이블 행 높이 최적화 */
+.data-table tbody tr {
+    min-height: 1.8em; /* 최소 높이 감소 */
+    max-height: 3em; /* 최대 높이 감소 */
+    page-break-inside: auto; /* 행 단위 분할 허용 */
 }
 
 * {
@@ -125,20 +143,23 @@ body {
     border-radius: 4px;
 }
 
-/* 각 페이지 전체를 둘러싸는 검은색 테두리 */
+/* 각 페이지 전체를 둘러싸는 검은색 테두리 - 개선 */
 .page-border {
     border: 2px solid #000;
-    padding: 0.2cm; /* A4 경계선과 검은색 테두리 사이 거리와 동일하게 */
+    padding: 0.15cm; /* 패딩 더 줄임 (0.2cm → 0.15cm) */
     margin: 0;
     height: 100%;
     box-sizing: border-box;
+    display: flex; /* flexbox 사용 */
+    flex-direction: column; /* 세로 방향 */
+    position: relative; /* 첫 페이지 하단 고정을 위해 */
 }
 
-/* 각 A4 페이지에 상대적 위치 설정 */
+/* 각 A4 페이지에 상대적 위치 설정 - 개선 */
 .a4-page {
     width: 21cm;
     height: 29.7cm;
-    padding: 0.2cm 0.2cm; /* 패딩을 최소화 (0.5cm → 0.2cm) */
+    padding: 0.15cm 0.15cm; /* 패딩을 더 줄임 (0.2cm → 0.15cm) */
     margin: 0 auto 20px;
     background-color: white;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -147,6 +168,8 @@ body {
     page-break-after: always;
     box-sizing: border-box;
     overflow: hidden; /* 스크롤 제거 */
+    display: flex; /* flexbox 사용 */
+    flex-direction: column; /* 세로 방향 */
 }
 
 /* 모든 내용이 페이지 너비를 넘지 않도록 추가 안전장치 */
@@ -228,7 +251,8 @@ body {
 }
 
 .section {
-    margin-bottom: 15px; /* 섹션 간격 줄이기 */
+    margin-bottom: 10px; /* 섹션 간격 더 줄이기 (15px → 10px) */
+    page-break-inside: auto; /* 섹션 내부에서도 페이지 분할 허용 */
 }
 
 .section-title {
@@ -237,12 +261,14 @@ body {
     margin-bottom: 10px;
     font-size: 18px;
     border-bottom: none;
+    page-break-after: avoid; /* 섹션 제목 바로 뒤에서 페이지 분할 방지 */
+    page-break-inside: avoid; /* 제목 내부에서 페이지 분할 방지 */
 }
 
 .result-title {
-    margin-top: 15px;
-    margin-bottom: 10px;
-    font-size: 16px;
+    margin-top: 10px; /* 상단 여백 줄임 (15px → 10px) */
+    margin-bottom: 8px; /* 하단 여백 줄임 (10px → 8px) */
+    font-size: 15px; /* 폰트 크기 약간 줄임 */
 }
 
 /* Result titles styling */
@@ -252,6 +278,8 @@ body {
     margin-top: 15px;
     margin-bottom: 10px;
     font-size: 16px;
+    page-break-after: avoid; /* 제목 바로 뒤에서 페이지 분할 방지 */
+    page-break-inside: avoid; /* 제목 내부에서 페이지 분할 방지 */
 }
 
 /* 2, 3번 제목들은 기본 검은색 + bold */
@@ -261,17 +289,37 @@ body {
 }
 
 .variant-type {
-    margin-top: 10px;
-    margin-bottom: 5px;
-    font-size: 14px;
+    margin-top: 8px; /* 여백 줄임 (10px → 8px) */
+    margin-bottom: 4px; /* 여백 줄임 (5px → 4px) */
+    font-size: 13px; /* 폰트 크기 줄임 */
     color: #333; /* Default color */
     font-weight: bold; /* 변이 타입 제목들은 bold */
+    page-break-after: avoid; /* 제목 바로 뒤에서 페이지 분할 방지 */
+    page-break-inside: avoid; /* 제목 내부에서 페이지 분할 방지 */
 }
 
 /* Clinical significance section - 하이라이트 부분만 빨간색 + bold */
 .clinical-highlight {
     color: #c00;
     font-weight: bold;
+}
+
+/* h3, h4 제목들의 페이지 분할 방지 */
+h3, h4, h2 {
+    page-break-after: avoid; /* 제목 바로 뒤에서 페이지 분할 방지 */
+    page-break-inside: avoid; /* 제목 내부에서 페이지 분할 방지 */
+    break-after: avoid; /* 표준 속성 */
+    break-inside: avoid; /* 표준 속성 */
+}
+
+/* 제목과 직후 콘텐츠를 함께 유지 */
+.result-title + *,
+.variant-type + *,
+.section-title + *,
+h3 + *,
+h4 + * {
+    page-break-before: avoid; /* 제목과 다음 요소 사이 분할 방지 */
+    break-before: avoid; /* 표준 속성 */
 }
 
 /* Clinical significance section - clinical 테이블만 빨간색 + bold */
@@ -310,7 +358,8 @@ body {
 table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 15px;
+    margin-bottom: 10px; /* 여백 줄임 (15px → 10px) */
+    page-break-inside: auto; /* 테이블 내부에서 페이지 분할 허용 */
 }
 
 /* 모든 테이블 셀에 기본 고정 높이 적용 */
@@ -879,10 +928,19 @@ table td {
     width: 100%;
 }
 
-/* 첫 페이지 컨텐츠 영역 */
+/* 첫 페이지 특별 처리 */
+.page-1 .page-border {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+/* 첫 페이지 컨텐츠 영역 - flexbox로 개선 */
 .page-1 .report-content {
-    height: calc(100% - 180px); /* Other Biomarkers + Footer 공간 확보 */
+    flex: 1; /* 남은 공간 모두 차지 */
     overflow: hidden;
+    position: relative;
+    padding-bottom: 5px; /* 하단 여백 최소화 (10px에서 5px로) */
 }
 
 /* 연속 페이지 스타일 */
@@ -1008,19 +1066,19 @@ table td {
 .page-content-continued .report-content {
     height: 100%; /* 전체 페이지 활용 */
     overflow: hidden;
-    padding-top: 15px;  /* 상단 패딩 추가하여 안정성 향상 */
+    padding-top: 5px;  /* 상단 패딩 최소화 (15px에서 5px로) */
 }
 
-/* 분할된 섹션 스타일 */
+/* 분할된 섹션 스타일 - 최적화 */
 .continued-section {
-    margin-top: 10px;  /* 20px에서 10px로 줄임 - 공간 효율화 */
-    margin-bottom: 15px;
+    margin-top: 5px;  /* 여백 최소화 (10px에서 5px로) */
+    margin-bottom: 10px; /* 하단 여백도 줄임 */
 }
 
 .continued-section .variant-type {
-    margin-bottom: 10px;
-    font-size: 14px;  /* 16px에서 14px로 줄임 - 원본과 동일하게 */
-    color: #333;  /* #000에서 #333으로 - 원본과 동일하게 */
+    margin-bottom: 5px; /* 여백 줄임 (10px에서 5px로) */
+    font-size: 13px;  /* 폰트 크기 조절 */
+    color: #333;  /* 원본과 동일하게 */
     font-weight: bold;
 }
 
@@ -1149,12 +1207,30 @@ table td {
     
     /* 테이블이 페이지를 넘어가지 않도록 */
     table {
-        page-break-inside: auto; /* avoid에서 auto로 변경하여 필요시 페이지 나눔 허용 */
+        page-break-inside: auto; /* 필요시 페이지 나눔 허용 */
     }
     
     /* 섹션이 페이지를 넘어가지 않도록 */
     .section {
-        page-break-inside: avoid;
+        page-break-inside: auto; /* avoid에서 auto로 변경 - 필요시 분할 허용 */
+    }
+    
+    /* 제목 요소들의 페이지 분할 방지 */
+    h2, h3, h4,
+    .result-title,
+    .section-title,
+    .variant-type {
+        page-break-after: avoid !important; /* 제목 바로 뒤에서 페이지 분할 방지 */
+        page-break-inside: avoid !important; /* 제목 내부에서 페이지 분할 방지 */
+    }
+    
+    /* 제목과 그 다음 요소를 함께 유지 */
+    .result-title + *,
+    .variant-type + *,
+    .section-title + *,
+    h3 + *,
+    h4 + * {
+        page-break-before: avoid !important; /* 제목과 다음 요소 사이 분할 방지 */
     }
     
     /* 인쇄 시 테이블 스타일 유지 */
@@ -1168,7 +1244,7 @@ table td {
     
     /* 첫 페이지 컨텐츠 영역 - 화면과 동일하게 유지 */
     .page-1 .report-content {
-        height: calc(100% - 180px);
+        height: calc(100% - 170px); /* 공간 확보를 위해 조정 */
         overflow: hidden; /* 화면과 동일하게 hidden 유지 */
     }
     

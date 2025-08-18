@@ -192,17 +192,19 @@ async def upload_excel(file: UploadFile = File(...)):
         # 검체 정보
         report_data["clinical_info"] = parser.get_Clinical_Info()
         
-        # SNV 데이터 - 수정된 값 사용
+        # SNV 데이터 - 수정된 값 사용 (분할 정보 포함)
         snv_clinical_highlight, snv_clinical_rows = parser.get_SNV('VCS')
+        snv_clinical_processed = process_table_data_with_split_info(snv_clinical_rows, max_rows_first_page=8)
         report_data["snv_clinical"] = {
             "highlight": snv_clinical_highlight,
-            **process_table_data(snv_clinical_rows)
+            **snv_clinical_processed
         }
         
         snv_unknown_highlight, snv_unknown_rows = parser.get_SNV('VUS')
+        snv_unknown_processed = process_table_data_with_split_info(snv_unknown_rows, max_rows_first_page=8)
         report_data["snv_unknown"] = {
             "highlight": snv_unknown_highlight,
-            **process_table_data(snv_unknown_rows)
+            **snv_unknown_processed
         }
         
         # Fusion 데이터 - 수정된 값 사용
@@ -218,17 +220,19 @@ async def upload_excel(file: UploadFile = File(...)):
             **process_table_data(fusion_unknown_rows)
         }
         
-        # CNV 데이터 - 수정된 값 사용
+        # CNV 데이터 - 수정된 값 사용 (분할 정보 포함)
         cnv_clinical_highlight, cnv_clinical_rows = parser.get_CNV('VCS')
+        cnv_clinical_processed = process_table_data_with_split_info(cnv_clinical_rows, max_rows_first_page=10)
         report_data["cnv_clinical"] = {
             "highlight": cnv_clinical_highlight,
-            **process_table_data(cnv_clinical_rows)
+            **cnv_clinical_processed
         }
         
         cnv_unknown_highlight, cnv_unknown_rows = parser.get_CNV('VUS')
+        cnv_unknown_processed = process_table_data_with_split_info(cnv_unknown_rows, max_rows_first_page=10)
         report_data["cnv_unknown"] = {
             "highlight": cnv_unknown_highlight,
-            **process_table_data(cnv_unknown_rows)
+            **cnv_unknown_processed
         }
         
         # LR BRCA 데이터 - 수정된 값 사용

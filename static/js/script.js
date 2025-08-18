@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
             uploadedFilesDiv.remove();
         }, 3000);
     }
-    // 동적 페이지 분할 기능 - 개선된 버전
+    // 동적 페이지 분할 기능 - 개선된 버전 (제목 처리 포함)
     function dynamicPageSplit() {
         const continuedPages = document.querySelectorAll('.page-continued');
         if (!continuedPages.length) return;
@@ -292,6 +292,11 @@ document.addEventListener('DOMContentLoaded', function() {
             for (let i = 0; i < elements.length; i++) {
                 const element = elements[i];
                 const elementHeight = element.offsetHeight;
+                
+                // 제목 요소인지 체크
+                const isTitle = element.tagName.match(/^H[2-4]$/) || 
+                              element.classList.contains('result-title') ||
+                              element.classList.contains('variant-type');
                 
                 // 테이블인 경우 행 단위로 분할 검토
                 if (element.tagName === 'TABLE') {
@@ -337,6 +342,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // 일반 요소 처리
                 if (currentHeight + elementHeight > maxHeight && currentHeight > 0) {
+                    // 제목이면 전체를 다음 페이지로
+                    if (isTitle) {
+                        console.log(`📋 제목이 페이지 경계에 걸치므로 다음 페이지로 이동`);
+                        elementsToMove = elements.slice(i);
+                        break;
+                    }
+                    
+                    // 제목을 포함한 섹션인지 체크
+                    const hasTitle = element.querySelector('h3, h4, .result-title, .variant-type');
+                    if (hasTitle) {
+                        const title = element.querySelector('h3, h4, .result-title, .variant-type');
+                        const titleHeight = title ? title.offsetHeight : 0;
+                        
+                        // 제목만 걸치는 경우 전체 섹션을 다음 페이지로
+                        if (currentHeight + titleHeight > maxHeight - 5) {
+                            console.log(`📋 섹션 제목이 걸치므로 전체 섹션을 다음 페이지로`);
+                            elementsToMove = elements.slice(i);
+                            break;
+                        }
+                    }
+                    
                     elementsToMove = elements.slice(i);
                     break;
                 }
@@ -412,7 +438,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // A4 페이지 분할 체크 기능
+    // A4 페이지 분할 체크 기능 (제목 체크 포함)
     function checkPageOverflow() {
         const a4Pages = document.querySelectorAll('.a4-page');
         
@@ -429,6 +455,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 페이지 높이를 초과하는 섹션에 대해 경고
                 if (totalHeight > pageHeight) {
                     console.warn(`Page ${pageIndex + 1}: 컨텐츠가 A4 페이지 크기를 초과합니다!`);
+                    
+                    // 제목이 잘리는지 체크
+                    const titles = section.querySelectorAll('h2, h3, h4, .result-title, .section-title, .variant-type');
+                    titles.forEach(title => {
+                        const rect = title.getBoundingClientRect();
+                        const pageRect = page.getBoundingClientRect();
+                        if (rect.bottom > pageRect.bottom - 10) {
+                            console.warn(`⚠️ 제목이 페이지 경계에서 잘림: ${title.textContent}`);
+                        }
+                    });
                 }
             });
             
@@ -441,7 +477,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // 첫 페이지 처리를 위한 함수 - 순서 유지 버전
+    // 첫 페이지 처리를 위한 함수 - 공간 최대 활용 버전 (제목 처리 포함)
     function handleFirstPage() {
         const firstPage = document.querySelector('.page-1');
         if (!firstPage) return;
@@ -455,7 +491,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 첫 페이지 컨텐츠 영역의 최대 높이 (패딩 최소화에 맞춰 조정)
         const pageHeight = firstPage.clientHeight;
-        const maxContentHeight = pageHeight - bottomFixedHeight - 20; // 패딩이 줄어든 만큼 여백도 줄임 (40px → 20px)
+        const maxContentHeight = pageHeight - bottomFixedHeight - 5; // 여백을 최소화 (20px → 5px)
         
         console.log(`첫 페이지 전체 높이: ${pageHeight}px, 하단 고정: ${bottomFixedHeight}px, 사용 가능: ${maxContentHeight}px`);
         
@@ -468,29 +504,85 @@ document.addEventListener('DOMContentLoaded', function() {
             const element = elements[i];
             const elementHeight = element.offsetHeight;
             
-            console.log(`요소 ${i}: ${element.tagName}${element.className ? '.' + element.className : ''} - 높이: ${elementHeight}px, 누적: ${currentHeight}px + ${elementHeight}px = ${currentHeight + elementHeight}px`);
+            // 제목 요소인지 체크
+            const isTitle = element.tagName.match(/^H[2-4]$/) || 
+                          element.classList.contains('result-title') ||
+                          element.classList.contains('section-title');
             
-            // 처음 4개 요소는 무조건 첫 페이지에 유지 (Variants of clinical significance 포함)
-            if (i < 4) {
+            console.log(`요소 ${i}: ${element.tagName}${element.className ? '.' + element.className : ''} - 높이: ${elementHeight}px, 누적: ${currentHeight}px + ${elementHeight}px = ${currentHeight + elementHeight}px, 제목: ${isTitle}`);
+            
+            // 검사결과 타이틀과 첫 섹션은 첫 페이지에 유지
+            if (i < 3) {
                 currentHeight += elementHeight;
                 console.log(`필수 요소 ${i} 첫 페이지에 강제 유지, 누적 높이: ${currentHeight}px`);
                 continue;
             }
             
-            // 4번째 요소부터는 공간 체크
-            if (currentHeight + elementHeight > maxContentHeight - 10) { // 여백을 더 줄임 (20px → 10px)
-                console.log(`⚠️ 오버플로우! 요소 ${i}부터 다음 페이지로 이동 (필요: ${currentHeight + elementHeight}px, 사용가능: ${maxContentHeight}px)`);
+            // 3번째 요소부터는 공간 체크
+            if (currentHeight + elementHeight > maxContentHeight - 2) { // 여백을 극도로 줄임 (10px → 2px)
+                console.log(`⚠️ 오버플로우! 요소 ${i}부터 처리 필요 (필요: ${currentHeight + elementHeight}px, 사용가능: ${maxContentHeight}px)`);
+                
+                // 제목이나 제목을 포함한 섹션인 경우 전체를 다음 페이지로
+                if (isTitle) {
+                    console.log(`📋 제목 요소가 잘리므로 전체를 다음 페이지로 이동`);
+                    elementsToMove.push(...elements.slice(i));
+                    break;
+                }
+                
+                // 제목을 포함한 섹션인 경우 (제목 + 테이블)
+                const hasTitle = element.querySelector('h3, h4, .result-title, .variant-type');
+                if (hasTitle) {
+                    const title = element.querySelector('h3, h4, .result-title, .variant-type');
+                    const titleHeight = title ? title.offsetHeight : 0;
+                    
+                    // 제목만 걸치는 경우 전체 섹션을 다음 페이지로
+                    if (currentHeight + titleHeight > maxContentHeight - 2) {
+                        console.log(`📋 섹션 제목이 잘리므로 전체 섹션을 다음 페이지로 이동`);
+                        elementsToMove.push(...elements.slice(i));
+                        break;
+                    }
+                }
                 
                 // 테이블인 경우 행별로 분할 시도
-                if (element.tagName === 'TABLE' && currentHeight > 0) {
-                    const availableSpace = maxContentHeight - currentHeight - 10; // 여백 조정 (50px → 10px)
-                    const result = tryTableSplit(element, availableSpace);
+                if (element.querySelector('table')) {
+                    const availableSpace = maxContentHeight - currentHeight - 2; // 여백 최소화 (10px → 2px)
+                    const table = element.querySelector('table');
+                    const result = tryTableSplit(table, availableSpace);
                     if (result.canSplit) {
                         console.log(`✂️ 테이블 분할: ${result.splitRowIndex}번째 행에서 분할`);
                         
-                        // 테이블 분할 실행
-                        const newTable = splitTableAtRow(element, result.splitRowIndex);
-                        elementsToMove.push(newTable);
+                        // 원본 테이블의 tbody에서 초과 행 제거
+                        const tbody = table.querySelector('tbody');
+                        const rows = Array.from(tbody.querySelectorAll('tr'));
+                        
+                        // 새로운 섹션 생성 (나머지 행들을 위한)
+                        const newSection = element.cloneNode(true);
+                        const newTable = newSection.querySelector('table');
+                        const newTbody = newTable.querySelector('tbody');
+                        
+                        // 새 테이블의 모든 행 제거
+                        newTbody.innerHTML = '';
+                        
+                        // 분할점 이후의 행들을 새 테이블로 이동
+                        for (let j = result.splitRowIndex; j < rows.length; j++) {
+                            newTbody.appendChild(rows[j].cloneNode(true));
+                        }
+                        
+                        // 원본 테이블에서 초과 행 제거
+                        for (let j = rows.length - 1; j >= result.splitRowIndex; j--) {
+                            rows[j].remove();
+                        }
+                        
+                        // 제목 수정
+                        const title = element.querySelector('.variant-type, h4');
+                        const newTitle = newSection.querySelector('.variant-type, h4');
+                        if (title && newTitle) {
+                            const titleText = title.textContent.replace(/\s*\(\d+\/\d+\).*/, '');
+                            title.innerHTML = title.innerHTML.replace(titleText, titleText + ' (1/2)');
+                            newTitle.innerHTML = newTitle.innerHTML.replace(titleText, titleText + ' (2/2)');
+                        }
+                        
+                        elementsToMove.push(newSection);
                         
                         // 분할 후 남은 요소들도 이동
                         elementsToMove.push(...elements.slice(i + 1));
@@ -514,23 +606,27 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // 테이블 분할 가능성 채크
+    // 테이블 분할 가능성 체크 - 더 공격적으로 공간 활용
     function tryTableSplit(table, availableHeight) {
-        const rows = Array.from(table.querySelectorAll('tr'));
+        const tbody = table.querySelector('tbody');
+        if (!tbody) return { canSplit: false };
+        
+        const rows = Array.from(tbody.querySelectorAll('tr'));
         if (rows.length <= 1) return { canSplit: false };
         
-        const headerRow = rows[0];
-        let accumulatedHeight = headerRow.offsetHeight;
+        const thead = table.querySelector('thead');
+        const headerHeight = thead ? thead.offsetHeight : 0;
+        let accumulatedHeight = headerHeight;
         
-        // 헤더 + 최소 1개 행은 들어가야 함
-        for (let i = 1; i < rows.length; i++) {
+        // 최대한 많은 행을 첫 페이지에 넣기
+        for (let i = 0; i < rows.length; i++) {
             const rowHeight = rows[i].offsetHeight;
             
             if (accumulatedHeight + rowHeight > availableHeight) {
-                if (i > 1) { // 헤더 + 1개 이상 행이 들어가면 분할 가능
+                if (i > 0) { // 최소 1개 행이라도 들어가면 분할
                     return { canSplit: true, splitRowIndex: i };
                 } else {
-                    return { canSplit: false }; // 헤더 + 1행도 안 들어가면 분할 불가
+                    return { canSplit: false }; // 1행도 안 들어가면 분할 불가
                 }
             }
             
@@ -631,6 +727,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 dynamicPageSplit();
                 checkPageOverflow();
             }, 500);
+            
+            // 이미지 로드 후 최종 체크
+            setTimeout(() => {
+                handleFirstPage();
+                dynamicPageSplit();
+            }, 1000);
         }, 100);
         
         // 윈도우 크기 변경 시 다시 체크
