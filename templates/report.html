@@ -796,6 +796,21 @@
                 
                 console.log(`Checking section ${index}: ${section.dataset.sectionName}, rows: ${rows.length}`);
                 
+                // data-split-at 속성 확인 (백엔드에서 설정한 분할 지점)
+                const splitAtAttr = section.dataset.splitAt;
+                if (splitAtAttr) {
+                    const splitAt = parseInt(splitAtAttr);
+                    console.log(`Using data-split-at value: ${splitAt}`);
+                    
+                    // 백엔드에서 지정한 분할 지점이 있고, 데이터가 그보다 많으면 분할
+                    if (rows.length > splitAt) {
+                        console.log(`Splitting table at row ${splitAt} based on data-split-at`);
+                        splitTableAtRow(section, splitAt);
+                        return; // 다음 섹션으로
+                    }
+                }
+                
+                // data-split-at이 없거나 적용되지 않은 경우, 기존처럼 동적 계산
                 // 테이블의 현재 위치와 하단 고정 요소 위치 확인
                 const sectionRect = section.getBoundingClientRect();
                 const bottomFixedRect = bottomFixed.getBoundingClientRect();
