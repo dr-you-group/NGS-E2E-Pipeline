@@ -82,6 +82,25 @@ def safe_remove_file(file_path: str, max_retries: int = 5, delay: float = 0.5) -
     
     return False
 
+def process_table_data_with_split_info(rows, max_rows_first_page=8):
+    """
+    rows 데이터를 headers와 data로 분리하고 분할 정보를 추가하는 함수
+    첫 페이지에 표시할 최대 행 수를 고려하여 split_at 정보 제공
+    """
+    if not rows or len(rows) <= 1:
+        return {"headers": [], "data": [], "split_at": None}
+    
+    headers = rows[0]
+    data = rows[1:]
+    
+    # 데이터가 많을 경우 분할 위치 계산
+    split_at = None
+    if len(data) > max_rows_first_page:
+        # 첫 페이지에 max_rows_first_page개, 나머지는 다음 페이지로
+        split_at = max_rows_first_page
+    
+    return {"headers": headers, "data": data, "split_at": split_at}
+
 # 테이블 데이터 처리 함수
 def process_table_data(rows):
     """
