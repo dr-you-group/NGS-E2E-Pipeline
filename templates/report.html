@@ -13,6 +13,9 @@
             <button id="pdf-download-btn" class="pdf-btn">
                 📄 PDF 다운로드
             </button>
+            <button id="ppt-download-btn" class="btn btn-success" onclick="downloadPPT('{{ specimen_id }}')">
+                📑 PPT 다운로드
+            </button>
         </div>
         <!-- 디버그 정보 (개발 중에만 사용) -->
         {% if debug %}

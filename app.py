@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Form, File, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import os
@@ -7,7 +7,12 @@ import sqlite3
 import json
 import traceback
 import time
+from io import BytesIO
 from utils import NGS_EXCEL2DB
+try:
+    from services.pptx_generator import NGS_PPT_Generator
+except ImportError as e:
+    print("경고: ppt_generator 모듈을 찾을 수 없습니다. PPT 다운로드 기능이 작동하지 않을 수 있습니다.")
 
 app = FastAPI()
 
@@ -176,6 +181,52 @@ async def generate_report(request: Request, specimen_id: str = Form(...)):
                 "error": f"보고서를 찾을 수 없습니다: {specimen_id}"
             }
         )
+
+
+@app.post("/api/download-pptx")
+async def download_pptx(specimen_id: str = Form(...)):
+    """
+    특정 검체의 PPT 보고서를 생성하여 다운로드합니다.
+    """
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row  # 컬럼명으로 데이터 접근 허용
+    cursor = conn.cursor()
+
+    try:
+        # 1. DB에서 리포트 데이터 조회
+        cursor.execute("SELECT report_data FROM reports WHERE specimen_id = ?", (specimen_id,))
+        result = cursor.fetchone()
+
+        if not result:
+            return JSONResponse({"success": False, "error": f"보고서를 찾을 수 없습니다: {specimen_id}"}, status_code=404)
+
+        # 2. JSON 데이터 파싱
+        report_data = json.loads(result["report_data"])
+
+        # 3. PPT 생성 (메모리 상에서)
+        generator = NGS_PPT_Generator()
+        ppt_buffer = generator.generate(report_data)
+
+        # 4. 파일 다운로드 응답 (StreamingResponse 사용)
+        filename = f"{specimen_id}.pptx"
+
+        return StreamingResponse(
+            ppt_buffer,
+            media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}",
+                "Access-Control-Expose-Headers": "Content-Disposition"
+            }
+        )
+
+    except Exception as e:
+        print(f"PPT 생성 중 오류 발생: {e}")
+        traceback.print_exc()
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+    finally:
+        # DB 연결 종료
+        conn.close()
 
 def save_json_file(specimen_id, report_data):
     """JSON 파일로 저장하는 함수"""
