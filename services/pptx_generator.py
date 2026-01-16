@@ -2,6 +2,7 @@
 
 import os
 import copy
+import textwrap
 from io import BytesIO
 import pandas as pd
 from pptx import Presentation
@@ -12,6 +13,23 @@ from pptx.oxml.xmlchemy import OxmlElement
 
 
 class NGS_PPT_Generator:
+    CLINICAL_INFO_MAPPING = {
+        "검체 정보": "검체 정보",  # 병리번호
+        "성별": "성별",
+        "나이": "나이",
+        "Unit NO.": "Unit NO.",
+        "환자명": "환자명",
+        "채취 장기": "채취 장기",
+        "원발 장기": "원발 장기",
+        "진단": "진단",
+        "의뢰의": "의뢰의",
+        "의뢰의 소속": "의뢰의 소속",
+        "검체 유형": "검체 유형",
+        "검체의 적절성여부": "검체의 적절성여부",
+        "검체접수일": "검체접수일",
+        "결과보고일": "결과보고일"
+    }
+
     def __init__(self):
         # 템플릿 경로 설정 (app.py와 동일한 위치의 templates 폴더 가정)
         self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -43,18 +61,24 @@ class NGS_PPT_Generator:
         """
         # 1. 패널 타입에 따른 템플릿 로드
         panel_type = report_data.get('panel_type', 'GE')
-        template_name = "blank_SA_report.pptx" if panel_type == 'SA' else "blank_GE_report.pptx"
+
+        if panel_type == 'SA':
+            template_name = "blank_SA_report.pptx"
+        else:
+            template_name = "blank_GE_report.pptx"
+
         template_path = os.path.join(self.template_dir, template_name)
 
         if not os.path.exists(template_path):
             raise FileNotFoundError(f"템플릿 파일을 찾을 수 없습니다: {template_path}")
 
+        # 2. 프레젠테이션 객체 생성
         prs = Presentation(template_path)
 
-        # 2. 데이터 매핑 (기존 make_pptx_result.py 로직 이식)
-        self._fill_clinical_info(prs, report_data['clinical_info'])
-        self._fill_qc_info(prs, report_data.get('qc', {}))
-        self._fill_biomarkers(prs, report_data.get('biomarkers', {}))
+        # 3. 데이터 매핑 (Mapping 상수 활용)
+        self._fill_clinical_info(prs.slides[0], report_data.get('clinical_info', {}))
+        # self._fill_qc_info(prs, report_data.get('qc', {}))
+        # self._fill_biomarkers(prs, report_data.get('biomarkers', {}))
 
         # 3. [핵심] 변이 테이블 동적 생성 (기존에 없던 로직 추가)
         # 예시로 SNV Clinical 테이블만 구현 (다른 변이도 동일한 방식으로 추가 가능)
@@ -67,13 +91,15 @@ class NGS_PPT_Generator:
         output.seek(0)
         return output
 
-    def _fill_clinical_info(self, prs, info):
+    def _fill_clinical_info(self, slide, info_data):
         """환자 기본 정보 채우기 (슬라이드 1페이지 가정)"""
-        slide = prs.slides[0]
-        # (좌표 등은 템플릿에 맞춰 조정 필요, 기존 코드 참조하여 구현)
-        # 예시: 텍스트 박스나 표를 찾아 값 입력
-        # 실제 구현 시에는 make_pptx_result.py의 report_clinical_info_table_1 함수 로직을 여기에 넣습니다.
-        pass
+        # 슬라이드 내의 모든 테이블 객체 추출 (Generator)
+        tables = [shape.table for shape in slide.shapes if shape.has_table]
+
+        # 매핑된 모든 필드 순회
+        for ppt_label, data_key in self.CLINICAL_INFO_MAPPING.items():
+            value = str(info_data.get(data_key, ""))
+            self._search_and_fill_cell_below(tables, ppt_label, value)
 
     def _fill_qc_info(self, prs, qc_data):
         """QC 정보 채우기 (슬라이드 3페이지 가정)"""
@@ -130,3 +156,31 @@ class NGS_PPT_Generator:
                     cell = table.cell(row_idx + 1, col_idx)
                     cell.text = str(cell_value)
                     self._set_cell_border(cell)
+
+    def _search_and_fill_cell_below(self, tables, target_label, value):
+        clean_target = target_label.replace(" ", "")
+
+        for table in tables:
+            for row_idx, row in enumerate(table.rows):
+                for col_idx, cell in enumerate(row.cells):
+                    # 텍스트 비교 (공백 제거)
+                    if clean_target in cell.text_frame.text.replace(" ", ""):
+                        try:
+                            target_cell = table.cell(row_idx + 1, col_idx)
+
+                            self._set_text_preserving_style(target_cell, value)
+                            return True
+
+                        except IndexError:
+                            pass
+                        except Exception as e:
+                            print(f"Warning: Failed to fill {target_label} - {e}")
+        return False
+
+    def _set_text_preserving_style(self, cell, text):
+        if cell.text_frame.paragraphs:
+            paragraph = cell.text_frame.paragraphs[0]
+            paragraph.text = text
+
+        else:
+            cell.text = text
