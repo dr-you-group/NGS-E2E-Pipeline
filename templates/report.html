@@ -88,7 +88,7 @@
                             <!-- SNVs & Indels (분할 가능) -->
                             {% if report_data.snv_clinical.data %}
                             <div id="snv-clinical-section" class="splittable-section" data-section-name="SNVs & Indels" data-table-type="clinical"{% if report_data.snv_clinical.split_at %} data-split-at="{{ report_data.snv_clinical.split_at }}"{% endif %}>
-                                <h4 class="variant-type snv-title">- SNVs & Indels{% if report_data.snv_clinical.highlight %}<span class="clinical-highlight">: {{ report_data.snv_clinical.highlight }}</span>{% endif %}</h4>
+                                <h4 class="variant-type snv-title">- SNVs & Indels{% if report_data.snv_clinical.highlight %}<span class="clinical-highlight">: {{ report_data.snv_clinical.highlight | safe }}</span>{% endif %}</h4>
                             <table class="data-table full-width" border="1" id="snv-clinical-table">
                             <thead>
                                 <tr>
