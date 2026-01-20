@@ -1566,7 +1566,8 @@ table td {
     z-index: 1000;
 }
 
-.pdf-btn {
+/* 공통 스타일 (모양, 폰트, 그림자 등) - 색상 제외 */
+.report-btn {
     padding: 12px 20px;
     border: none;
     border-radius: 8px;
@@ -1575,14 +1576,31 @@ table td {
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
-    color: white;
+    color: white; /* 글자색은 흰색으로 통일 */
 }
 
-.pdf-btn:hover {
-    background: linear-gradient(135deg, #c0392b, #a93226);
+/* 호버 시 공통 동작 (위로 살짝 뜨는 효과) */
+.report-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* PDF 버튼 전용 색상 (기존 붉은색 유지) */
+.report-btn.pdf {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.report-btn.pdf:hover {
+    background: linear-gradient(135deg, #c0392b, #a93226);
+}
+
+/* PPT 버튼 전용 색상 (제안: 주황색 - PowerPoint 브랜드 컬러) */
+.report-btn.ppt {
+    background: linear-gradient(135deg, #f39c12, #d35400);
+}
+
+.report-btn.ppt:hover {
+    background: linear-gradient(135deg, #d35400, #a04000);
 }
 
 /* 인쇄 시 버튼 숨기기 */
