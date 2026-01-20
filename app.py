@@ -3,6 +3,9 @@ import sqlite3
 import time
 import traceback
 import shutil
+import config
+import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Form, File, UploadFile, Depends
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, StreamingResponse
@@ -15,35 +18,39 @@ from services.excel_parser import NGS_EXCEL2DB
 try:
     from services.pptx_generator import NGS_PPT_Generator
 except ImportError as e:
-    print("경고: ppt_generator 모듈을 찾을 수 없습니다. PPT 다운로드 기능이 작동하지 않을 수 있습니다.")
+    logging.warning("경고: ppt_generator 모듈을 찾을 수 없습니다. PPT 다운로드 기능이 작동하지 않을 수 있습니다.")
 
-app = FastAPI()
+config.setup_logging()
+logger = logging.getLogger("app")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 디렉토리 확인 및 생성
+    if not config.JSON_DIR.exists():
+        config.JSON_DIR.mkdir(parents=True, exist_ok=True)
+
+    if not config.TMP_DIR.exists():
+        config.TMP_DIR.mkdir(parents=True, exist_ok=True)
+        logger.info(f"임시 파일 디렉토리 생성: {config.TMP_DIR}")
+
+    # DB 초기화
+    init_db()
+
+    yield
+
+    # 앱 종료 시 실행할 로직이 있다면 여기에 작성
+app = FastAPI(lifespan=lifespan)
 
 # 현재 스크립트 파일의 경로
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
-templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
-
-# SQLite 데이터베이스 설정
-DB_PATH = os.path.join(BASE_DIR, "ngs_reports.db")
-JSON_DIR = os.path.join(BASE_DIR, "json")
-TMP_DIR = os.path.join(BASE_DIR, "tmp")
-
-# 디렉토리 확인 및 생성
-if not os.path.exists(JSON_DIR):
-    os.makedirs(JSON_DIR)
-
-if not os.path.exists(TMP_DIR):
-    os.makedirs(TMP_DIR)
-    print(f"임시 파일 디렉토리 생성: {TMP_DIR}")
-
+app.mount("/static", StaticFiles(directory=config.STATIC_DIR), name="static")
+templates = Jinja2Templates(directory=config.TEMPLATE_DIR)
 
 def init_db():
-    if not os.path.exists(DB_PATH):
-        conn = sqlite3.connect(DB_PATH)
+    if not config.DB_PATH.exists():
+        conn = sqlite3.connect(config.DB_PATH)
         cursor = conn.cursor()
-
         cursor.execute('''
                        CREATE TABLE IF NOT EXISTS reports
                        (
@@ -68,15 +75,13 @@ def init_db():
         conn.close()
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    # check_same_thread=False: 비동기/동기 혼용 시 스레드 에러 방지 옵션
+    conn = sqlite3.connect(config.DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     try:
         yield conn
     finally:
         conn.close()
-
-init_db()
-
 
 def safe_remove_file(file_path: str, max_retries: int = 5, delay: float = 0.5) -> bool:
     """
@@ -96,19 +101,18 @@ def safe_remove_file(file_path: str, max_retries: int = 5, delay: float = 0.5) -
     for attempt in range(max_retries):
         try:
             os.remove(file_path)
-            print(f"임시 파일 삭제 완료: {file_path}")
+            logger.info(f"임시 파일 삭제 완료: {file_path}")
             return True
         except PermissionError as e:
             if attempt < max_retries - 1:
-                print(f"파일 삭제 재시도 {attempt + 1}/{max_retries}: {file_path}")
+                logger.warning(f"파일 삭제 재시도 {attempt + 1}/{max_retries}: {file_path}")
                 time.sleep(delay)
             else:
-                print(f"파일 삭제 실패 (최대 재시도 도달): {file_path} - {e}")
+                logger.error(f"파일 삭제 실패 (최대 재시도 도달): {file_path} - {e}")
                 return False
         except Exception as e:
-            print(f"파일 삭제 중 예상치 못한 오류: {file_path} - {e}")
+            logger.error(f"파일 삭제 중 예상치 못한 오류: {file_path} - {e}")
             return False
-
     return False
 
 
@@ -241,196 +245,133 @@ def download_pptx(specimen_id: str = Form(...), conn: sqlite3.Connection = Depen
         )
 
     except Exception as e:
-        print(f"PPT 생성 중 오류 발생: {e}")
-        traceback.print_exc()
+        logger.error(f"PPT 생성 중 오류 발생: {e}")
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
 
 def save_json_file(specimen_id, report_data):
     """JSON 파일로 저장하는 함수"""
     try:
-        json_file_path = os.path.join(JSON_DIR, f"{specimen_id}.json")
+        json_file_path = config.JSON_DIR / f"{specimen_id}.json"
         with open(json_file_path, "w", encoding="utf-8") as json_file:
             json.dump(report_data, json_file, indent=4, ensure_ascii=False)
-        print(f"JSON 파일 저장 완료: {json_file_path}")
+        logger.info(f"JSON 파일 저장 완료: {json_file_path}")
         return True
     except Exception as e:
-        print(f"JSON 파일 저장 실패: {str(e)}")
-        traceback.print_exc()
+        logger.error(f"JSON 파일 저장 실패: {str(e)}")
         return False
+
+
+def extract_report_data(parser) -> dict:
+    report_data = {}
+
+    # 1. 기본 정보
+    report_data["clinical_info"] = parser.get_Clinical_Info()
+    report_data["biomarkers"] = parser.get_Biomarkers()
+    report_data["failed_gene"] = parser.get_Failed_Gene()
+    report_data["comments"] = parser.get_Comments()
+    report_data["diagnostic_info"] = parser.get_Diagnostic_Info()
+    report_data["filter_history"] = parser.get_Filter_History()
+    report_data["drna_qubit"] = parser.get_DRNA_Qubit_Density()
+    report_data["analysis_program"] = parser.get_Analysis_Program()
+    report_data["diagnosis_user"] = parser.get_Diagnosis_User_Registration()
+    report_data["panel_type"] = parser.panel
+
+    # 2. QC 데이터
+    report_data["qc"] = process_table_data(parser.get_QC())
+
+    # 3. 변이 데이터 (Split Info 적용)
+    # SNV
+    h, rows = parser.get_SNV('VCS')
+    report_data["snv_clinical"] = {"highlight": h, **process_table_data_with_split_info(rows, 8)}
+
+    h, rows = parser.get_SNV('VUS')
+    report_data["snv_unknown"] = {"highlight": h, **process_table_data_with_split_info(rows, 8)}
+
+    # Fusion
+    h, rows = parser.get_Fusion('VCS')
+    report_data["fusion_clinical"] = {"highlight": h, **process_table_data(rows)}
+
+    h, rows = parser.get_Fusion('VUS')
+    report_data["fusion_unknown"] = {"highlight": h, **process_table_data(rows)}
+
+    # CNV
+    h, rows = parser.get_CNV('VCS')
+    report_data["cnv_clinical"] = {"highlight": h, **process_table_data_with_split_info(rows, 10)}
+
+    h, rows = parser.get_CNV('VUS')
+    report_data["cnv_unknown"] = {"highlight": h, **process_table_data_with_split_info(rows, 10)}
+
+    # LR BRCA
+    h, rows = parser.get_LR_BRCA('VCS')
+    report_data["lr_brca_clinical"] = {"highlight": h, **process_table_data(rows)}
+
+    h, rows = parser.get_LR_BRCA('VUS')
+    report_data["lr_brca_unknown"] = {"highlight": h, **process_table_data(rows)}
+
+    # Splice
+    h, rows = parser.get_Splice('VCS')
+    report_data["splice_clinical"] = {"highlight": h, **process_table_data(rows)}
+
+    h, rows = parser.get_Splice('VUS')
+    report_data["splice_unknown"] = {"highlight": h, **process_table_data(rows)}
+
+    return report_data
 
 
 @app.post("/api/upload-excel")
 def upload_excel(file: UploadFile = File(...), conn: sqlite3.Connection = Depends(get_db)):
-    temp_file_path = os.path.join(TMP_DIR, f"temp_{file.filename}")
+    temp_file_path = config.TMP_DIR / f"temp_{file.filename}"
+    parser = None
 
     try:
-        # 임시 파일에 저장
+        # 동기 방식으로 임시 파일 저장 (shutil)
         with open(temp_file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
-            # content = await file.read()
-            # buffer.write(content)
 
-        print(f"엑셀 파일 임시 저장 완료: {temp_file_path}")
+        logger.info(f"엑셀 파일 임시 저장 완료: {temp_file_path}")
 
-        # Excel 파일 파싱
-        parser = NGS_EXCEL2DB(temp_file_path)
+        # Excel 파일 파싱 (Path 객체를 문자열로 변환하여 전달)
+        parser = NGS_EXCEL2DB(str(temp_file_path))
 
-        # 보고서 데이터 생성
-        report_data = {}
+        # 데이터 추출 로직 분리 호출
+        report_data = extract_report_data(parser)
 
-        # 검체 정보
-        report_data["clinical_info"] = parser.get_Clinical_Info()
+        # 검체 정보 확인
+        specimen_id = report_data["clinical_info"].get("검체 정보")
+        if not specimen_id:
+            raise ValueError("엑셀 파일에서 '검체 정보(Specimen ID)'를 찾을 수 없습니다.")
 
-        # SNV 데이터 - 수정된 값 사용 (분할 정보 포함)
-        snv_clinical_highlight, snv_clinical_rows = parser.get_SNV('VCS')
-        snv_clinical_processed = process_table_data_with_split_info(snv_clinical_rows, max_rows_first_page=8)
-        report_data["snv_clinical"] = {
-            "highlight": snv_clinical_highlight,
-            **snv_clinical_processed
-        }
+        # 로깅 (print -> logger)
+        logger.info(f"\n=== 업로드 처리 시작: {file.filename} ===")
+        logger.info(f"Target Specimen ID: {specimen_id}")
 
-        snv_unknown_highlight, snv_unknown_rows = parser.get_SNV('VUS')
-        snv_unknown_processed = process_table_data_with_split_info(snv_unknown_rows, max_rows_first_page=8)
-        report_data["snv_unknown"] = {
-            "highlight": snv_unknown_highlight,
-            **snv_unknown_processed
-        }
-
-        # Fusion 데이터 - 수정된 값 사용
-        fusion_clinical_highlight, fusion_clinical_rows = parser.get_Fusion('VCS')
-        report_data["fusion_clinical"] = {
-            "highlight": fusion_clinical_highlight,
-            **process_table_data(fusion_clinical_rows)
-        }
-
-        fusion_unknown_highlight, fusion_unknown_rows = parser.get_Fusion('VUS')
-        report_data["fusion_unknown"] = {
-            "highlight": fusion_unknown_highlight,
-            **process_table_data(fusion_unknown_rows)
-        }
-
-        # CNV 데이터 - 수정된 값 사용 (분할 정보 포함)
-        cnv_clinical_highlight, cnv_clinical_rows = parser.get_CNV('VCS')
-        cnv_clinical_processed = process_table_data_with_split_info(cnv_clinical_rows, max_rows_first_page=10)
-        report_data["cnv_clinical"] = {
-            "highlight": cnv_clinical_highlight,
-            **cnv_clinical_processed
-        }
-
-        cnv_unknown_highlight, cnv_unknown_rows = parser.get_CNV('VUS')
-        cnv_unknown_processed = process_table_data_with_split_info(cnv_unknown_rows, max_rows_first_page=10)
-        report_data["cnv_unknown"] = {
-            "highlight": cnv_unknown_highlight,
-            **cnv_unknown_processed
-        }
-
-        # LR BRCA 데이터 - 수정된 값 사용
-        lr_brca_clinical_highlight, lr_brca_clinical_rows = parser.get_LR_BRCA('VCS')
-        report_data["lr_brca_clinical"] = {
-            "highlight": lr_brca_clinical_highlight,
-            **process_table_data(lr_brca_clinical_rows)
-        }
-
-        lr_brca_unknown_highlight, lr_brca_unknown_rows = parser.get_LR_BRCA('VUS')
-        report_data["lr_brca_unknown"] = {
-            "highlight": lr_brca_unknown_highlight,
-            **process_table_data(lr_brca_unknown_rows)
-        }
-
-        # Splice 데이터 - 수정된 값 사용
-        splice_clinical_highlight, splice_clinical_rows = parser.get_Splice('VCS')
-        report_data["splice_clinical"] = {
-            "highlight": splice_clinical_highlight,
-            **process_table_data(splice_clinical_rows)
-        }
-
-        splice_unknown_highlight, splice_unknown_rows = parser.get_Splice('VUS')
-        report_data["splice_unknown"] = {
-            "highlight": splice_unknown_highlight,
-            **process_table_data(splice_unknown_rows)
-        }
-
-        # Biomarkers
-        report_data["biomarkers"] = parser.get_Biomarkers()
-
-        # Failed Gene
-        report_data["failed_gene"] = parser.get_Failed_Gene()
-
-        # Comments
-        report_data["comments"] = parser.get_Comments()
-
-        # 검사정보
-        report_data["diagnostic_info"] = parser.get_Diagnostic_Info()
-
-        # Filter History
-        report_data["filter_history"] = parser.get_Filter_History()
-
-        # DNA, RNA
-        report_data["drna_qubit"] = parser.get_DRNA_Qubit_Density()
-
-        # QC
-        qc_rows = parser.get_QC()
-        report_data["qc"] = process_table_data(qc_rows)
-
-        # Analysis Program
-        report_data["analysis_program"] = parser.get_Analysis_Program()
-
-        # 사용자 정보
-        report_data["diagnosis_user"] = parser.get_Diagnosis_User_Registration()
-
-        # Panel Type
-        report_data["panel_type"] = parser.panel
-
-        # 데이터베이스에 저장
-        specimen_id = report_data["clinical_info"]["검체 정보"]
-
-        print(f"\n=== 업로드 디버깅 ===")
-        print(f"업로드 파일명: {file.filename}")
-        print(f"추출된 specimen_id: {specimen_id}")
-        print(f"병리번호 (clinical_dict): {parser.clinical_dict.get('병리번호', 'NOT FOUND')}")
+        pathology_num = parser.clinical_dict.get('병리번호', 'NOT FOUND')
+        logger.debug(f"병리번호: {pathology_num}")  # debug 레벨 권장
 
         cursor = conn.cursor()
 
-        # 기존 데이터 확인
+        # 중복 확인
         cursor.execute("SELECT specimen_id FROM reports WHERE specimen_id = ?", (specimen_id,))
-        existing = cursor.fetchone()
-        if existing:
-            print(f"경고: {specimen_id}는 이미 존재합니다. 덮어쓰기됩니다.")
+        if cursor.fetchone():
+            logger.warning(f"경고: {specimen_id} 보고서가 이미 존재합니다. 덮어쓰기(Replace)를 수행합니다.")
 
-        # 저장 전 전체 데이터 확인
-        cursor.execute("SELECT COUNT(*) as count FROM reports")
-        before_count = cursor.fetchone()[0]
-        print(f"저장 전 전체 보고서 수: {before_count}")
-
+        # DB 저장 (Insert or Replace)
         cursor.execute(
             "INSERT OR REPLACE INTO reports (specimen_id, report_data) VALUES (?, ?)",
             (specimen_id, json.dumps(report_data))
         )
-
         conn.commit()
 
-        # 저장 후 전체 데이터 확인
-        cursor.execute("SELECT COUNT(*) as count FROM reports")
-        after_count = cursor.fetchone()[0]
-        print(f"저장 후 전체 보고서 수: {after_count}")
+        logger.info(f"데이터베이스 저장 완료: {specimen_id}")
+        logger.info(f"======================================\n")
 
-        # 현재 저장된 모든 specimen_id 출력
-        cursor.execute("SELECT specimen_id FROM reports ORDER BY created_at DESC LIMIT 10")
-        all_ids = cursor.fetchall()
-        print(f"최근 10개 specimen_id: {[row[0] for row in all_ids]}")
-
-        print(f"데이터베이스에 저장 완료: {specimen_id}")
-        print(f"==================\n")
-
-        # JSON 파일로도 저장
+        # JSON 파일 백업
         json_saved = save_json_file(specimen_id, report_data)
 
-        # Excel 파일 닫기 (파일 잠금 해제)
+        # 리소스 정리
         parser.close()
-
-        # 임시 파일 삭제
-        safe_remove_file(temp_file_path)
+        safe_remove_file(str(temp_file_path))
 
         return JSONResponse({
             "success": True,
@@ -439,18 +380,21 @@ def upload_excel(file: UploadFile = File(...), conn: sqlite3.Connection = Depend
         })
 
     except Exception as e:
-        # 오류 발생 시 Excel 파일 닫기 및 임시 파일 삭제
-        try:
-            if 'parser' in locals():
+        # 예외 발생 시 정리
+        if parser:
+            try:
                 parser.close()
-        except:
-            pass
+            except:
+                pass
 
-        if os.path.exists(temp_file_path):
-            safe_remove_file(temp_file_path)
+        # os.path.exists -> Pathlib.exists()
+        if temp_file_path.exists():
+            safe_remove_file(str(temp_file_path))
 
-        print(f"엑셀 업로드 중 오류 발생: {str(e)}")
-        traceback.print_exc()
+        # print/traceback -> logger.error/exception
+        logger.error(f"엑셀 업로드 중 치명적 오류: {e}")
+        # logger.exception은 스택 트레이스를 자동으로 로그에 남깁니다.
+        # logger.exception(e)
 
         return JSONResponse({"success": False, "error": str(e)})
 
@@ -503,15 +447,15 @@ async def get_reports(conn: sqlite3.Connection = Depends(get_db)):
 
     # JSON 파일 목록도 확인
     json_files = []
-    if os.path.exists(JSON_DIR):
-        json_files = [f for f in os.listdir(JSON_DIR) if f.endswith('.json')]
+    if config.JSON_DIR.exists():
+        json_files = [f for f in config.JSON_DIR.glob('*.json')]
 
-    print(f"\n=== 보고서 목록 호출 ===")
-    print(f"DB에 저장된 보고서 수: {len(reports)}")
-    print(f"JSON 파일 수: {len(json_files)}")
-    print(f"DB specimen_ids: {[r['specimen_id'] for r in reports[:10]]}")
-    print(f"JSON 파일명: {json_files[:10]}")
-    print(f"==================\n")
+    logger.info(f"\n=== 보고서 목록 호출 ===")
+    logger.info(f"DB에 저장된 보고서 수: {len(reports)}")
+    logger.info(f"JSON 파일 수: {len(json_files)}")
+    logger.info(f"DB specimen_ids: {[r['specimen_id'] for r in reports[:10]]}")
+    logger.info(f"JSON 파일명: {json_files[:10]}")
+    logger.info(f"==================\n")
 
     return JSONResponse({"success": True, "reports": reports, "json_files": json_files})
 
@@ -524,9 +468,9 @@ async def get_specification(panel_type: str):
     if panel_type not in ['GE', 'SA']:
         return JSONResponse({"error": "Invalid panel type"}, status_code=400)
 
-    spec_file = os.path.join(BASE_DIR, "templates", f"{panel_type}_Specification.html")
+    spec_file = config.TEMPLATE_DIR / f"{panel_type}_Specification.html"
 
-    if not os.path.exists(spec_file):
+    if not spec_file.exists():
         return JSONResponse({"error": "Specification file not found"}, status_code=404)
 
     return FileResponse(spec_file, media_type="text/html")
@@ -542,9 +486,9 @@ async def get_gene_content(content_type: str):
     if content_type not in valid_types:
         return JSONResponse({"error": "Invalid content type"}, status_code=400)
 
-    gene_content_file = os.path.join(BASE_DIR, "templates", f"{content_type}.html")
+    gene_content_file = config.TEMPLATE_DIR / f"{content_type}.html"
 
-    if not os.path.exists(gene_content_file):
+    if not gene_content_file.exists():
         return JSONResponse({"error": "Gene content file not found"}, status_code=404)
 
     return FileResponse(gene_content_file, media_type="text/html")
