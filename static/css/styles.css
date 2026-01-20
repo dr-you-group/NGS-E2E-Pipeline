@@ -156,10 +156,15 @@ body {
     position: relative; /* 첫 페이지 하단 고정을 위해 */
 }
 
-/* 각 A4 페이지에 상대적 위치 설정 - 개선 */
+/* PPT 슬라이드 규격으로 변경*/
+@page {
+    size: 19.05cm 25.4cm;
+    margin: 0;
+}
+
 .a4-page {
-    width: 21cm;
-    height: 29.7cm;
+    width: 19.05cm;
+    height: 25.4cm;
     padding: 0.5cm 0.525cm;
     margin: 0 auto 20px;
     background-color: white;
@@ -301,7 +306,7 @@ body {
 
 /* Clinical significance section - 하이라이트 부분만 빨간색 + bold */
 .clinical-highlight {
-    color: #c00;
+    color: #FF0000 !important;
     font-weight: bold;
 }
 
@@ -395,7 +400,7 @@ table td {
 }
 
 .info-table th {
-    background-color: #b8cce4;
+    background-color: #C6D9F1 !important;
     font-weight: bold; /* 기존 normal에서 bold로 변경 */
     padding: 2px 1px; /* 10px 5px에서 2px 1px로 대폭 감소 */
     text-align: center;
@@ -428,7 +433,7 @@ table td {
 }
 
 .data-table th {
-    background-color: #b8cce4;
+    background-color: #C6D9F1 !important;
     font-weight: bold; /* normal에서 bold로 변경 */
     padding: 2px 1px; /* 8px 4px에서 2px 1px로 대폭 감소 */
     text-align: center;
@@ -571,7 +576,7 @@ table td {
 }
 
 .biomarkers-table th {
-    background-color: #e2efda;
+    background-color: #E3F3D1 !important;
     font-weight: bold; /* normal에서 bold로 변경 */
     padding: 2px 1px; /* 8px 4px에서 2px 1px로 대폭 감소 */
     text-align: center;
@@ -1587,11 +1592,17 @@ table td {
     }
 }
 
-/* 데이터 셀 스타일 (1pt 테두리 + 8pt 폰트) */
+/* 데이터 셀 스타일 */
+/* 1. 일반 테이블 (1pt) */
 .data-table td,
-.info-table td,
-.biomarkers-table td {
+.info-table td {
     border: 1pt solid #000 !important;
+    font-size: 8pt !important;
+}
+
+/* 2. Biomarkers 테이블 (0.5pt) */
+.biomarkers-table td {
+    border: 0.5pt solid #000 !important;
     font-size: 8pt !important;
 }
 
