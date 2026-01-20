@@ -1,13 +1,12 @@
-import os
 import copy
+import os
 from io import BytesIO
-from typing import List, Dict, Any
 
 from pptx import Presentation
-from pptx.util import Pt, Cm
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
 from pptx.oxml.xmlchemy import OxmlElement
+from pptx.util import Pt, Cm
 
 
 class PPTReportConfig:
