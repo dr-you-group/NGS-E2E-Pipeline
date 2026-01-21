@@ -727,10 +727,10 @@ table td {
 
 /* 검사정보 스타일 */
 .info-section {
-    margin: 10px 0;
+    margin-top: 0 !important;
     margin-left: 10px; /* 좌측 여백 줄이기 */
     line-height: 1.6;
-    font-size: 8pt;
+    font-size: 10pt;
 }
 
 .info-label {
@@ -739,6 +739,38 @@ table td {
 
 .info-highlight {
     font-weight: bold;
+}
+
+.page-2-content {
+    margin-top: 0 !important;
+}
+
+.page-2-content .section {
+    margin-bottom: 5px !important;
+}
+
+
+.page-2-content .section-title {
+    font-size: 12pt !important;
+    padding-bottom: 2px !important;
+    margin-bottom: 2px !important;
+    border-bottom: none !important;
+}
+
+.page-2-content .info-section {
+    margin: 2px 2px 2px 5px !important;
+    line-height: 1.3 !important;
+    font-size: 10pt !important;
+}
+
+.page-2-content > .section:nth-of-type(3) .info-section .info-label,
+.page-2-content .qc-header {
+    font-weight: normal !important;
+}
+
+.page-2-content .qc-col-tight:nth-child(2),
+.page-2-content .qc-col-tight:nth-child(3) {
+    text-align: center !important;
 }
 
 /* QC 간단한 테이블 스타일 */
@@ -1021,6 +1053,7 @@ table td {
     display: flex;
     flex-direction: column;
     height: 100%;
+    margin-top: 0px !important;
 }
 
 /* Gene Content 페이지 */
@@ -1349,12 +1382,6 @@ table td {
         max-width: none !important;
     }
     
-    /* Specification 테이블 스타일 유지 */
-    .specification-box table {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-    
     /* 테이블 레이아웃과 커럼 너비 - 화면과 동일하게 유지, 강제 스타일 제거 */
     
     /* 보고서 테두리 유지 */
@@ -1391,6 +1418,71 @@ table td {
         print-color-adjust: exact;
     }
 }
+
+/* Specification 테이블 전용 스타일 */
+    .specification-box {
+        width: 100%;
+        /* PPT 너비 15.42cm 고려하여 부모 요소에 맞춤 */
+        max-width: 15.5cm;
+        margin: 0 auto; /* 가운데 정렬 */
+    }
+
+    table.spec-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: Arial, sans-serif;
+        table-layout: fixed; /* 셀 너비 고정하여 예측 가능하게 만듦 */
+        font-size: 8px !important;
+    }
+
+    .spec-table thead th,
+    .spec-table tbody td {
+        border: 1px solid #666; /* 기존보다 얇고 깔끔한 테두리 */
+        padding: 3px 5px !important;       /* 기존 8px -> 3px로 축소 (핵심) */
+        line-height: 1.2;       /* 줄 간격 축소 */
+        vertical-align: middle;
+    }
+
+    /* 헤더 스타일 */
+    .spec-table thead th {
+        background-color: #D5E4F1;
+        font-weight: bold;
+        text-align: center;
+        height: 20px; /* 헤더 높이 명시 */
+    }
+
+    /* 데이터 셀 스타일 */
+    .spec-table tbody td {
+        background-color: white;
+        line-height: 1.1;
+        height: auto !important;
+    }
+
+    /* 첫 번째 컬럼 (Parameter) 너비 조정 - 필요에 따라 % 조절 */
+    .spec-table tbody tr td:first-child {
+        width: 35%;
+        text-align: left;
+    }
+
+    /* 두 번째 컬럼 (Value) 너비 조정 */
+    .spec-table tbody tr td:last-child {
+        width: 65%;
+        text-align: center;
+        word-break: break-word; /* 긴 텍스트 줄바꿈 허용 */
+    }
+
+    /* 인쇄 및 PDF 변환 시 색상 유지 */
+    @media print {
+        table.spec-table,
+        .spec-table thead th,
+        .spec-table tbody td {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .spec-table thead th {
+            background-color: #D5E4F1 !important;
+        }
+    }
 
 /* 검색 결과 드롭다운 스타일 */
 .search-container {
