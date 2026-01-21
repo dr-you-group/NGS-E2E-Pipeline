@@ -1,24 +1,26 @@
-/* 분할 가능한 섹션 스타일 - 개선 */
-.splittable-section {
-    position: relative;
-    page-break-inside: auto; /* 페이지 분할 허용으로 변경 */
-    break-inside: auto; /* 표준 속성 - 필요시 분할 허용 */
-}
+/* ==========================================================================
+   1. 변수 및 리셋 (Variables & Reset)
+   ========================================================================== */
+:root {
+    /* 색상 팔레트 */
+    --bg-body: #f5f5f5;
+    --bg-white: #ffffff;
+    --bg-header-blue: #C6D9F1;  /* 일반 테이블 헤더 */
+    --bg-header-green: #E3F3D1; /* 바이오마커 테이블 헤더 */
+    --bg-header-gray: #D5E4F1;  /* Spec/Gene 테이블 헤더 */
 
-/* 첫 페이지 하단 고정 콘텐츠 - flexbox 방식으로 개선 */
-.page-bottom-fixed {
-    flex-shrink: 0; /* 축소 방지 */
-    width: 100%;
-    background-color: white;
-    z-index: 10;
-    margin-top: auto; /* 하단으로 밀기 */
-}
+    --text-primary: #333333;
+    --text-black: #000000;
+    --text-red: #FF0000;        /* 통합된 하이라이트 색상 (제목 & 테이블 데이터 동일) */
 
-/* 테이블 행 높이 최적화 */
-.data-table tbody tr {
-    min-height: 1.8em; /* 최소 높이 감소 */
-    max-height: 3em; /* 최대 높이 감소 */
-    page-break-inside: auto; /* 행 단위 분할 허용 */
+    --border-black: #000000;
+    --border-gray: #ddd;
+
+    /* 페이지 규격 (A4) */
+    --page-width: 19.05cm;
+    --page-height: 25.4cm;
+    --page-padding-y: 0.5cm;
+    --page-padding-x: 0.525cm;
 }
 
 * {
@@ -29,1735 +31,471 @@
 }
 
 body {
-    background-color: #f5f5f5;
+    background-color: var(--bg-body);
 }
 
 .container {
     padding: 20px;
 }
 
-.search-form {
-    max-width: 800px;
-    margin: 50px auto;
-    padding: 30px;
-    background-color: white;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-}
-
-.search-form h2 {
-    margin-bottom: 20px;
-    color: #333;
-    text-align: center;
-}
-
-.search-form input {
-    width: 70%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    margin-right: 10px;
-}
-
-.search-form button {
-    padding: 10px 20px;
-    background-color: #4a90e2;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.upload-form {
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid #eee;
-}
-
-.upload-form h3 {
-    margin-bottom: 15px;
-    font-size: 16px;
-}
-
-#excel-file {
-    margin-bottom: 15px;
-    width: 100%;
-}
-
-#upload-btn {
-    width: 100%;
-    padding: 10px;
-    background-color: #27ae60;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.report-list {
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid #eee;
-}
-
-.report-list h3 {
-    margin-bottom: 15px;
-    font-size: 16px;
-}
-
-#report-list {
-    list-style: none;
-}
-
-#report-list li {
-    padding: 10px;
-    border-bottom: 1px solid #eee;
-    cursor: pointer;
-}
-
-#report-list li:hover {
-    background-color: #f5f5f5;
-}
-
-.error-message {
-    max-width: 600px;
-    margin: 50px auto;
-    padding: 20px;
-    background-color: #fee;
-    border: 1px solid #f99;
-    border-radius: 5px;
-    text-align: center;
-}
-
-.error-message h2 {
-    color: #c33;
-    margin-bottom: 20px;
-}
-
-.error-message a {
-    display: inline-block;
-    padding: 10px 20px;
-    background-color: #4a90e2;
-    color: white;
-    text-decoration: none;
-    border-radius: 4px;
-}
-
-/* 각 페이지 전체를 둘러싸는 검은색 테두리 - 개선 */
-.page-border {
-    width: 100%;
-    height: 100%;
-    border: 1pt solid #000;
-    padding: 0.15cm; /* 패딩 더 줄임 (0.2cm → 0.15cm) */
-    margin: 0;
-    box-sizing: border-box;
-    display: flex; /* flexbox 사용 */
-    flex-direction: column; /* 세로 방향 */
-    position: relative; /* 첫 페이지 하단 고정을 위해 */
-}
-
-/* PPT 슬라이드 규격으로 변경*/
-@page {
-    size: 19.05cm 25.4cm;
-    margin: 0;
-}
-
+/* ==========================================================================
+   2. 보고서 페이지 레이아웃 (Report Layout)
+   ========================================================================== */
+/* A4 페이지 기본 설정 */
 .a4-page {
-    width: 19.05cm;
-    height: 25.4cm;
-    padding: 0.5cm 0.525cm;
+    width: var(--page-width);
+    height: var(--page-height);
+    padding: var(--page-padding-y) var(--page-padding-x);
     margin: 0 auto 20px;
-    background-color: white;
+    background-color: var(--bg-white);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    border: 2px solid #ff0000; /* 빨간색 테두리로 A4 경계 표시 */
+    border: 2px solid var(--text-red); /* 개발용 테두리 (인쇄시 제거됨) */
     position: relative;
     page-break-after: always;
     box-sizing: border-box;
-    overflow: hidden; /* 스크롤 제거 */
-    display: flex; /* flexbox 사용 */
-    flex-direction: column; /* 세로 방향 */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
-/* 모든 내용이 페이지 너비를 넘지 않도록 추가 안전장치 */
-.a4-page * {
-    max-width: 100%;
+/* 페이지 내부 컨텐츠 래퍼 (검은 테두리) */
+.page-border {
+    width: 100%;
+    height: 100%;
+    border: 1pt solid var(--border-black);
+    padding: 0.15cm;
+    margin: 0;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    position: relative;
 }
 
-/* 오버플로우 경고를 위한 클래스 */
-.a4-page.overflow-warning {
-    border-color: #ff9900;
-    background-color: #fff9f0;
-}
-
-.a4-page.overflow-warning::after {
-    content: "WARNING: Content exceeds A4 size!";
-    background-color: #ff9900;
-    color: white;
-}
-
-/* A4 기준선 표시 (개발용) */
-.a4-page::after {
-    content: "A4 Page Boundary (210mm x 297mm)";
-    position: absolute;
-    bottom: 5px;
-    right: 5px;
-    font-size: 10px;
-    color: #ff0000;
-    background-color: #ffe5e5;
-    border: 1px solid #ff0000;
-    padding: 3px 8px;
-    font-weight: bold;
-}
-
-/* 페이지 번호 표시를 위해 ::before 사용 */
-.a4-page.page-1::before { content: "Page 1"; }
-.a4-page.page-2::before { content: "Page 2"; }
-.a4-page.page-3::before { content: "Page 3"; }
-.a4-page.page-4::before { content: "Page 4"; }
-
-.a4-page::before {
-    position: absolute;
-    top: 5px;
-    left: 5px;
-    font-size: 10px;
-    color: #ff0000;
-    background-color: #ffe5e5;
-    border: 1px solid #ff0000;
-    padding: 3px 8px;
-    font-weight: bold;
-    z-index: 1000;
-}
-
-/* 실제 보고서 내용 */
+/* 보고서 내용 영역 */
 .report-content {
     height: 100%;
     display: flex;
     flex-direction: column;
 }
 
-/* 페이지 번호 표시 */
-.page-number {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    font-size: 10pt;
-    color: #666;
-}
-
-.report-header {
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-.report-header h1 {
-    color: #333;
-    padding-bottom: 10px;
-    font-size: 24px;
-}
-
-.section {
-    margin-bottom: 10px; /* 섹션 간격 더 줄이기 (15px → 10px) */
-    page-break-inside: auto; /* 섹션 내부에서도 페이지 분할 허용 */
-}
-
-.section-title {
-    color: #333;
+/* 첫 페이지: 하단 고정 요소 처리를 위한 설정 */
+.page-1 .report-content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
     padding-bottom: 5px;
-    margin-bottom: 10px;
-    font-size: 18px;
-    border-bottom: none;
-    page-break-after: avoid; /* 섹션 제목 바로 뒤에서 페이지 분할 방지 */
-    page-break-inside: avoid; /* 제목 내부에서 페이지 분할 방지 */
 }
 
-.result-title {
-    margin-top: 10px; /* 상단 여백 줄임 (15px → 10px) */
-    margin-bottom: 8px; /* 하단 여백 줄임 (10px → 8px) */
-    font-size: 15px; /* 폰트 크기 약간 줄임 */
-}
-
-/* Result titles styling */
-.result-title {
-    color: #000; /* 모든 제목은 기본적으로 검은색 */
-    font-weight: bold; /* 모든 제목은 bold */
-    margin-top: 15px;
-    margin-bottom: 10px;
-    font-size: 16px;
-    page-break-after: avoid; /* 제목 바로 뒤에서 페이지 분할 방지 */
-    page-break-inside: avoid; /* 제목 내부에서 페이지 분할 방지 */
-}
-
-/* 2, 3번 제목들은 기본 검은색 + bold */
-.page-continued-1 h3.result-title {
-    color: #000;
-    font-weight: bold;
-}
-
-.variant-type {
-    margin-top: 8px; /* 여백 줄임 (10px → 8px) */
-    margin-bottom: 4px; /* 여백 줄임 (5px → 4px) */
-    font-size: 13px; /* 폰트 크기 줄임 */
-    color: #333; /* Default color */
-    font-weight: bold; /* 변이 타입 제목들은 bold */
-    page-break-after: avoid; /* 제목 바로 뒤에서 페이지 분할 방지 */
-    page-break-inside: avoid; /* 제목 내부에서 페이지 분할 방지 */
-}
-
-/* Clinical significance section - 하이라이트 부분만 빨간색 + bold */
-.clinical-highlight {
-    color: #FF0000 !important;
-    font-weight: bold;
-}
-
-/* h3, h4 제목들의 페이지 분할 방지 */
-h3, h4, h2 {
-    page-break-after: avoid; /* 제목 바로 뒤에서 페이지 분할 방지 */
-    page-break-inside: avoid; /* 제목 내부에서 페이지 분할 방지 */
-    break-after: avoid; /* 표준 속성 */
-    break-inside: avoid; /* 표준 속성 */
-}
-
-/* 제목과 직후 콘텐츠를 함께 유지 */
-.result-title + *,
-.variant-type + *,
-.section-title + *,
-h3 + *,
-h4 + * {
-    page-break-before: avoid; /* 제목과 다음 요소 사이 분할 방지 */
-    break-before: avoid; /* 표준 속성 */
-}
-
-/* Clinical significance section - clinical 테이블만 빨간색 + bold */
-#snv-clinical-table td,
-#fusion-clinical-table td,
-#cnv-clinical-table td,
-#lr-brca-clinical-table td,
-#splice-clinical-table td {
-    color: #c00 !important;
-    font-weight: bold !important;
-}
-
-/* Unknown 및 Failed gene 테이블은 기본 색상 */
-#snv-unknown-table td,
-#fusion-unknown-table td,
-#cnv-unknown-table td,
-#lr-brca-unknown-table td,
-#splice-unknown-table td,
-.data-table td {
-    color: #000 !important;
-    font-weight: normal !important;
-}
-
-/* Failed gene text - black */
-#failed-gene {
-    color: #000;
-    font-weight: normal;
-}
-
-/* Exception: "None" text should remain normal */
-.none-text {
-    color: #333 !important;
-    font-weight: normal !important;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 10px; /* 여백 줄임 (15px → 10px) */
-    page-break-inside: auto; /* 테이블 내부에서 페이지 분할 허용 */
-}
-
-/* 모든 테이블 셀에 기본 고정 높이 적용 */
-table th {
-    text-align: center;
-    vertical-align: middle;
-    font-weight: bold;
-    height: 2.8em; /* 고정 높이 */
-    line-height: 1.4;
-    overflow: hidden;
-    word-break: break-word;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    box-sizing: border-box;
-}
-
-table td {
-    text-align: center;
-    vertical-align: middle;
-    height: 2.8em; /* 고정 높이 */
-    line-height: 1.4;
-    overflow: hidden;
-    word-break: break-word;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    box-sizing: border-box;
-}
-
-.full-width {
-    width: 100%;
-    table-layout: fixed;
-}
-
-.info-table th {
-    background-color: #C6D9F1 !important;
-    font-weight: bold; /* 기존 normal에서 bold로 변경 */
-    padding: 2px 1px; /* 10px 5px에서 2px 1px로 대폭 감소 */
-    text-align: center;
-    vertical-align: middle; /* 세로 중간 정렬 추가 */
-    border: 1px solid #000;
-    font-size: 8pt;
-    line-height: 1.4; /* 2줄 허용을 위해 라인 높이 조정 */
-    height: 3.2em; /* 고정 높이로 변경 (2줄 기준) */
-    overflow: hidden; /* 넘치는 텍스트 숨김 */
-    word-break: break-word;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    box-sizing: border-box;
-}
-
-.info-table td {
-    padding: 2px 1px; /* 10px 5px에서 2px 1px로 대폭 감소 */
-    text-align: center;
-    vertical-align: middle; /* 세로 중간 정렬 추가 */
-    border: 1px solid #000;
-    font-size: 8pt;
-    line-height: 1.4; /* 2줄 허용을 위해 라인 높이 조정 */
-    height: 3.2em; /* 고정 높이로 변경 (2줄 기준) */
-    overflow: hidden; /* 넘치는 텍스트 숨김 */
-    font-weight: bold; /* 데이터 셀도 bold 처리 */
-    word-break: break-word; /* 긴 단어 자동 줄바꿈 */
-    word-wrap: break-word; /* IE 호환성 */
-    overflow-wrap: break-word; /* 표준 속성 */
-    box-sizing: border-box;
-}
-
-.data-table th {
-    background-color: #C6D9F1 !important;
-    font-weight: bold; /* normal에서 bold로 변경 */
-    padding: 2px 1px; /* 8px 4px에서 2px 1px로 대폭 감소 */
-    text-align: center;
-    vertical-align: middle; /* 세로 중간 정렬 추가 */
-    border: 1px solid #000;
-    font-size: 8pt;
-    line-height: 1.4; /* 2줄 허용을 위해 라인 높이 조정 */
-    height: 2.8em; /* 고정 높이로 변경 (2줄 기준, 조금 작게) */
-    overflow: hidden; /* 넘치는 텍스트 숨김 */
-    word-break: break-word;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    box-sizing: border-box;
-}
-
-.data-table td {
-    padding: 2px 1px; /* 8px 4px에서 2px 1px로 대폭 감소 */
-    text-align: center;
-    vertical-align: middle; /* 세로 중간 정렬 추가 */
-    border-top: 1px solid #000;
-    border-bottom: 1px solid #000;
-    border-left: none;
-    border-right: none;
-    font-size: 8pt;
-    line-height: 1.4; /* 2줄 허용을 위해 라인 높이 조정 */
-    height: 2.8em; /* 고정 높이로 변경 (2줄 기준, 조금 작게) */
-    overflow: hidden; /* 넘치는 텍스트 숨김 */
-    word-break: break-word; /* 긴 단어 자동 줄바꿈 */
-    word-wrap: break-word; /* IE 호환성 */
-    overflow-wrap: break-word; /* 표준 속성 */
-    box-sizing: border-box;
-}
-
-/* SNV 테이블 컴럼 너비 */
-.data-table th:nth-child(1) { width: 10%; }  /* GENE - 8%에서 10%로 증가 */
-.data-table th:nth-child(2) { width: 18%; } /* MUTATION TYPE */
-.data-table th:nth-child(3) { width: 15%; } /* AA CHANGE */
-.data-table th:nth-child(4) { width: 8%; } /* VAF (%) - 10%에서 8%로 감소 */
-.data-table th:nth-child(5) { width: 25%; } /* HGVSc */
-.data-table th:nth-child(6) { width: 24%; } /* HGVSp */
-
-/* HGVSc와 HGVSp 컴럼에 대한 특별 처리 */
-#snv-clinical-table td:nth-child(5),
-#snv-clinical-table td:nth-child(6),
-#snv-unknown-table td:nth-child(5),
-#snv-unknown-table td:nth-child(6) {
-    word-break: break-all; /* 문자 단위로 줄바꿈 */
-    text-align: center; /* 가운데 정렬 유지 */
-    padding: 2px 1px; /* 4px 6px에서 2px 1px로 감소 */
-    font-size: 7pt; /* 약간 작게 */
-    line-height: 1.2;
-}
-
-/* Fusion 테이블 컴럼 너비 */
-#fusion-clinical-table th:nth-child(1),
-#fusion-unknown-table th:nth-child(1) { width: 20%; } /* GENE FUSION */
-#fusion-clinical-table th:nth-child(2),
-#fusion-unknown-table th:nth-child(2) { width: 25%; } /* BREAKPOINT 1 */
-#fusion-clinical-table th:nth-child(3),
-#fusion-unknown-table th:nth-child(3) { width: 25%; } /* BREAKPOINT 2 */
-#fusion-clinical-table th:nth-child(4),
-#fusion-unknown-table th:nth-child(4) { width: 30%; } /* FUSION SUPPORTING READS */
-
-/* Fusion Breakpoint 컴럼에 대한 특별 처리 */
-#fusion-clinical-table td:nth-child(2),
-#fusion-clinical-table td:nth-child(3),
-#fusion-unknown-table td:nth-child(2),
-#fusion-unknown-table td:nth-child(3) {
-    word-break: break-all;
-    text-align: center; /* 가운데 정렬 유지 */
-    padding: 2px 1px; /* 4px 6px에서 2px 1px로 감소 */
-    font-size: 7pt;
-    line-height: 1.2;
-}
-
-/* CNV 테이블 컴럼 너비 */
-#cnv-clinical-table th:nth-child(1),
-#cnv-unknown-table th:nth-child(1) { width: 12%; } /* GENE */
-#cnv-clinical-table th:nth-child(2),
-#cnv-unknown-table th:nth-child(2) { width: 25%; } /* LOCATION */
-#cnv-clinical-table th:nth-child(3),
-#cnv-unknown-table th:nth-child(3) { width: 20%; } /* FOLD CHANGE */
-#cnv-clinical-table th:nth-child(4),
-#cnv-unknown-table th:nth-child(4) { width: 43%; } /* ESTIMATED COPY NUMBER */
-
-/* CNV Location 컴럼에 대한 특별 처리 */
-#cnv-clinical-table td:nth-child(2),
-#cnv-unknown-table td:nth-child(2) {
-    word-break: break-all;
-    text-align: center; /* 가운데 정렬 유지 */
-    padding: 2px 1px; /* 4px 6px에서 2px 1px로 감소 */
-    font-size: 7pt;
-    line-height: 1.2;
-}
-
-/* LR BRCA 테이블 컴럼 너비 */
-#lr-brca-clinical-table th:nth-child(1),
-#lr-brca-unknown-table th:nth-child(1) { width: 12%; } /* GENE */
-#lr-brca-clinical-table th:nth-child(2),
-#lr-brca-unknown-table th:nth-child(2) { width: 20%; } /* LOCATION */
-#lr-brca-clinical-table th:nth-child(3),
-#lr-brca-unknown-table th:nth-child(3) { width: 18%; } /* AFFECTED EXON */
-#lr-brca-clinical-table th:nth-child(4),
-#lr-brca-unknown-table th:nth-child(4) { width: 20%; } /* FOLD CHANGE */
-#lr-brca-clinical-table th:nth-child(5),
-#lr-brca-unknown-table th:nth-child(5) { width: 30%; } /* ESTIMATED COPY NUMBER */
-
-/* LR BRCA Location 컴럼에 대한 특별 처리 */
-#lr-brca-clinical-table td:nth-child(2),
-#lr-brca-unknown-table td:nth-child(2) {
-    word-break: break-all;
-    text-align: center; /* 가운데 정렬 유지 */
-    padding: 2px 1px; /* 4px 6px에서 2px 1px로 감소 */
-    font-size: 7pt;
-    line-height: 1.2;
-}
-
-/* Splice variant 테이블 컴럼 너비 */
-#splice-clinical-table th:nth-child(1),
-#splice-unknown-table th:nth-child(1) { width: 12%; } /* GENE */
-#splice-clinical-table th:nth-child(2),
-#splice-unknown-table th:nth-child(2) { width: 18%; } /* AFFECTED EXON */
-#splice-clinical-table th:nth-child(3),
-#splice-unknown-table th:nth-child(3) { width: 25%; } /* BREAKPOINT 1 */
-#splice-clinical-table th:nth-child(4),
-#splice-unknown-table th:nth-child(4) { width: 25%; } /* BREAKPOINT 2 */
-#splice-clinical-table th:nth-child(5),
-#splice-unknown-table th:nth-child(5) { width: 20%; } /* SPLICE SUPPORTING READS */
-
-/* Splice Breakpoint 컴럼에 대한 특별 처리 */
-#splice-clinical-table td:nth-child(3),
-#splice-clinical-table td:nth-child(4),
-#splice-unknown-table td:nth-child(3),
-#splice-unknown-table td:nth-child(4) {
-    word-break: break-all;
-    text-align: center; /* 가운데 정렬 유지 */
-    padding: 2px 1px; /* 4px 6px에서 2px 1px로 감소 */
-    font-size: 7pt;
-    line-height: 1.2;
-}
-
-.biomarkers-table th {
-    background-color: #E3F3D1 !important;
-    font-weight: bold; /* normal에서 bold로 변경 */
-    padding: 2px 1px; /* 8px 4px에서 2px 1px로 대폭 감소 */
-    text-align: center;
-    vertical-align: middle; /* 세로 중간 정렬 추가 */
-    border: 1px solid #000;
-    font-size: 8pt;
-    line-height: 1.4; /* 2줄 허용을 위해 라인 높이 조정 */
-    height: 2.8em; /* 고정 높이로 변경 (2줄 기준, 조금 작게) */
-    overflow: hidden; /* 넘치는 텍스트 숨김 */
-    word-break: break-word;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    box-sizing: border-box;
-}
-
-.biomarkers-table td {
-    padding: 2px 1px; /* 8px 4px에서 2px 1px로 대폭 감소 */
-    text-align: center;
-    vertical-align: middle; /* 세로 중간 정렬 추가 */
-    border: 1px solid #000;
-    font-size: 8pt;
-    line-height: 1.4; /* 2줄 허용을 위해 라인 높이 조정 */
-    height: 2.8em; /* 고정 높이로 변경 (2줄 기준, 조금 작게) */
-    overflow: hidden; /* 넘치는 텍스트 숨김 */
-    word-break: break-word; /* 긴 단어 자동 줄바꿈 */
-    word-wrap: break-word; /* IE 호환성 */
-    overflow-wrap: break-word; /* 표준 속성 */
-    box-sizing: border-box;
-}
-
-/* Specification 테이블 스타일은 인라인 스타일로 대체됨 */
-
-.comment-box {
-    border: 1px solid #000;
-    padding: 10px; /* padding 줄이기 */
-    min-height: 100px;
-    line-height: 1.4;
-    font-size: 8pt;
-}
-
-.comment-box p {
-    font-size: 8pt;
-    margin-bottom: 10px;
-}
-
-.comment-section {
-    border: 2px solid #666;
-    padding: 8px; /* padding 줄이기 */
-    margin-bottom: 15px;
-}
-
-.additional-info {
-    font-size: 8pt;
-    margin: 10px 0;
-    line-height: 1.4;
-}
-
-.additional-info p {
-    margin-bottom: 5px;
-}
-
-.comment-text {
-    font-size: 8pt;
-}
-
-.comment-text p {
-    margin-bottom: 10px;
-    font-size: 8pt;
-}
-
-.no-data {
-    color: #777;
-    font-style: italic;
-    text-align: center;
-    font-size: 8pt;
-}
-
-.specification-box {
-    text-align: center;
-    margin: 15px 0;
-}
-
-.gene-content-box {
-    text-align: left;
-    margin: 15px 0;
-}
-
-.specification-box img {
-    max-width: 100%;
-    height: auto;
-}
-
-.gene-content-box img {
-    width: 100%;
-    height: auto;
-    max-width: none;
-    display: block;
-    margin: 0 auto;
-}
-
-/* 1. 테이블 셀(Cell) 강제 축소 */
-.gene-content-table {
-    width: calc(100% - 4px);
-    border-collapse: collapse;
-    table-layout: fixed;
-    margin: 0;
-    display: table;
-}
-
-.gene-content-table th,
-.gene-content-table td {
-    padding: 0 !important;          /* 여백 제거 */
-    margin: 0 !important;
-    height: 13px !important;        /* 행 높이 10px로 고정 (다이어트) */
-    font-size: 6px !important;      /* 폰트 6px로 축소 */
-    line-height: 1.0 !important;    /* 줄 간격 최소화 */
-    border: none !important;        /* 테두리 제거 */
-    vertical-align: middle;
-    word-wrap: break-word;
-    overflow: hidden;
-    font-weight: bold !important;
-    color: #000 !important;
-}
-
-/* 헤더 배경색 및 폰트 */
-.gene-content-table th {
-    background-color: #D5E4F1 !important;
-    border-bottom: 3px double #000 !important;
-}
-
-.gene-content-table tr td {
-    width: 9.09%; /* 11개 칼럼이므로 100/11 */
-}
-
-/* Gene Content 페이지에서만 적용되는 특별 스타일 */
-.page-3 .gene-content-box,
-.page-4 .gene-content-box {
-    margin: 0 !important; /* 좌우 여백 제거 */
-    width: 100%; /* 부모 컨테이너 전체 너비 사용 */
-}
-
-/* SA 패널의 경우 page-3, page-4 모두 적용 */
-.page-3 .gene-content-wrapper,
-.page-4 .gene-content-wrapper {
-    margin-top: 0 !important; /* 위쪽으로 10px 당김 */
-    padding-top: 0 !important; /* 패딩 제거 */
-}
-
-/* 검사정보 스타일 */
-.info-section {
-    margin-top: 0 !important;
-    margin-left: 10px; /* 좌측 여백 줄이기 */
-    line-height: 1.6;
-    font-size: 10pt;
-}
-
-.info-label {
-    font-weight: bold;
-}
-
-.info-highlight {
-    font-weight: bold;
-}
-
-.page-2-content {
-    margin-top: 0 !important;
-}
-
-.page-2-content .section {
-    margin-bottom: 5px !important;
-}
-
-
-.page-2-content .section-title {
-    font-size: 12pt !important;
-    padding-bottom: 2px !important;
-    margin-bottom: 2px !important;
-    border-bottom: none !important;
-}
-
-.page-2-content .info-section {
-    margin: 2px 2px 2px 5px !important;
-    line-height: 1.3 !important;
-    font-size: 10pt !important;
-}
-
-.page-2-content > .section:nth-of-type(3) .info-section .info-label,
-.page-2-content .qc-header {
-    font-weight: normal !important;
-}
-
-.page-2-content .qc-col-tight:nth-child(2),
-.page-2-content .qc-col-tight:nth-child(3) {
-    text-align: center !important;
-}
-
-/* QC 간단한 테이블 스타일 */
-.qc-simple {
-    margin: 10px 0;
-    font-size: 8pt;
-}
-
-.qc-header {
-    display: flex;
-    font-weight: bold;
-    margin-bottom: 2px;
-    line-height: 1.4;
-    align-items: center; /* 세로 중간 정렬 */
-}
-
-.qc-row-simple {
-    display: flex;
-    margin-bottom: 1px;
-    line-height: 1.4;
-    align-items: center; /* 세로 중간 정렬 */
-}
-
-.qc-col {
-    flex: 1;
-    padding: 1px 5px;
-    text-align: left;
-}
-
-.qc-col:first-child {
-    flex: 2;
-}
-
-/* QC 컬럼 간격 좀 더 줄인 버전 */
-.qc-col-tight {
-    padding: 1px 2px;
-    text-align: left;
-    white-space: nowrap;
-}
-
-.qc-col-tight:first-child {
-    width: 20%;
-}
-
-.qc-col-tight:nth-child(2) {
-    width: 20%;
-}
-
-.qc-col-tight:nth-child(3) {
-    width: 20%;
-}
-
-.small-text {
-    font-size: 7pt;
-    font-weight: normal;
-}
-
-/* QC 그리드 스타일 */
-.qc-grid {
-    display: grid;
-    grid-template-columns: 3fr 1fr 1fr;
-    width: 100%;
-    font-size: 8pt;
-}
-
-.qc-row {
-    display: contents;
-}
-
-.qc-cell {
-    padding: 5px;
-}
-
-.qc-row:first-child .qc-cell {
-    font-weight: bold;
-}
-
-/* 사용자 정보 스타일 (마지막 페이지에만) */
-.user-info-section {
-    margin-bottom: 5px; /* 더 줄이기 */
-    font-size: 10pt;
-}
-
-/* 사용자 정보 위의 점선 */
-.user-info-divider {
-    border-top: 2px dashed #000;
-    margin-bottom: 0; /* 5px에서 0으로 줄이기 */
-}
-
-.user-info-container {
-    padding: 0; /* 패딩 제거 */
-    position: relative; /* 분자 접수 번호의 절대 위치 기준 */
-    padding-top: 20px; /* 분자 접수 번호 테이블을 위한 공간 줄이기 */
-}
-
-/* 분자 접수 번호 행 - 독립적 위치 */
-.user-info-number-row {
-    position: absolute;
-    right: 0;
-    top: 5px; /* 점선 아래 적절한 위치에 고정 */
-}
-
-/* Tested by / Analyzed by 행 */
-.user-info-tested-row {
-    display: flex;
-    align-items: center;
-    margin-top: -12px; /* 점선에 더 가까이, 분자 접수 번호와 비슷한 높이로 */
-    margin-bottom: 2px;
-}
-
-/* Signed by 행 */
-.user-info-signed-row {
-    margin-bottom: 2px;
-}
-
-.user-tested {
-    margin-right: 60px;
-    font-size: 12pt;
-}
-
-.user-analyzed {
-    font-size: 12pt;
-}
-
-.user-signed {
-    font-size: 12pt;
-}
-
-.user-number-table {
-    border: 1px solid #000;
-    border-collapse: collapse;
-    display: inline-table;
-}
-
-.user-number-label {
-    border: 1px solid #000;
-    padding: 4px 8px;
-    background-color: #f0f0f0;
-    font-weight: bold; /* 이미 bold였지만 확인 */
-    text-align: center;
-    vertical-align: middle; /* 세로 중간 정렬 추가 */
-    font-size: 11pt;
-    height: 2.5em; /* 고정 높이 추가 */
-    line-height: 1.4;
-    overflow: hidden; /* 넘치는 텍스트 숨김 */
-    word-break: break-word;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-}
-
-.user-number-value {
-    border: 1px solid #000;
-    padding: 4px 8px;
-    text-align: center;
-    vertical-align: middle; /* 세로 중간 정렬 추가 */
-    font-size: 11pt;
-    font-weight: bold; /* 값도 bold 처리 */
-    height: 2.5em; /* 고정 높이 추가 */
-    line-height: 1.4;
-    overflow: hidden; /* 넘치는 텍스트 숨김 */
-    word-break: break-word;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-}
-
-/* 푸터 스타일 (단순화) */
-.report-footer {
-    margin-top: 5px; /* 더 줄이기 */
-    padding-top: 2px; /* 더 줄이기 */
-}
-
-/* 페이지 하단 wrapper에서의 푸터 */
-.page-footer-wrapper .report-footer {
-    margin-top: 0; /* 기본 margin 제거 */
-    padding-top: 0; /* 기본 padding 제거 */
-}
-
-.footer-container {
-    border-top: 2px dashed #000;
-    padding: 5px 0; /* 패딩 줄이기 */
-    font-size: 10pt;
-}
-
-.footer-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-}
-
-.footer-left {
-    flex: 1;
-}
-
-.footer-right {
-    text-align: right;
-}
-
-.footer-right img {
-    height: 35px;
-    width: auto;
-    vertical-align: bottom;
-}
-
-.footer-org {
-    font-weight: bold;
-    margin-bottom: 2px;
-    font-size: 7pt;
-    line-height: 1.2;
-}
-
-.footer-address {
-    font-size: 7pt;
-    line-height: 1.2;
-}
-
-/* 페이지별 특별 스타일 */
-.page-1 .report-footer {
-    margin-top: auto;
-    padding-top: 10px;
-}
-
-/* 첫 페이지 하단 고정 컨텐츠 */
+/* 하단 고정 영역 (Footer 포함) */
 .page-bottom-fixed {
-    position: absolute;
+    flex-shrink: 0;
+    width: 100%;
+    background-color: var(--bg-white);
+    z-index: 10;
+    margin-top: auto;
+    position: absolute; /* 절대 위치로 하단 고정 */
     bottom: 0;
     left: 0;
     right: 0;
-    width: 100%;
 }
 
-/* 첫 페이지 특별 처리 */
-.page-1 .page-border {
-    display: flex;
-    flex-direction: column;
+/* 페이지 분할 관련 유틸리티 */
+.splittable-section {
     position: relative;
+    page-break-inside: auto;
+    break-inside: auto;
 }
 
-/* 첫 페이지 컨텐츠 영역 - flexbox로 개선 */
-.page-1 .report-content {
-    flex: 1; /* 남은 공간 모두 차지 */
-    overflow: hidden;
-    position: relative;
-    padding-bottom: 5px; /* 하단 여백 최소화 (10px에서 5px로) */
-}
-
-/* 연속 페이지 스타일 */
-.page-continued {
-    page-break-before: always;
-}
-
-.page-continued-1::before {
-    content: "Page 1-continued";
-}
-
-.page-continued-2::before {
-    content: "Page 1-continued-2";
-}
-
-.page-continued-3::before {
-    content: "Page 1-continued-3";
-}
-
-/* 동적 페이지용 스타일 */
-.dynamic-content {
-    max-height: calc(100% - 40px);
-    overflow: hidden;
-}
-
-/* 동적으로 생성된 페이지 */
-.dynamic-page {
-    display: none;
-}
-
-.dynamic-page.active {
-    display: block;
-}
-
-/* 검사정보부터 Specification까지 한 페이지에 */
-.page-2-content {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    margin-top: 0px !important;
-}
-
-/* Gene Content 페이지 */
-.page-3-content,
-.page-4-content {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    padding: 0; /* 패딩 제거 */
-}
-
-/* 분할된 테이블 스타일 */
-.split-table-continued {
-    margin-top: 0;
-}
-
-.split-table-continued tr:first-child th {
-    background-color: #b8cce4; /* 헤더 배경색 유지 */
-    font-weight: bold; /* normal에서 bold로 변경 */
-    padding: 2px 1px; /* 8px 4px에서 2px 1px로 대폭 감소 */
-    text-align: center;
-    vertical-align: middle; /* 세로 중간 정렬 추가 */
-    border: 1px solid #000;
-    font-size: 8pt;
-    height: 2.8em; /* 고정 높이 추가 */
-    line-height: 1.4;
-    overflow: hidden; /* 넘치는 텍스트 숨김 */
-    word-break: break-word;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-}
-
-/* 분할된 테이블의 모든 데이터 셀 */
-.split-table-continued td {
-    padding: 2px 1px; /* 8px 4px에서 2px 1px로 대폭 감소 */
-    text-align: center;
-    vertical-align: middle;
-    font-size: 8pt;
-    height: 2.8em; /* 고정 높이 */
-    line-height: 1.4;
-    overflow: hidden;
-    word-break: break-word;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    border-top: 1px solid #000;
-    border-bottom: 1px solid #000;
-    border-left: none;
-    border-right: none;
-}
-
-/* CNV 분할 테이블의 중요한 데이터는 빨간색 + bold */
-.split-table-continued td {
-    color: #c00 !important;
-    font-weight: bold !important;
-}
-
-/* Other Biomarkers 테이블의 경우 */
-.split-table-continued.biomarkers-table tr:first-child th {
-    background-color: #e2efda;
-    font-weight: bold; /* bold로 변경 */
-    padding: 2px 1px; /* 8px 4px에서 2px 1px로 대폭 감소 */
-    text-align: center;
-    vertical-align: middle; /* 세로 중간 정렬 추가 */
-    border: 1px solid #000;
-    font-size: 8pt;
-    height: 2.8em; /* 고정 높이 추가 */
-    line-height: 1.4;
-    overflow: hidden; /* 넘치는 텍스트 숨김 */
-    word-break: break-word;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-}
-
-/* 분할된 콘텐츠를 위한 일반적인 페이지 스타일 */
+.page-continued,
 .page-content-continued {
     page-break-before: always;
 }
 
-.page-content-continued::before {
-    content: "Page 1-Content-continued";
+/* 디버깅용 페이지 마커 (인쇄 시 숨김) */
+.a4-page::before {
+    position: absolute; top: 5px; left: 5px;
+    font-size: 10px; color: var(--text-red); background-color: #ffe5e5;
+    border: 1px solid var(--text-red); padding: 3px 8px; font-weight: bold; z-index: 1000;
+}
+.a4-page.page-1::before { content: "Page 1"; }
+.a4-page.page-2::before { content: "Page 2"; }
+.a4-page.page-3::before { content: "Page 3"; }
+.a4-page.page-4::before { content: "Page 4"; }
+.page-continued-1::before { content: "Page 1-continued"; }
+.page-content-continued::before { content: "Page 1-Content-continued"; }
+
+/* ==========================================================================
+   3. 타이포그래피 (Typography)
+   ========================================================================== */
+.report-header { text-align: center; margin-bottom: 20px; }
+.report-header h1 { color: var(--text-primary); padding-bottom: 10px; font-size: 24px; }
+
+.section { margin-bottom: 10px; page-break-inside: auto; }
+
+/* 제목 스타일 */
+.section-title {
+    color: var(--text-primary);
+    padding-bottom: 5px; margin-bottom: 10px;
+    font-size: 18px; border-bottom: none;
 }
 
-/* 분할된 콘텐츠 페이지의 컨텐츠 영역 */
-.page-content-continued .report-content {
-    height: 100%; /* 전체 페이지 활용 */
+.result-title {
+    color: var(--text-black); font-weight: bold;
+    margin-top: 10px; margin-bottom: 8px; font-size: 15px;
+}
+
+.variant-type {
+    margin-top: 8px; margin-bottom: 4px;
+    font-size: 13px; color: var(--text-primary); font-weight: bold;
+}
+
+/* 페이지 분할 방지 (제목과 내용 분리 방지) */
+h1, h2, h3, h4, .section-title, .result-title, .variant-type {
+    page-break-after: avoid; break-after: avoid; page-break-inside: avoid;
+}
+.result-title + *, .variant-type + *, .section-title + *, h3 + *, h4 + * {
+    page-break-before: avoid; break-before: avoid;
+}
+
+/* 텍스트 하이라이트 유틸리티 */
+.clinical-highlight { color: var(--text-red) !important; font-weight: bold; }
+.none-text { color: var(--text-primary) !important; font-weight: normal !important; }
+#failed-gene { color: var(--text-black); font-weight: normal; }
+.small-text { font-size: 7pt; font-weight: normal; }
+
+/* ==========================================================================
+   4. 테이블 스타일 (Tables) - 통합 및 최적화
+   ========================================================================== */
+table {
+    width: 100%; border-collapse: collapse; margin-bottom: 10px; page-break-inside: auto;
+}
+.full-width { width: 100%; table-layout: fixed; }
+
+/* 4.1. 공통 테이블 셀 스타일 (헤더/데이터 공통) */
+.data-table th, .data-table td,
+.info-table th, .info-table td,
+.biomarkers-table th, .biomarkers-table td,
+.split-table-continued th, .split-table-continued td {
+    text-align: center;
+    vertical-align: middle;
+    border: 1pt solid var(--border-black);
+    font-size: 8pt;
+    line-height: 1.4;
     overflow: hidden;
-    padding-top: 5px;  /* 상단 패딩 최소화 (15px에서 5px로) */
+    word-break: break-word;
+    overflow-wrap: break-word;
+    box-sizing: border-box;
+    padding: 2px 1px; /* 공통 패딩 */
 }
 
-/* 분할된 섹션 스타일 - 최적화 */
-.continued-section {
-    margin-top: 5px;  /* 여백 최소화 (10px에서 5px로) */
-    margin-bottom: 10px; /* 하단 여백도 줄임 */
-}
-
-.continued-section .variant-type {
-    margin-bottom: 5px; /* 여백 줄임 (10px에서 5px로) */
-    font-size: 13px;  /* 폰트 크기 조절 */
-    color: #333;  /* 원본과 동일하게 */
+/* 4.2. 헤더 (TH) 공통 스타일 */
+.data-table th, .info-table th, .biomarkers-table th, .split-table-continued th {
     font-weight: bold;
+    height: 2.8em; /* 2줄 기준 고정 높이 */
+}
+/* 헤더 배경색 지정 (우선순위 높임) */
+.data-table th, .info-table th, .split-table-continued th { background-color: var(--bg-header-blue) !important; }
+.biomarkers-table th { background-color: var(--bg-header-green) !important; }
+.info-table th { height: 3.2em; /* 정보 테이블 헤더는 조금 더 높음 */ }
+
+/* 4.3. 데이터 셀 (TD) 공통 스타일 */
+.data-table td, .info-table td, .biomarkers-table td, .split-table-continued td {
+    height: 2.8em;
+}
+.data-table tbody tr {
+    min-height: 1.8em; max-height: 3em; page-break-inside: auto;
+}
+/* 테이블별 미세 조정 */
+.info-table td { height: 3.2em; font-weight: bold; }
+.biomarkers-table td { border: 0.5pt solid var(--border-black) !important; }
+
+/* 4.4. 임상적 의미(Clinical Significance) 테이블 - 빨간색/Bold 강조 */
+/* [수정] 색상을 --text-dark-red에서 --text-red로 변경하여 제목과 동일하게 맞춤 */
+:is(#snv-clinical-table, #fusion-clinical-table, #cnv-clinical-table,
+    #lr-brca-clinical-table, #splice-clinical-table,
+    .split-table-continued) td {
+    color: var(--text-red) !important;
+    font-weight: bold !important;
 }
 
-.continued-section .clinical-highlight {
-    color: #ff0000;
-    font-weight: bold;
+/* 4.5. 의미 불명/정상(Unknown/Normal) 테이블 - 검은색/Normal */
+:is(#snv-unknown-table, #fusion-unknown-table, #cnv-unknown-table,
+    #lr-brca-unknown-table, #splice-unknown-table) td {
+    color: var(--text-black) !important;
+    font-weight: normal !important;
 }
 
-/* Gene Content 페이지 특별 스타일 */
-.gene-content-wrapper {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    /* justify-content: center; 제거 - 세로 중간 정렬 해제 */
-    padding: 0; /* 추가 패딩 제거 */
-    margin-top: 5px; /* 요청에 따라 -10px로 변경 */
+/* 4.6. 컬럼 너비 설정 (Column Widths) */
+/* SNV */
+.data-table th:nth-child(1) { width: 10%; } /* GENE */
+.data-table th:nth-child(2) { width: 18%; } /* MUTATION TYPE */
+.data-table th:nth-child(3) { width: 15%; } /* AA CHANGE */
+.data-table th:nth-child(4) { width: 8%; }  /* VAF */
+.data-table th:nth-child(5) { width: 25%; } /* HGVSc */
+.data-table th:nth-child(6) { width: 24%; } /* HGVSp */
+
+/* Fusion */
+:is(#fusion-clinical-table, #fusion-unknown-table) th:nth-child(1) { width: 20%; }
+:is(#fusion-clinical-table, #fusion-unknown-table) th:nth-child(2) { width: 25%; }
+:is(#fusion-clinical-table, #fusion-unknown-table) th:nth-child(3) { width: 25%; }
+:is(#fusion-clinical-table, #fusion-unknown-table) th:nth-child(4) { width: 30%; }
+
+/* CNV, Splice, LR-BRCA 등 나머지 테이블 너비는 HTML 구조에 맞춰 유지 */
+:is(#cnv-clinical-table, #cnv-unknown-table) th:nth-child(1) { width: 12%; }
+:is(#cnv-clinical-table, #cnv-unknown-table) th:nth-child(2) { width: 25%; }
+:is(#cnv-clinical-table, #cnv-unknown-table) th:nth-child(3) { width: 20%; }
+:is(#cnv-clinical-table, #cnv-unknown-table) th:nth-child(4) { width: 43%; }
+
+:is(#lr-brca-clinical-table, #lr-brca-unknown-table) th:nth-child(1) { width: 12%; }
+:is(#lr-brca-clinical-table, #lr-brca-unknown-table) th:nth-child(2) { width: 20%; }
+:is(#lr-brca-clinical-table, #lr-brca-unknown-table) th:nth-child(3) { width: 18%; }
+:is(#lr-brca-clinical-table, #lr-brca-unknown-table) th:nth-child(4) { width: 20%; }
+:is(#lr-brca-clinical-table, #lr-brca-unknown-table) th:nth-child(5) { width: 30%; }
+
+:is(#splice-clinical-table, #splice-unknown-table) th:nth-child(1) { width: 12%; }
+:is(#splice-clinical-table, #splice-unknown-table) th:nth-child(2) { width: 18%; }
+:is(#splice-clinical-table, #splice-unknown-table) th:nth-child(3) { width: 25%; }
+:is(#splice-clinical-table, #splice-unknown-table) th:nth-child(4) { width: 25%; }
+:is(#splice-clinical-table, #splice-unknown-table) th:nth-child(5) { width: 20%; }
+
+/* 긴 텍스트 강제 줄바꿈 (Breakpoints, HGVS 등) */
+:is(#snv-clinical-table, #snv-unknown-table) td:nth-child(5),
+:is(#snv-clinical-table, #snv-unknown-table) td:nth-child(6),
+:is(#fusion-clinical-table, #fusion-unknown-table) td:nth-child(2),
+:is(#fusion-clinical-table, #fusion-unknown-table) td:nth-child(3),
+:is(#cnv-clinical-table, #cnv-unknown-table) td:nth-child(2),
+:is(#lr-brca-clinical-table, #lr-brca-unknown-table) td:nth-child(2),
+:is(#splice-clinical-table, #splice-unknown-table) td:nth-child(3),
+:is(#splice-clinical-table, #splice-unknown-table) td:nth-child(4) {
+    word-break: break-all; font-size: 7pt; line-height: 1.2;
 }
 
-/* CNV 분할 섹션 내부 스타일 */
-#cnv-continued-section {
-    margin-top: 20px;
-    margin-bottom: 15px;
+/* ==========================================================================
+   5. 특수 테이블 (Specification & Gene Content)
+   ========================================================================== */
+/* Specification Table (Mini) */
+.specification-box { width: 100%; max-width: 15.5cm; margin: 0 auto; }
+table.spec-table { table-layout: fixed; font-size: 10px !important; margin: 0 !important; }
+.spec-table th, .spec-table td {
+    border: 1px solid #666; padding: 3px 5px !important; line-height: 1.2; vertical-align: middle;
+}
+.spec-table thead th {
+    background-color: var(--bg-header-gray); height: 20px;
+    border-bottom: 3px double #000 !important;
+}
+.spec-table td:first-child { width: 35%; text-align: left; border-left: none !important; }
+.spec-table td:last-child { width: 65%; text-align: center; border-right: none !important; }
+
+/* Gene Content Table (Micro) */
+.gene-content-box { text-align: left; margin: 15px 0; }
+.gene-content-box img { width: 100%; height: auto; max-width: none; display: block; margin: 0 auto; }
+.gene-content-table {
+    width: calc(100% - 4px); display: table; table-layout: fixed; margin: 0;
+    border-collapse: collapse;
+}
+.gene-content-table th, .gene-content-table td {
+    padding: 0 !important; margin: 0 !important; height: 13px !important;
+    font-size: 6px !important; line-height: 1.0 !important;
+    border: none !important; vertical-align: middle;
+    font-weight: bold !important; color: var(--text-black) !important;
+}
+.gene-content-table th { background-color: var(--bg-header-gray) !important; border-bottom: 3px double #000 !important; }
+.gene-content-table tr td { width: 9.09%; }
+
+/* 페이지별 Gene Content 조정 */
+.page-3 .gene-content-box, .page-4 .gene-content-box { margin: 0 !important; width: 100%; }
+.gene-content-wrapper { flex: 1; display: flex; flex-direction: column; padding: 0; margin-top: 5px; }
+
+/* ==========================================================================
+   6. 보고서 컴포넌트 (Components: Info, QC, Footer)
+   ========================================================================== */
+/* 검사정보 섹션 */
+.info-section { margin-left: 10px; line-height: 1.6; font-size: 10pt; }
+.info-label { font-weight: bold; }
+
+/* QC 그리드 (Grid Layout) */
+.qc-simple { margin: 10px 0; font-size: 8pt; }
+.qc-header, .qc-row-simple { display: flex; align-items: center; line-height: 1.4; }
+.qc-header { font-weight: bold; margin-bottom: 2px; }
+.qc-col-tight { padding: 1px 2px; text-align: left; white-space: nowrap; }
+.qc-col-tight:first-child { width: 20%; }
+.qc-col-tight:nth-child(2), .qc-col-tight:nth-child(3) { width: 20%; text-align: center !important; }
+
+/* [수정] Page 2 특별 스타일 오버라이드 (Bold 해제 요청 반영) */
+/* 1. QC 헤더: Bold 해제 */
+.page-2-content .qc-header {
+    font-weight: normal !important;
+}
+/* 2. DNA/RNA 섹션 라벨: Bold 해제 (3번째 섹션의 info-label 타겟팅) */
+.page-2-content > .section:nth-of-type(3) .info-label {
+    font-weight: normal !important;
 }
 
-#cnv-continued-section .variant-type {
-    margin-bottom: 10px;
-    font-size: 16px;
-    color: #000;
-    font-weight: bold;
+/* 코멘트 박스 */
+.comment-section { border: 2px solid #666; padding: 8px; margin-bottom: 15px; }
+.comment-box { border: 1px solid #000; padding: 10px; min-height: 100px; line-height: 1.4; font-size: 8pt; }
+.additional-info { font-size: 8pt; margin: 10px 0; line-height: 1.4; }
+
+/* 사용자 정보 (User Info - 서명란) */
+.page-footer-wrapper { margin-top: auto; padding-top: 0; }
+.user-info-section { margin-bottom: 5px; font-size: 10pt; margin-top: -25px; } /* 위치 조정 */
+.user-info-divider { border-top: 2px dashed #000; margin-bottom: 0; }
+.user-info-container { padding-top: 20px; position: relative; }
+.user-info-number-row { position: absolute; right: 0; top: 5px; }
+.user-info-tested-row { display: flex; align-items: center; margin-top: -12px; margin-bottom: 2px; }
+.user-tested { margin-right: 60px; font-size: 12pt; }
+.user-analyzed, .user-signed { font-size: 12pt; }
+
+/* 접수번호 테이블 */
+.user-number-table { border: 1px solid #000; display: inline-table; border-collapse: collapse; }
+.user-number-label, .user-number-value {
+    padding: 4px 8px; text-align: center; vertical-align: middle;
+    font-size: 11pt; font-weight: bold; height: 2.5em; overflow: hidden; border: 1px solid #000;
 }
+.user-number-label { background-color: #f0f0f0; }
 
-#cnv-continued-section .clinical-highlight {
-    color: #c00;
-    font-weight: bold;
+/* Footer (하단 로고 및 주소) */
+.report-footer { margin-top: 5px; padding-top: 2px; }
+.footer-container { border-top: 2px dashed #000; padding: 5px 0; font-size: 10pt; }
+.footer-row { display: flex; justify-content: space-between; align-items: flex-end; }
+.footer-org { font-weight: bold; margin-bottom: 2px; font-size: 7pt; line-height: 1.2; }
+.footer-address { font-size: 7pt; line-height: 1.2; }
+.footer-right img { height: 35px; width: auto; vertical-align: bottom; }
+.page-1 .report-footer { margin-top: auto; padding-top: 10px; }
+
+/* 페이지별 특수 컨텐츠 조정 */
+.page-2-content { display: flex; flex-direction: column; height: 100%; margin-top: 0px !important; }
+.page-2-content .section { margin-bottom: 5px !important; }
+.page-2-content .section-title { font-size: 12pt !important; padding-bottom: 2px !important; margin-bottom: 2px !important; }
+.page-3-content, .page-4-content { display: flex; flex-direction: column; height: 100%; padding: 0; }
+.continued-section { margin-top: 5px; margin-bottom: 10px; }
+
+/* ==========================================================================
+   7. UI 컨트롤 (Index.html & Controls)
+   ========================================================================== */
+/* 검색 폼 스타일 */
+.search-form {
+    max-width: 800px; margin: 50px auto; padding: 30px;
+    background-color: var(--bg-white); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); border-radius: 8px;
 }
+.search-form h2 { margin-bottom: 20px; color: var(--text-primary); text-align: center; }
 
-.gene-content-wrapper .section {
-    margin: 0; /* Gene Content 섹션의 마진 제거 */
-}
-
-/* 페이지 하단 footer를 위한 스타일 */
-.page-footer-wrapper {
-    margin-top: auto;
-    padding-top: 0; /* 상단 패딩 제거 */
-}
-
-/* 마지막 페이지의 사용자 정보는 footer 위에 표시 */
-.page-footer-wrapper .user-info-section {
-    margin-bottom: 0; /* Signed by와 Footer 사이 공간 제거 */
-    margin-top: -25px; /* 사용자 정보 전체를 더 위로 올리기 */
-}
-
-/* Footer를 항상 페이지 하단에 고정 - 삭제 */
-/* .page-footer-wrapper .report-footer {
-    margin-top: 10px;
-} */
-
-@media print {
-    @page {
-        size: 19.05cm 24cm;
-        margin: 0;
-    }
-    
-    body {
-        background-color: white;
-        margin: 0;
-        padding: 0;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-    
-    .container {
-        padding: 0;
-    }
-    
-    .a4-page {
-        width: 19.05cm;
-        height: 25.4cm;
-        padding: 1cm;
-        margin: 0 auto 20px;
-        background-color: white;
-        box-shadow: none;
-        border: none; /* 개발용 빨간색 테두리는 인쇄 시 제거 */
-        page-break-after: always;
-        page-break-inside: avoid;
-        box-sizing: border-box;
-        /* overflow는 화면과 동일하게 auto로 유지 */
-    }
-    
-    .a4-page:last-child {
-        page-break-after: auto;
-    }
-    
-    /* 인쇄 시 버튼 숨기기 */
-    .report-controls {
-        display: none !important;
-    }
-    
-    /* A4 기준선 및 페이지 표시 숨기기 */
-    .a4-page::after,
-    .a4-page::before {
-        display: none !important;
-    }
-    
-    /* 오버플로우 경고 스타일 제거 */
-    .a4-page.overflow-warning {
-        border: none;
-        background-color: white;
-    }
-    
-    .a4-page.overflow-warning::after {
-        display: none !important;
-    }
-    
-    /* 프린트시 화면과 동일하게 유지 */
-    /* overflow를 visible로 변경하지 않고 화면 설정 유지 */
-    
-    /* 분할된 콘텐츠 페이지도 프린트 시 디버깅 요소 숨김 */
-    .page-content-continued::before {
-        display: none;
-    }
-    
-    /* 프린트시 강제 페이지 나누기 */
-    .force-page-break {
-        page-break-before: always;
-    }
-    
-    /* 테이블이 페이지를 넘어가지 않도록 */
-    table {
-        page-break-inside: auto; /* 필요시 페이지 나눔 허용 */
-    }
-    
-    /* 섹션이 페이지를 넘어가지 않도록 */
-    .section {
-        page-break-inside: auto; /* avoid에서 auto로 변경 - 필요시 분할 허용 */
-    }
-    
-    /* 제목 요소들의 페이지 분할 방지 */
-    h2, h3, h4,
-    .result-title,
-    .section-title,
-    .variant-type {
-        page-break-after: avoid !important; /* 제목 바로 뒤에서 페이지 분할 방지 */
-        page-break-inside: avoid !important; /* 제목 내부에서 페이지 분할 방지 */
-    }
-    
-    /* 제목과 그 다음 요소를 함께 유지 */
-    .result-title + *,
-    .variant-type + *,
-    .section-title + *,
-    h3 + *,
-    h4 + * {
-        page-break-before: avoid !important; /* 제목과 다음 요소 사이 분할 방지 */
-    }
-    
-    /* 인쇄 시 테이블 스타일 유지 */
-    .page-border {
-        border: 2px solid #000;
-        padding: 0.2cm;
-        margin: 0;
-        height: 100%;
-        box-sizing: border-box;
-    }
-    
-    /* 첫 페이지 컨텐츠 영역 - 화면과 동일하게 유지 */
-    .page-1 .report-content {
-        height: calc(100% - 170px); /* 공간 확보를 위해 조정 */
-        overflow: hidden; /* 화면과 동일하게 hidden 유지 */
-    }
-    
-    /* 인쇄 시에도 하단 고정 요소 위치 유지 */
-    .page-bottom-fixed {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        width: 100%;
-    }
-    
-    /* 테이블 스타일 - 화면과 동일하게 유지, 강제 스타일 제거 */
-    
-    /* 테이블 헤더 배경색 유지 */
-    .data-table th, .info-table th {
-        background-color: #C6D9F1 !important;
-        border: 1pt solid #000 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-    
-    .biomarkers-table th {
-        background-color: #E3F3D1 !important;
-        border: 1pt solid #000 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-    
-    /* Clinical significance 테이블 빨간색 유지 */
-    #snv-clinical-table td,
-    #fusion-clinical-table td,
-    #cnv-clinical-table td,
-    #lr-brca-clinical-table td,
-    #splice-clinical-table td {
-        color: #FF0000 !important;
-        font-weight: bold !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-    
-    /* 컨텐츠 영역 - 화면과 동일하게 유지 */
-    /* overflow를 강제로 visible로 변경하지 않음 */
-    
-    /* 분할된 테이블 스타일 유지 */
-    .split-table-continued {
-        margin-top: 0 !important;
-    }
-    
-    /* 인쇄 시 페이지 번호와 디버그 요소 숨기기 */
-    .page-continued::before,
-    .page-content-continued::before {
-        display: none !important;
-    }
-    
-    /* Gene Content 이미지 크기 유지 */
-    .gene-content-box img {
-        width: 100% !important;
-        height: auto !important;
-        max-width: none !important;
-    }
-    
-    /* 테이블 레이아웃과 커럼 너비 - 화면과 동일하게 유지, 강제 스타일 제거 */
-    
-    /* 보고서 테두리 유지 */
-    .page-border {
-        border: 2px solid #000 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-    
-    /* 인쇄 시 페이지 나누기 컨트롤 */
-    .a4-page {
-        break-inside: avoid;
-        page-break-inside: avoid;
-    }
-    
-    /* 전체 컨테이너 크기 고정 */
-    .container {
-        width: 21cm !important;
-        margin: 0 auto !important;
-    }
-    
-    /* body.printing 클래스 관련 스타일 제거 - 화면과 동일하게 유지 */
-    
-    /* 인쇄 시 Comment 박스 스타일 유지 */
-    .comment-section {
-        border: 2px solid #666 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-    
-    .comment-box {
-        border: 1px solid #000 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-}
-
-/* Specification 테이블 전용 스타일 */
-    .specification-box {
-        width: 100%;
-        /* PPT 너비 15.42cm 고려하여 부모 요소에 맞춤 */
-        max-width: 15.5cm;
-        margin: 0 auto; /* 가운데 정렬 */
-    }
-
-    table.spec-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-family: Arial, sans-serif;
-        table-layout: fixed; /* 셀 너비 고정하여 예측 가능하게 만듦 */
-        font-size: 8px !important;
-    }
-
-    .spec-table thead th,
-    .spec-table tbody td {
-        border: 1px solid #666; /* 기존보다 얇고 깔끔한 테두리 */
-        padding: 3px 5px !important;       /* 기존 8px -> 3px로 축소 (핵심) */
-        line-height: 1.2;       /* 줄 간격 축소 */
-        vertical-align: middle;
-    }
-
-    /* 헤더 스타일 */
-    .spec-table thead th {
-        background-color: #D5E4F1;
-        font-weight: bold;
-        text-align: center;
-        height: 20px; /* 헤더 높이 명시 */
-    }
-
-    /* 데이터 셀 스타일 */
-    .spec-table tbody td {
-        background-color: white;
-        line-height: 1.1;
-        height: auto !important;
-    }
-
-    /* 첫 번째 컬럼 (Parameter) 너비 조정 - 필요에 따라 % 조절 */
-    .spec-table tbody tr td:first-child {
-        width: 35%;
-        text-align: left;
-    }
-
-    /* 두 번째 컬럼 (Value) 너비 조정 */
-    .spec-table tbody tr td:last-child {
-        width: 65%;
-        text-align: center;
-        word-break: break-word; /* 긴 텍스트 줄바꿈 허용 */
-    }
-
-    /* 인쇄 및 PDF 변환 시 색상 유지 */
-    @media print {
-        table.spec-table,
-        .spec-table thead th,
-        .spec-table tbody td {
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
-        .spec-table thead th {
-            background-color: #D5E4F1 !important;
-        }
-    }
-
-/* 검색 결과 드롭다운 스타일 */
-.search-container {
-    position: relative;
-    width: 100%;
-}
-
+/* 검색 입력창 및 드롭다운 */
+.search-container { position: relative; width: 100%; }
 .search-container input {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    font-size: 16px;
-    outline: none;
-    transition: border-color 0.3s;
+    width: 100%; padding: 12px; border: 2px solid var(--border-gray);
+    border-radius: 8px; font-size: 16px; outline: none; transition: border-color 0.3s;
 }
-
-.search-container input:focus {
-    border-color: #4a90e2;
-}
+.search-container input:focus { border-color: #4a90e2; }
 
 .search-results-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: white;
-    border: 1px solid #ddd;
-    border-top: none;
-    border-radius: 0 0 8px 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    max-height: 300px;
-    overflow-y: auto;
-    z-index: 1000;
-    display: none;
+    position: absolute; top: 100%; left: 0; right: 0;
+    background: var(--bg-white); border: 1px solid var(--border-gray); border-top: none;
+    border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-height: 300px; overflow-y: auto; z-index: 1000; display: none;
 }
+.search-results-dropdown.show { display: block; }
 
-.search-results-dropdown.show {
-    display: block;
-}
+.search-result-item { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background-color 0.2s; }
+.search-result-item:hover { background-color: #f8f9fa; }
+.result-main { font-weight: bold; color: var(--text-primary); margin-bottom: 4px; }
+.result-details { font-size: 14px; color: #666; display: flex; flex-wrap: wrap; gap: 8px; }
+.result-detail { background-color: #f0f0f0; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
 
-.search-result-item {
-    padding: 12px 16px;
-    border-bottom: 1px solid #f0f0f0;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.search-result-item:hover {
-    background-color: #f8f9fa;
-}
-
-.search-result-item:last-child {
-    border-bottom: none;
-}
-
-.result-main {
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 4px;
-}
-
-.result-details {
-    font-size: 14px;
-    color: #666;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.result-detail {
-    background-color: #f0f0f0;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-}
-
-.no-results {
-    padding: 16px;
-    text-align: center;
-    color: #999;
-    font-style: italic;
-}
-
-/* 드래그 앤 드롭 영역 */
+/* 파일 업로드 (드래그앤드롭) */
 .drag-drop-zone {
-    width: 100%;
-    height: 200px;
-    border: 3px dashed #999;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-    margin-top: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    width: 100%; height: 200px; border: 3px dashed #999; border-radius: 8px;
+    background-color: #f9f9f9; margin-top: 20px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease;
 }
+.drag-drop-zone:hover { border-color: #4a90e2; background-color: #f0f8ff; }
+.drag-content { text-align: center; }
+.drag-icon { font-size: 48px; margin-bottom: 15px; }
+.drag-text { font-size: 18px; font-weight: bold; color: var(--text-primary); margin-bottom: 8px; }
+.drag-subtext { font-size: 14px; color: #666; }
 
-.drag-drop-zone:hover {
-    border-color: #4a90e2;
-    background-color: #f0f8ff;
+/* 진행 상태 및 에러 */
+.upload-progress { margin-top: 20px; padding: 20px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; }
+.progress-text { text-align: center; margin-bottom: 10px; font-weight: 500; color: #495057; }
+.progress-bar { width: 100%; height: 20px; background-color: #e9ecef; border-radius: 10px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #4a90e2, #357abd); width: 0%; transition: width 0.3s ease; border-radius: 10px; }
+.error-message {
+    max-width: 600px; margin: 50px auto; padding: 20px;
+    background-color: #fee; border: 1px solid #f99; border-radius: 5px; text-align: center;
 }
+.error-message h2 { color: #c33; margin-bottom: 20px; }
+.error-message a { display: inline-block; padding: 10px 20px; background-color: #4a90e2; color: white; text-decoration: none; border-radius: 4px; }
 
-.drag-drop-zone.dragover {
-    border-color: #4a90e2;
-    border-style: solid;
-    background-color: #e8f4fd;
-    transform: scale(1.02);
-}
-
-.drag-content {
-    text-align: center;
-}
-
-.drag-icon {
-    font-size: 48px;
-    margin-bottom: 15px;
-}
-
-.drag-text {
-    font-size: 18px;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 8px;
-}
-
-.drag-subtext {
-    font-size: 14px;
-    color: #666;
-}
-
-/* 업로드 진행률 */
-.upload-progress {
-    margin-top: 20px;
-    padding: 20px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    border: 1px solid #e9ecef;
-}
-
-.progress-text {
-    text-align: center;
-    margin-bottom: 10px;
-    font-weight: 500;
-    color: #495057;
-}
-
-.progress-bar {
-    width: 100%;
-    height: 20px;
-    background-color: #e9ecef;
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #4a90e2, #357abd);
-    width: 0%;
-    transition: width 0.3s ease;
-    border-radius: 10px;
-}
-
-/* 업로드된 파일 목록 */
-.uploaded-files {
-    margin-top: 15px;
-}
-
-.file-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-    background-color: #f8f9fa;
-    border-radius: 6px;
-    margin-bottom: 8px;
-    font-size: 14px;
-}
-
-.file-name {
-    color: #495057;
-    flex: 1;
-}
-
-.file-status {
-    font-size: 12px;
-    font-weight: 500;
-}
-
-.file-status.success {
-    color: #28a745;
-}
-
-.file-status.error {
-    color: #dc3545;
-}
-
-.file-status.processing {
-    color: #ffc107;
-}
-
-/* 보고서 컨트롤 버튼 */
-.report-controls {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 1000;
-}
-
-/* 공통 스타일 (모양, 폰트, 그림자 등) - 색상 제외 */
+/* 보고서 버튼 (PDF/PPT) */
+.report-controls { position: fixed; top: 20px; right: 20px; z-index: 1000; }
 .report-btn {
-    padding: 12px 20px;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    color: white; /* 글자색은 흰색으로 통일 */
+    padding: 12px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1); color: white;
 }
+.report-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+.report-btn.pdf { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+.report-btn.ppt { background: linear-gradient(135deg, #f39c12, #d35400); }
 
-/* 호버 시 공통 동작 (위로 살짝 뜨는 효과) */
-.report-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-
-/* PDF 버튼 전용 색상 (기존 붉은색 유지) */
-.report-btn.pdf {
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
-}
-
-.report-btn.pdf:hover {
-    background: linear-gradient(135deg, #c0392b, #a93226);
-}
-
-/* PPT 버튼 전용 색상 (제안: 주황색 - PowerPoint 브랜드 컬러) */
-.report-btn.ppt {
-    background: linear-gradient(135deg, #f39c12, #d35400);
-}
-
-.report-btn.ppt:hover {
-    background: linear-gradient(135deg, #d35400, #a04000);
-}
-
-/* 인쇄 시 버튼 숨기기 */
+/* ==========================================================================
+   8. 인쇄 설정 (Print Media)
+   ========================================================================== */
 @media print {
-    .report-controls {
+    @page {
+        size: 19.05cm 24cm; margin: 0;
+    }
+
+    body {
+        background-color: white; margin: 0; padding: 0;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+
+    .container { width: 21cm !important; margin: 0 auto !important; padding: 0; }
+
+    /* 인쇄 시 숨김 요소 */
+    .report-controls, .a4-page::after, .a4-page::before,
+    .a4-page.overflow-warning::after, .page-content-continued::before {
         display: none !important;
     }
-}
 
-/* 데이터 셀 스타일 */
-/* 1. 일반 테이블 (1pt) */
-.data-table td,
-.info-table td {
-    border: 1pt solid #000 !important;
-    font-size: 8pt !important;
-}
+    /* 인쇄용 페이지 설정 */
+    .a4-page {
+        margin: 0 auto 20px; box-shadow: none; border: none;
+        page-break-after: always; break-inside: avoid; page-break-inside: avoid;
+    }
+    .a4-page:last-child { page-break-after: auto; }
+    .a4-page.overflow-warning { border: none; background-color: white; }
 
-/* 2. Biomarkers 테이블 (0.5pt) */
-.biomarkers-table td {
-    border: 0.5pt solid #000 !important;
-    font-size: 8pt !important;
-}
+    /* 테두리 및 레이아웃 강제 유지 */
+    .page-border { border: 2px solid #000 !important; padding: 0.2cm; height: 100%; }
+    .page-1 .report-content { height: calc(100% - 170px); overflow: hidden; }
+    .page-bottom-fixed { position: absolute; bottom: 0; left: 0; right: 0; width: 100%; }
 
-/* 붉은색 하이라이트 (VCS) */
-.clinical-highlight,
-#snv-clinical-table td,
-#fusion-clinical-table td,
-#cnv-clinical-table td,
-#lr-brca-clinical-table td,
-#splice-clinical-table td {
-    color: #FF0000 !important; /* 완전한 Red */
-    font-weight: bold !important;
+    /* 테이블 스타일 강제 유지 (배경색, 폰트색 등) */
+    .data-table th, .info-table th, .split-table-continued th { background-color: var(--bg-header-blue) !important; border: 1pt solid #000 !important; }
+    .biomarkers-table th { background-color: var(--bg-header-green) !important; border: 1pt solid #000 !important; }
+    .spec-table thead th { background-color: var(--bg-header-gray) !important; }
+
+    /* 하이라이트 색상 강제 유지 */
+    :is(#snv-clinical-table, #fusion-clinical-table, #cnv-clinical-table,
+        #lr-brca-clinical-table, #splice-clinical-table, .split-table-continued) td,
+    .clinical-highlight {
+        color: var(--text-red) !important; font-weight: bold !important;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+
+    /* 섹션 분할 허용/방지 */
+    .section { page-break-inside: auto; }
+    h2, h3, h4, .result-title, .section-title, .variant-type {
+        page-break-after: avoid !important; page-break-inside: avoid !important;
+    }
+    .result-title + *, .variant-type + *, .section-title + * {
+        page-break-before: avoid !important;
+    }
+
+    /* Gene Content 이미지 크기 강제 */
+    .gene-content-box img { width: 100% !important; height: auto !important; max-width: none !important; }
+
+    /* Comment 스타일 강제 */
+    .comment-section { border: 2px solid #666 !important; }
+    .comment-box { border: 1px solid #000 !important; }
 }
