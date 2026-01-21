@@ -677,17 +677,52 @@ table td {
     margin: 0 auto;
 }
 
+/* 1. 테이블 셀(Cell) 강제 축소 */
+.gene-content-table {
+    width: calc(100% - 4px);
+    border-collapse: collapse;
+    table-layout: fixed;
+    margin: 0;
+    display: table;
+}
+
+.gene-content-table th,
+.gene-content-table td {
+    padding: 0 !important;          /* 여백 제거 */
+    margin: 0 !important;
+    height: 13px !important;        /* 행 높이 10px로 고정 (다이어트) */
+    font-size: 6px !important;      /* 폰트 6px로 축소 */
+    line-height: 1.0 !important;    /* 줄 간격 최소화 */
+    border: none !important;        /* 테두리 제거 */
+    vertical-align: middle;
+    word-wrap: break-word;
+    overflow: hidden;
+    font-weight: bold !important;
+    color: #000 !important;
+}
+
+/* 헤더 배경색 및 폰트 */
+.gene-content-table th {
+    background-color: #D5E4F1 !important;
+    border-bottom: 3px double #000 !important;
+}
+
+.gene-content-table tr td {
+    width: 9.09%; /* 11개 칼럼이므로 100/11 */
+}
+
 /* Gene Content 페이지에서만 적용되는 특별 스타일 */
 .page-3 .gene-content-box,
 .page-4 .gene-content-box {
-    margin: 15px 0; /* 좌우 여백 제거 */
+    margin: 0 !important; /* 좌우 여백 제거 */
     width: 100%; /* 부모 컨테이너 전체 너비 사용 */
 }
 
 /* SA 패널의 경우 page-3, page-4 모두 적용 */
 .page-3 .gene-content-wrapper,
 .page-4 .gene-content-wrapper {
-    padding-top: 0; /* 패딩 제거 */
+    margin-top: 0 !important; /* 위쪽으로 10px 당김 */
+    padding-top: 0 !important; /* 패딩 제거 */
 }
 
 /* 검사정보 스타일 */
@@ -1100,7 +1135,7 @@ table td {
     flex-direction: column;
     /* justify-content: center; 제거 - 세로 중간 정렬 해제 */
     padding: 0; /* 추가 패딩 제거 */
-    margin-top: -10px; /* 요청에 따라 -10px로 변경 */
+    margin-top: 5px; /* 요청에 따라 -10px로 변경 */
 }
 
 /* CNV 분할 섹션 내부 스타일 */
