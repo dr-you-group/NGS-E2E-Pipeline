@@ -302,6 +302,8 @@ table {
 
 .biomarkers-table td {
     border: 0.5pt solid var(--border-black) !important;
+    border-left: none !important;
+    border-right: none !important;
 }
 
 /* 4.4. 임상적 의미(Clinical Significance) 테이블 - 빨간색/Bold 강조 */
@@ -1103,6 +1105,11 @@ table.spec-table {
     .biomarkers-table th {
         background-color: var(--bg-header-green) !important;
         border: 1pt solid #000 !important;
+    }
+
+    .biomarkers-table td {
+        border-left: none !important;
+        border-right: none !important;
     }
 
     .spec-table thead th {
