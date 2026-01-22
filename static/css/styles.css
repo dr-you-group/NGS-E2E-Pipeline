@@ -5,13 +5,13 @@
     /* 색상 팔레트 */
     --bg-body: #f5f5f5;
     --bg-white: #ffffff;
-    --bg-header-blue: #C6D9F1;  /* 일반 테이블 헤더 */
+    --bg-header-blue: #C6D9F1; /* 일반 테이블 헤더 */
     --bg-header-green: #E3F3D1; /* 바이오마커 테이블 헤더 */
-    --bg-header-gray: #D5E4F1;  /* Spec/Gene 테이블 헤더 */
+    --bg-header-gray: #D5E4F1; /* Spec/Gene 테이블 헤더 */
 
     --text-primary: #333333;
     --text-black: #000000;
-    --text-red: #FF0000;        /* 통합된 하이라이트 색상 (제목 & 테이블 데이터 동일) */
+    --text-red: #FF0000; /* 통합된 하이라이트 색상 (제목 & 테이블 데이터 동일) */
 
     --border-black: #000000;
     --border-gray: #ddd;
@@ -113,63 +113,133 @@ body {
 
 /* 디버깅용 페이지 마커 (인쇄 시 숨김) */
 .a4-page::before {
-    position: absolute; top: 5px; left: 5px;
-    font-size: 10px; color: var(--text-red); background-color: #ffe5e5;
-    border: 1px solid var(--text-red); padding: 3px 8px; font-weight: bold; z-index: 1000;
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    font-size: 10px;
+    color: var(--text-red);
+    background-color: #ffe5e5;
+    border: 1px solid var(--text-red);
+    padding: 3px 8px;
+    font-weight: bold;
+    z-index: 1000;
 }
-.a4-page.page-1::before { content: "Page 1"; }
-.a4-page.page-2::before { content: "Page 2"; }
-.a4-page.page-3::before { content: "Page 3"; }
-.a4-page.page-4::before { content: "Page 4"; }
-.page-continued-1::before { content: "Page 1-continued"; }
-.page-content-continued::before { content: "Page 1-Content-continued"; }
+
+.a4-page.page-1::before {
+    content: "Page 1";
+}
+
+.a4-page.page-2::before {
+    content: "Page 2";
+}
+
+.a4-page.page-3::before {
+    content: "Page 3";
+}
+
+.a4-page.page-4::before {
+    content: "Page 4";
+}
+
+.page-continued-1::before {
+    content: "Page 1-continued";
+}
+
+.page-content-continued::before {
+    content: "Page 1-Content-continued";
+}
 
 /* ==========================================================================
    3. 타이포그래피 (Typography)
    ========================================================================== */
-.report-header { text-align: center; margin-bottom: 20px; }
-.report-header h1 { color: var(--text-primary); padding-bottom: 10px; font-size: 24px; }
+.report-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
 
-.section { margin-bottom: 10px; page-break-inside: auto; }
+.report-header h1 {
+    color: var(--text-primary);
+    padding-bottom: 10px;
+    font-size: 24px;
+}
+
+.section {
+    margin-bottom: 10px;
+    page-break-inside: auto;
+}
 
 /* 제목 스타일 */
 .section-title {
     color: var(--text-primary);
-    padding-bottom: 5px; margin-bottom: 10px;
-    font-size: 18px; border-bottom: none;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+    font-size: 18px;
+    border-bottom: none;
 }
 
 .result-title {
-    color: var(--text-black); font-weight: bold;
-    margin-top: 10px; margin-bottom: 8px; font-size: 15px;
+    color: var(--text-black);
+    font-weight: bold;
+    margin-top: 10px;
+    margin-bottom: 8px;
+    font-size: 15px;
 }
 
 .variant-type {
-    margin-top: 8px; margin-bottom: 4px;
-    font-size: 13px; color: var(--text-primary); font-weight: bold;
+    margin-top: 8px;
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: bold;
 }
 
 /* 페이지 분할 방지 (제목과 내용 분리 방지) */
 h1, h2, h3, h4, .section-title, .result-title, .variant-type {
-    page-break-after: avoid; break-after: avoid; page-break-inside: avoid;
+    page-break-after: avoid;
+    break-after: avoid;
+    page-break-inside: avoid;
 }
+
 .result-title + *, .variant-type + *, .section-title + *, h3 + *, h4 + * {
-    page-break-before: avoid; break-before: avoid;
+    page-break-before: avoid;
+    break-before: avoid;
 }
 
 /* 텍스트 하이라이트 유틸리티 */
-.clinical-highlight { color: var(--text-red) !important; font-weight: bold; }
-.none-text { color: var(--text-primary) !important; font-weight: normal !important; }
-#failed-gene { color: var(--text-black); font-weight: normal; }
-.small-text { font-size: 7pt; font-weight: normal; }
+.clinical-highlight {
+    color: var(--text-red) !important;
+    font-weight: bold;
+}
+
+.none-text {
+    color: var(--text-primary) !important;
+    font-weight: normal !important;
+}
+
+#failed-gene {
+    color: var(--text-black);
+    font-weight: normal;
+}
+
+.small-text {
+    font-size: 7pt;
+    font-weight: normal;
+}
 
 /* ==========================================================================
    4. 테이블 스타일 (Tables) - 통합 및 최적화
    ========================================================================== */
 table {
-    width: 100%; border-collapse: collapse; margin-bottom: 10px; page-break-inside: auto;
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+    page-break-inside: auto;
 }
-.full-width { width: 100%; table-layout: fixed; }
+
+.full-width {
+    width: 100%;
+    table-layout: fixed;
+}
 
 /* 4.1. 공통 테이블 셀 스타일 (헤더/데이터 공통) */
 .data-table th, .data-table td,
@@ -193,263 +263,775 @@ table {
     font-weight: bold;
     height: 2.8em; /* 2줄 기준 고정 높이 */
 }
+
 /* 헤더 배경색 지정 (우선순위 높임) */
-.data-table th, .info-table th, .split-table-continued th { background-color: var(--bg-header-blue) !important; }
-.biomarkers-table th { background-color: var(--bg-header-green) !important; }
-.info-table th { height: 3.2em; /* 정보 테이블 헤더는 조금 더 높음 */ }
+.data-table th, .info-table th, .split-table-continued th {
+    background-color: var(--bg-header-blue) !important;
+}
+
+.biomarkers-table th {
+    background-color: var(--bg-header-green) !important;
+}
+
+.info-table th {
+    height: 3.2em; /* 정보 테이블 헤더는 조금 더 높음 */
+}
 
 /* 4.3. 데이터 셀 (TD) 공통 스타일 */
 .data-table td, .info-table td, .biomarkers-table td, .split-table-continued td {
     height: 2.8em;
 }
+
 .data-table tbody tr {
-    min-height: 1.8em; max-height: 3em; page-break-inside: auto;
+    min-height: 1.8em;
+    max-height: 3em;
+    page-break-inside: auto;
 }
+
 /* 테이블별 미세 조정 */
-.info-table td { height: 3.2em; font-weight: bold; }
-.biomarkers-table td { border: 0.5pt solid var(--border-black) !important; }
+.info-table td {
+    height: 3.2em;
+    font-weight: bold;
+}
+
+.biomarkers-table td {
+    border: 0.5pt solid var(--border-black) !important;
+}
 
 /* 4.4. 임상적 의미(Clinical Significance) 테이블 - 빨간색/Bold 강조 */
 /* [수정] 색상을 --text-dark-red에서 --text-red로 변경하여 제목과 동일하게 맞춤 */
-:is(#snv-clinical-table, #fusion-clinical-table, #cnv-clinical-table,
-    #lr-brca-clinical-table, #splice-clinical-table,
-    .split-table-continued) td {
+#snv-clinical-table td,
+#fusion-clinical-table td,
+#cnv-clinical-table td,
+#lr-brca-clinical-table td,
+#splice-clinical-table td,
+.split-table-continued td {
     color: var(--text-red) !important;
     font-weight: bold !important;
 }
 
 /* 4.5. 의미 불명/정상(Unknown/Normal) 테이블 - 검은색/Normal */
-:is(#snv-unknown-table, #fusion-unknown-table, #cnv-unknown-table,
-    #lr-brca-unknown-table, #splice-unknown-table) td {
+#snv-unknown-table td,
+#fusion-unknown-table td,
+#cnv-unknown-table td,
+#lr-brca-unknown-table td,
+#splice-unknown-table td {
     color: var(--text-black) !important;
     font-weight: normal !important;
 }
 
 /* 4.6. 컬럼 너비 설정 (Column Widths) */
 /* SNV */
-.data-table th:nth-child(1) { width: 10%; } /* GENE */
-.data-table th:nth-child(2) { width: 18%; } /* MUTATION TYPE */
-.data-table th:nth-child(3) { width: 15%; } /* AA CHANGE */
-.data-table th:nth-child(4) { width: 8%; }  /* VAF */
-.data-table th:nth-child(5) { width: 25%; } /* HGVSc */
-.data-table th:nth-child(6) { width: 24%; } /* HGVSp */
+.data-table th:nth-child(1) {
+    width: 10%;
+}
+
+/* GENE */
+.data-table th:nth-child(2) {
+    width: 18%;
+}
+
+/* MUTATION TYPE */
+.data-table th:nth-child(3) {
+    width: 15%;
+}
+
+/* AA CHANGE */
+.data-table th:nth-child(4) {
+    width: 8%;
+}
+
+/* VAF */
+.data-table th:nth-child(5) {
+    width: 25%;
+}
+
+/* HGVSc */
+.data-table th:nth-child(6) {
+    width: 24%;
+}
+
+/* HGVSp */
 
 /* Fusion */
-:is(#fusion-clinical-table, #fusion-unknown-table) th:nth-child(1) { width: 20%; }
-:is(#fusion-clinical-table, #fusion-unknown-table) th:nth-child(2) { width: 25%; }
-:is(#fusion-clinical-table, #fusion-unknown-table) th:nth-child(3) { width: 25%; }
-:is(#fusion-clinical-table, #fusion-unknown-table) th:nth-child(4) { width: 30%; }
+#fusion-clinical-table th:nth-child(1),
+#fusion-unknown-table th:nth-child(1) {
+    width: 20%;
+}
 
-/* CNV, Splice, LR-BRCA 등 나머지 테이블 너비는 HTML 구조에 맞춰 유지 */
-:is(#cnv-clinical-table, #cnv-unknown-table) th:nth-child(1) { width: 12%; }
-:is(#cnv-clinical-table, #cnv-unknown-table) th:nth-child(2) { width: 25%; }
-:is(#cnv-clinical-table, #cnv-unknown-table) th:nth-child(3) { width: 20%; }
-:is(#cnv-clinical-table, #cnv-unknown-table) th:nth-child(4) { width: 43%; }
+#fusion-clinical-table th:nth-child(2),
+#fusion-unknown-table th:nth-child(2) {
+    width: 25%;
+}
 
-:is(#lr-brca-clinical-table, #lr-brca-unknown-table) th:nth-child(1) { width: 12%; }
-:is(#lr-brca-clinical-table, #lr-brca-unknown-table) th:nth-child(2) { width: 20%; }
-:is(#lr-brca-clinical-table, #lr-brca-unknown-table) th:nth-child(3) { width: 18%; }
-:is(#lr-brca-clinical-table, #lr-brca-unknown-table) th:nth-child(4) { width: 20%; }
-:is(#lr-brca-clinical-table, #lr-brca-unknown-table) th:nth-child(5) { width: 30%; }
+#fusion-clinical-table th:nth-child(3),
+#fusion-unknown-table th:nth-child(3) {
+    width: 25%;
+}
 
-:is(#splice-clinical-table, #splice-unknown-table) th:nth-child(1) { width: 12%; }
-:is(#splice-clinical-table, #splice-unknown-table) th:nth-child(2) { width: 18%; }
-:is(#splice-clinical-table, #splice-unknown-table) th:nth-child(3) { width: 25%; }
-:is(#splice-clinical-table, #splice-unknown-table) th:nth-child(4) { width: 25%; }
-:is(#splice-clinical-table, #splice-unknown-table) th:nth-child(5) { width: 20%; }
+#fusion-clinical-table th:nth-child(4),
+#fusion-unknown-table th:nth-child(4) {
+    width: 30%;
+}
+
+/* CNV */
+#cnv-clinical-table th:nth-child(1),
+#cnv-unknown-table th:nth-child(1) {
+    width: 12%;
+}
+
+#cnv-clinical-table th:nth-child(2),
+#cnv-unknown-table th:nth-child(2) {
+    width: 25%;
+}
+
+#cnv-clinical-table th:nth-child(3),
+#cnv-unknown-table th:nth-child(3) {
+    width: 20%;
+}
+
+#cnv-clinical-table th:nth-child(4),
+#cnv-unknown-table th:nth-child(4) {
+    width: 43%;
+}
+
+/* LR-BRCA */
+#lr-brca-clinical-table th:nth-child(1),
+#lr-brca-unknown-table th:nth-child(1) {
+    width: 12%;
+}
+
+#lr-brca-clinical-table th:nth-child(2),
+#lr-brca-unknown-table th:nth-child(2) {
+    width: 20%;
+}
+
+#lr-brca-clinical-table th:nth-child(3),
+#lr-brca-unknown-table th:nth-child(3) {
+    width: 18%;
+}
+
+#lr-brca-clinical-table th:nth-child(4),
+#lr-brca-unknown-table th:nth-child(4) {
+    width: 20%;
+}
+
+#lr-brca-clinical-table th:nth-child(5),
+#lr-brca-unknown-table th:nth-child(5) {
+    width: 30%;
+}
+
+/* Splice */
+#splice-clinical-table th:nth-child(1),
+#splice-unknown-table th:nth-child(1) {
+    width: 12%;
+}
+
+#splice-clinical-table th:nth-child(2),
+#splice-unknown-table th:nth-child(2) {
+    width: 18%;
+}
+
+#splice-clinical-table th:nth-child(3),
+#splice-unknown-table th:nth-child(3) {
+    width: 25%;
+}
+
+#splice-clinical-table th:nth-child(4),
+#splice-unknown-table th:nth-child(4) {
+    width: 25%;
+}
+
+#splice-clinical-table th:nth-child(5),
+#splice-unknown-table th:nth-child(5) {
+    width: 20%;
+}
 
 /* 긴 텍스트 강제 줄바꿈 (Breakpoints, HGVS 등) */
-:is(#snv-clinical-table, #snv-unknown-table) td:nth-child(5),
-:is(#snv-clinical-table, #snv-unknown-table) td:nth-child(6),
-:is(#fusion-clinical-table, #fusion-unknown-table) td:nth-child(2),
-:is(#fusion-clinical-table, #fusion-unknown-table) td:nth-child(3),
-:is(#cnv-clinical-table, #cnv-unknown-table) td:nth-child(2),
-:is(#lr-brca-clinical-table, #lr-brca-unknown-table) td:nth-child(2),
-:is(#splice-clinical-table, #splice-unknown-table) td:nth-child(3),
-:is(#splice-clinical-table, #splice-unknown-table) td:nth-child(4) {
-    word-break: break-all; font-size: 7pt; line-height: 1.2;
+#snv-clinical-table td:nth-child(5),
+#snv-unknown-table td:nth-child(5),
+#snv-clinical-table td:nth-child(6),
+#snv-unknown-table td:nth-child(6),
+#fusion-clinical-table td:nth-child(2),
+#fusion-unknown-table td:nth-child(2),
+#fusion-clinical-table td:nth-child(3),
+#fusion-unknown-table td:nth-child(3),
+#cnv-clinical-table td:nth-child(2),
+#cnv-unknown-table td:nth-child(2),
+#lr-brca-clinical-table td:nth-child(2),
+#lr-brca-unknown-table td:nth-child(2),
+#splice-clinical-table td:nth-child(3),
+#splice-unknown-table td:nth-child(3),
+#splice-clinical-table td:nth-child(4),
+#splice-unknown-table td:nth-child(4) {
+    word-break: break-all;
+    font-size: 7pt;
+    line-height: 1.2;
 }
 
 /* ==========================================================================
    5. 특수 테이블 (Specification & Gene Content)
    ========================================================================== */
 /* Specification Table (Mini) */
-.specification-box { width: 100%; max-width: 15.5cm; margin: 0 auto; }
-table.spec-table { table-layout: fixed; font-size: 10px !important; margin: 0 !important; }
-.spec-table th, .spec-table td {
-    border: 1px solid #666; padding: 3px 5px !important; line-height: 1.2; vertical-align: middle;
+.specification-box {
+    width: 100%;
+    max-width: 15.5cm;
+    margin: 0 auto;
 }
-.spec-table thead th {
-    background-color: var(--bg-header-gray); height: 20px;
+
+table.spec-table {
+    table-layout: fixed;
+    font-size: 10pt !important;
+    margin: 0 !important;
+}
+
+.spec-table th, .spec-table td {
+    border-top: 1px solid #666;
+    border-bottom: 1px solid #666;
+    border-left: none;
+    border-right: none;
+    padding: 3px 5px !important;
+    line-height: 1.2;
+    vertical-align: middle;
+}
+
+.spec-table th {
+    background-color: var(--bg-header-gray);
+    height: 20px;
     border-bottom: 3px double #000 !important;
 }
-.spec-table td:first-child { width: 35%; text-align: left; border-left: none !important; }
-.spec-table td:last-child { width: 65%; text-align: center; border-right: none !important; }
+
+.spec-table th:first-child,
+.spec-table td:first-child {
+    width: 35%;
+    text-align: left;
+    border-left: none !important;
+}
+
+.spec-table th:last-child,
+.spec-table td:last-child {
+    width: 65%;
+    text-align: center;
+    border-right: none !important;
+    word-break: break-word;
+}
 
 /* Gene Content Table (Micro) */
-.gene-content-box { text-align: left; margin: 15px 0; }
-.gene-content-box img { width: 100%; height: auto; max-width: none; display: block; margin: 0 auto; }
+.gene-content-box {
+    text-align: left;
+    margin: 15px 0;
+}
+
+.gene-content-box img {
+    width: 100%;
+    height: auto;
+    max-width: none;
+    display: block;
+    margin: 0 auto;
+}
+
 .gene-content-table {
-    width: calc(100% - 4px); display: table; table-layout: fixed; margin: 0;
+    width: calc(100% - 4px);
+    display: table;
+    table-layout: fixed;
+    margin: 0;
     border-collapse: collapse;
 }
+
 .gene-content-table th, .gene-content-table td {
-    padding: 0 !important; margin: 0 !important; height: 13px !important;
-    font-size: 6px !important; line-height: 1.0 !important;
-    border: none !important; vertical-align: middle;
-    font-weight: bold !important; color: var(--text-black) !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    height: 13px !important;
+    font-size: 6px !important;
+    line-height: 1.0 !important;
+    border: none !important;
+    vertical-align: middle;
+    font-weight: bold !important;
+    color: var(--text-black) !important;
 }
-.gene-content-table th { background-color: var(--bg-header-gray) !important; border-bottom: 3px double #000 !important; }
-.gene-content-table tr td { width: 9.09%; }
+
+.gene-content-table th {
+    background-color: var(--bg-header-gray) !important;
+    border-bottom: 3px double #000 !important;
+}
+
+.gene-content-table tr td {
+    width: 9.09%;
+}
 
 /* 페이지별 Gene Content 조정 */
-.page-3 .gene-content-box, .page-4 .gene-content-box { margin: 0 !important; width: 100%; }
-.gene-content-wrapper { flex: 1; display: flex; flex-direction: column; padding: 0; margin-top: 5px; }
+.page-3 .gene-content-box, .page-4 .gene-content-box {
+    margin: 0 !important;
+    width: 100%;
+}
+
+.gene-content-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin-top: 5px;
+}
 
 /* ==========================================================================
    6. 보고서 컴포넌트 (Components: Info, QC, Footer)
    ========================================================================== */
 /* 검사정보 섹션 */
-.info-section { margin-left: 10px; line-height: 1.6; font-size: 10pt; }
-.info-label { font-weight: bold; }
+.info-section {
+    margin-left: 10px;
+    line-height: 1.6;
+    font-size: 10pt;
+}
+
+.info-label {
+    font-weight: bold;
+}
 
 /* QC 그리드 (Grid Layout) */
-.qc-simple { margin: 10px 0; font-size: 8pt; }
-.qc-header, .qc-row-simple { display: flex; align-items: center; line-height: 1.4; }
-.qc-header { font-weight: bold; margin-bottom: 2px; }
-.qc-col-tight { padding: 1px 2px; text-align: left; white-space: nowrap; }
-.qc-col-tight:first-child { width: 20%; }
-.qc-col-tight:nth-child(2), .qc-col-tight:nth-child(3) { width: 20%; text-align: center !important; }
+.qc-simple {
+    margin: 10px 0;
+    font-size: 8pt;
+}
+
+.qc-header, .qc-row-simple {
+    display: flex;
+    align-items: center;
+    line-height: 1.4;
+}
+
+.qc-header {
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.qc-col-tight {
+    padding: 1px 2px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.qc-col-tight:first-child {
+    width: 20%;
+}
+
+.qc-col-tight:nth-child(2), .qc-col-tight:nth-child(3) {
+    width: 20%;
+    text-align: center !important;
+}
 
 /* [수정] Page 2 특별 스타일 오버라이드 (Bold 해제 요청 반영) */
 /* 1. QC 헤더: Bold 해제 */
 .page-2-content .qc-header {
     font-weight: normal !important;
 }
+
 /* 2. DNA/RNA 섹션 라벨: Bold 해제 (3번째 섹션의 info-label 타겟팅) */
 .page-2-content > .section:nth-of-type(3) .info-label {
     font-weight: normal !important;
 }
 
 /* 코멘트 박스 */
-.comment-section { border: 2px solid #666; padding: 8px; margin-bottom: 15px; }
-.comment-box { border: 1px solid #000; padding: 10px; min-height: 100px; line-height: 1.4; font-size: 8pt; }
-.additional-info { font-size: 8pt; margin: 10px 0; line-height: 1.4; }
+.comment-section {
+    border: 2px solid #666;
+    padding: 8px;
+    margin-bottom: 15px;
+}
+
+.comment-box {
+    border: 1px solid #000;
+    padding: 10px;
+    min-height: 100px;
+    line-height: 1.4;
+    font-size: 8pt;
+}
+
+.additional-info {
+    font-size: 8pt;
+    margin: 10px 0;
+    line-height: 1.4;
+}
 
 /* 사용자 정보 (User Info - 서명란) */
-.page-footer-wrapper { margin-top: auto; padding-top: 0; }
-.user-info-section { margin-bottom: 5px; font-size: 10pt; margin-top: -25px; } /* 위치 조정 */
-.user-info-divider { border-top: 2px dashed #000; margin-bottom: 0; }
-.user-info-container { padding-top: 20px; position: relative; }
-.user-info-number-row { position: absolute; right: 0; top: 5px; }
-.user-info-tested-row { display: flex; align-items: center; margin-top: -12px; margin-bottom: 2px; }
-.user-tested { margin-right: 60px; font-size: 12pt; }
-.user-analyzed, .user-signed { font-size: 12pt; }
+.page-footer-wrapper {
+    margin-top: auto;
+    padding-top: 0;
+}
+
+.user-info-section {
+    margin-bottom: 5px;
+    font-size: 10pt;
+    margin-top: -25px;
+}
+
+/* 위치 조정 */
+.user-info-divider {
+    border-top: 2px dashed #000;
+    margin-bottom: 0;
+}
+
+.user-info-container {
+    padding-top: 20px;
+    position: relative;
+}
+
+.user-info-number-row {
+    position: absolute;
+    right: 0;
+    top: 5px;
+}
+
+.user-info-tested-row {
+    display: flex;
+    align-items: center;
+    margin-top: -12px;
+    margin-bottom: 2px;
+}
+
+.user-tested {
+    margin-right: 60px;
+    font-size: 12pt;
+}
+
+.user-analyzed, .user-signed {
+    font-size: 12pt;
+}
 
 /* 접수번호 테이블 */
-.user-number-table { border: 1px solid #000; display: inline-table; border-collapse: collapse; }
-.user-number-label, .user-number-value {
-    padding: 4px 8px; text-align: center; vertical-align: middle;
-    font-size: 11pt; font-weight: bold; height: 2.5em; overflow: hidden; border: 1px solid #000;
+.user-number-table {
+    border: 1px solid #000;
+    display: inline-table;
+    border-collapse: collapse;
 }
-.user-number-label { background-color: #f0f0f0; }
+
+.user-number-label, .user-number-value {
+    padding: 4px 8px;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 11pt;
+    font-weight: bold;
+    height: 2.5em;
+    overflow: hidden;
+    border: 1px solid #000;
+}
+
+.user-number-label {
+    background-color: #f0f0f0;
+}
 
 /* Footer (하단 로고 및 주소) */
-.report-footer { margin-top: 5px; padding-top: 2px; }
-.footer-container { border-top: 2px dashed #000; padding: 5px 0; font-size: 10pt; }
-.footer-row { display: flex; justify-content: space-between; align-items: flex-end; }
-.footer-org { font-weight: bold; margin-bottom: 2px; font-size: 7pt; line-height: 1.2; }
-.footer-address { font-size: 7pt; line-height: 1.2; }
-.footer-right img { height: 35px; width: auto; vertical-align: bottom; }
-.page-1 .report-footer { margin-top: auto; padding-top: 10px; }
+.report-footer {
+    margin-top: 5px;
+    padding-top: 2px;
+}
+
+.footer-container {
+    border-top: 2px dashed #000;
+    padding: 5px 0;
+    font-size: 10pt;
+}
+
+.footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.footer-org {
+    font-weight: bold;
+    margin-bottom: 2px;
+    font-size: 7pt;
+    line-height: 1.2;
+}
+
+.footer-address {
+    font-size: 7pt;
+    line-height: 1.2;
+}
+
+.footer-right img {
+    height: 35px;
+    width: auto;
+    vertical-align: bottom;
+}
+
+.page-1 .report-footer {
+    margin-top: auto;
+    padding-top: 10px;
+}
 
 /* 페이지별 특수 컨텐츠 조정 */
-.page-2-content { display: flex; flex-direction: column; height: 100%; margin-top: 0px !important; }
-.page-2-content .section { margin-bottom: 5px !important; }
-.page-2-content .section-title { font-size: 12pt !important; padding-bottom: 2px !important; margin-bottom: 2px !important; }
-.page-3-content, .page-4-content { display: flex; flex-direction: column; height: 100%; padding: 0; }
-.continued-section { margin-top: 5px; margin-bottom: 10px; }
+.page-2-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    margin-top: 0px !important;
+}
+
+.page-2-content .section {
+    margin-bottom: 5px !important;
+}
+
+.page-2-content .section-title {
+    font-size: 12pt !important;
+    padding-bottom: 2px !important;
+    margin-bottom: 2px !important;
+}
+
+.page-3-content, .page-4-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 0;
+}
+
+.continued-section {
+    margin-top: 5px;
+    margin-bottom: 10px;
+}
 
 /* ==========================================================================
    7. UI 컨트롤 (Index.html & Controls)
    ========================================================================== */
 /* 검색 폼 스타일 */
 .search-form {
-    max-width: 800px; margin: 50px auto; padding: 30px;
-    background-color: var(--bg-white); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); border-radius: 8px;
+    max-width: 800px;
+    margin: 50px auto;
+    padding: 30px;
+    background-color: var(--bg-white);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
 }
-.search-form h2 { margin-bottom: 20px; color: var(--text-primary); text-align: center; }
+
+.search-form h2 {
+    margin-bottom: 20px;
+    color: var(--text-primary);
+    text-align: center;
+}
 
 /* 검색 입력창 및 드롭다운 */
-.search-container { position: relative; width: 100%; }
-.search-container input {
-    width: 100%; padding: 12px; border: 2px solid var(--border-gray);
-    border-radius: 8px; font-size: 16px; outline: none; transition: border-color 0.3s;
+.search-container {
+    position: relative;
+    width: 100%;
 }
-.search-container input:focus { border-color: #4a90e2; }
+
+.search-container input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid var(--border-gray);
+    border-radius: 8px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.search-container input:focus {
+    border-color: #4a90e2;
+}
 
 .search-results-dropdown {
-    position: absolute; top: 100%; left: 0; right: 0;
-    background: var(--bg-white); border: 1px solid var(--border-gray); border-top: none;
-    border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    max-height: 300px; overflow-y: auto; z-index: 1000; display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-white);
+    border: 1px solid var(--border-gray);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
 }
-.search-results-dropdown.show { display: block; }
 
-.search-result-item { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background-color 0.2s; }
-.search-result-item:hover { background-color: #f8f9fa; }
-.result-main { font-weight: bold; color: var(--text-primary); margin-bottom: 4px; }
-.result-details { font-size: 14px; color: #666; display: flex; flex-wrap: wrap; gap: 8px; }
-.result-detail { background-color: #f0f0f0; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+.search-results-dropdown.show {
+    display: block;
+}
+
+.search-result-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.search-result-item:hover {
+    background-color: #f8f9fa;
+}
+
+.result-main {
+    font-weight: bold;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.result-details {
+    font-size: 14px;
+    color: #666;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.result-detail {
+    background-color: #f0f0f0;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
 
 /* 파일 업로드 (드래그앤드롭) */
 .drag-drop-zone {
-    width: 100%; height: 200px; border: 3px dashed #999; border-radius: 8px;
-    background-color: #f9f9f9; margin-top: 20px;
-    display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease;
+    width: 100%;
+    height: 200px;
+    border: 3px dashed #999;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
-.drag-drop-zone:hover { border-color: #4a90e2; background-color: #f0f8ff; }
-.drag-content { text-align: center; }
-.drag-icon { font-size: 48px; margin-bottom: 15px; }
-.drag-text { font-size: 18px; font-weight: bold; color: var(--text-primary); margin-bottom: 8px; }
-.drag-subtext { font-size: 14px; color: #666; }
+
+.drag-drop-zone:hover {
+    border-color: #4a90e2;
+    background-color: #f0f8ff;
+}
+
+.drag-content {
+    text-align: center;
+}
+
+.drag-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+}
+
+.drag-text {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.drag-subtext {
+    font-size: 14px;
+    color: #666;
+}
 
 /* 진행 상태 및 에러 */
-.upload-progress { margin-top: 20px; padding: 20px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; }
-.progress-text { text-align: center; margin-bottom: 10px; font-weight: 500; color: #495057; }
-.progress-bar { width: 100%; height: 20px; background-color: #e9ecef; border-radius: 10px; overflow: hidden; }
-.progress-fill { height: 100%; background: linear-gradient(90deg, #4a90e2, #357abd); width: 0%; transition: width 0.3s ease; border-radius: 10px; }
-.error-message {
-    max-width: 600px; margin: 50px auto; padding: 20px;
-    background-color: #fee; border: 1px solid #f99; border-radius: 5px; text-align: center;
+.upload-progress {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
 }
-.error-message h2 { color: #c33; margin-bottom: 20px; }
-.error-message a { display: inline-block; padding: 10px 20px; background-color: #4a90e2; color: white; text-decoration: none; border-radius: 4px; }
+
+.progress-text {
+    text-align: center;
+    margin-bottom: 10px;
+    font-weight: 500;
+    color: #495057;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background-color: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4a90e2, #357abd);
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 10px;
+}
+
+.error-message {
+    max-width: 600px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: #fee;
+    border: 1px solid #f99;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.error-message h2 {
+    color: #c33;
+    margin-bottom: 20px;
+}
+
+.error-message a {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #4a90e2;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+}
 
 /* 보고서 버튼 (PDF/PPT) */
-.report-controls { position: fixed; top: 20px; right: 20px; z-index: 1000; }
-.report-btn {
-    padding: 12px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
-    cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1); color: white;
+.report-controls {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
 }
-.report-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
-.report-btn.pdf { background: linear-gradient(135deg, #e74c3c, #c0392b); }
-.report-btn.ppt { background: linear-gradient(135deg, #f39c12, #d35400); }
+
+.report-btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    color: white;
+}
+
+.report-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.report-btn.pdf {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.report-btn.ppt {
+    background: linear-gradient(135deg, #f39c12, #d35400);
+}
 
 /* ==========================================================================
    8. 인쇄 설정 (Print Media)
    ========================================================================== */
 @media print {
     @page {
-        size: 19.05cm 24cm; margin: 0;
+        size: 19.05cm 24cm;
+        margin: 0;
     }
 
     body {
-        background-color: white; margin: 0; padding: 0;
-        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+        background-color: white;
+        margin: 0;
+        padding: 0;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
-    .container { width: 21cm !important; margin: 0 auto !important; padding: 0; }
+    .container {
+        width: 21cm !important;
+        margin: 0 auto !important;
+        padding: 0;
+    }
 
     /* 인쇄 시 숨김 요소 */
     .report-controls, .a4-page::after, .a4-page::before,
@@ -459,43 +1041,99 @@ table.spec-table { table-layout: fixed; font-size: 10px !important; margin: 0 !i
 
     /* 인쇄용 페이지 설정 */
     .a4-page {
-        margin: 0 auto 20px; box-shadow: none; border: none;
-        page-break-after: always; break-inside: avoid; page-break-inside: avoid;
+        margin: 0 auto 20px;
+        box-shadow: none;
+        border: none;
+        page-break-after: always;
+        break-inside: avoid;
+        page-break-inside: avoid;
     }
-    .a4-page:last-child { page-break-after: auto; }
-    .a4-page.overflow-warning { border: none; background-color: white; }
+
+    .a4-page:last-child {
+        page-break-after: auto;
+    }
+
+    .a4-page.overflow-warning {
+        border: none;
+        background-color: white;
+    }
 
     /* 테두리 및 레이아웃 강제 유지 */
-    .page-border { border: 2px solid #000 !important; padding: 0.2cm; height: 100%; }
-    .page-1 .report-content { height: calc(100% - 170px); overflow: hidden; }
-    .page-bottom-fixed { position: absolute; bottom: 0; left: 0; right: 0; width: 100%; }
+    .page-border {
+        border: 2px solid #000 !important;
+        padding: 0.2cm;
+        height: 100%;
+    }
+
+    .page-1 .report-content {
+        height: calc(100% - 170px);
+        overflow: hidden;
+    }
+
+    .page-bottom-fixed {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+    }
 
     /* 테이블 스타일 강제 유지 (배경색, 폰트색 등) */
-    .data-table th, .info-table th, .split-table-continued th { background-color: var(--bg-header-blue) !important; border: 1pt solid #000 !important; }
-    .biomarkers-table th { background-color: var(--bg-header-green) !important; border: 1pt solid #000 !important; }
-    .spec-table thead th { background-color: var(--bg-header-gray) !important; }
+    .data-table th, .info-table th, .split-table-continued th {
+        background-color: var(--bg-header-blue) !important;
+        border: 1pt solid #000 !important;
+    }
+
+    .biomarkers-table th {
+        background-color: var(--bg-header-green) !important;
+        border: 1pt solid #000 !important;
+    }
+
+    .spec-table thead th {
+        background-color: var(--bg-header-gray) !important;
+    }
 
     /* 하이라이트 색상 강제 유지 */
-    :is(#snv-clinical-table, #fusion-clinical-table, #cnv-clinical-table,
-        #lr-brca-clinical-table, #splice-clinical-table, .split-table-continued) td,
+    #snv-clinical-table td,
+    #fusion-clinical-table td,
+    #cnv-clinical-table td,
+    #lr-brca-clinical-table td,
+    #splice-clinical-table td,
+    .split-table-continued td,
     .clinical-highlight {
-        color: var(--text-red) !important; font-weight: bold !important;
-        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+        color: var(--text-red) !important;
+        font-weight: bold !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
     /* 섹션 분할 허용/방지 */
-    .section { page-break-inside: auto; }
-    h2, h3, h4, .result-title, .section-title, .variant-type {
-        page-break-after: avoid !important; page-break-inside: avoid !important;
+    .section {
+        page-break-inside: auto;
     }
+
+    h2, h3, h4, .result-title, .section-title, .variant-type {
+        page-break-after: avoid !important;
+        page-break-inside: avoid !important;
+    }
+
     .result-title + *, .variant-type + *, .section-title + * {
         page-break-before: avoid !important;
     }
 
     /* Gene Content 이미지 크기 강제 */
-    .gene-content-box img { width: 100% !important; height: auto !important; max-width: none !important; }
+    .gene-content-box img {
+        width: 100% !important;
+        height: auto !important;
+        max-width: none !important;
+    }
 
     /* Comment 스타일 강제 */
-    .comment-section { border: 2px solid #666 !important; }
-    .comment-box { border: 1px solid #000 !important; }
+    .comment-section {
+        border: 2px solid #666 !important;
+    }
+
+    .comment-box {
+        border: 1px solid #000 !important;
+    }
 }
