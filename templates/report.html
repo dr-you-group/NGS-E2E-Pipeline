@@ -1,5 +1,17 @@
 <!DOCTYPE html>
 <html lang="ko">
+{% macro render_highlight(highlight_data) %}
+    {% if highlight_data %}
+        :
+        {% for segment in highlight_data %}
+            {% if segment.style == 'italic' %}
+                <i>{{ segment.text }}</i>
+            {% else %}
+                {{ segment.text }}
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+{% endmacro %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -92,8 +104,9 @@
                                  data-table-type="clinical"{% if report_data.snv_clinical.split_at %}
                                  data-split-at="{{ report_data.snv_clinical.split_at }}"{% endif %}>
                                 <h4 class="variant-type snv-title">- SNVs & Indels
-                                    {% if report_data.snv_clinical.highlight %}
-                                        <span class="clinical-highlight">: {{ report_data.snv_clinical.highlight | safe }}</span>{% endif %}
+                                    <span class="clinical-highlight">
+                                        {{ render_highlight(report_data.snv_clinical.highlight) }}
+                                    </span>
                                 </h4>
                                 <table class="data-table full-width" id="snv-clinical-table">
                                     <thead>
@@ -126,8 +139,9 @@
                             <div id="fusion-clinical-section" class="splittable-section" data-section-name="Fusion gene"
                                  data-table-type="clinical">
                                 <h4 class="variant-type fusion-title">- Fusion genes
-                                    {% if report_data.fusion_clinical.highlight %}:
-                                        <span class="clinical-highlight"> {{ report_data.fusion_clinical.highlight | safe }}</span>{% endif %}
+                                    <span class="clinical-highlight">
+                                        {{ render_highlight(report_data.fusion_clinical.highlight) }}
+                                    </span>
                                 </h4>
                                 <table class="data-table full-width" id="fusion-clinical-table">
                                     <thead>
@@ -159,8 +173,9 @@
                                  data-section-name="Copy number variation"{% if report_data.cnv_clinical.split_at %}
                                  data-split-at="{{ report_data.cnv_clinical.split_at }}"{% endif %}>
                                 <h4 class="variant-type cnv-title">- Copy number variation
-                                    {% if report_data.cnv_clinical.highlight %}:
-                                        <span class="clinical-highlight"> {{ report_data.cnv_clinical.highlight | safe}}</span>{% endif %}
+                                    <span class="clinical-highlight">
+                                        {{ render_highlight(report_data.cnv_clinical.highlight) }}
+                                    </span>
                                 </h4>
                                 <table class="data-table full-width" id="cnv-clinical-table">
                                     <thead>
@@ -191,8 +206,9 @@
                             <div id="lr-brca-clinical-section" class="splittable-section"
                                  data-section-name="Large rearrangements in BRCA1/2" data-table-type="clinical">
                                 <h4 class="variant-type lr-brca-title">- Large rearrangements in BRCA1/2
-                                    {% if report_data.lr_brca_clinical.highlight %}:
-                                        <span class="clinical-highlight"> {{ report_data.lr_brca_clinical.highlight | safe}}</span>{% endif %}
+                                    <span class="clinical-highlight">
+                                        {{ render_highlight(report_data.lr_brca_clinical.highlight) }}
+                                    </span>
                                 </h4>
                                 <table class="data-table full-width" id="lr-brca-clinical-table">
                                     <thead>
@@ -225,8 +241,9 @@
                             <div id="splice-clinical-section" class="splittable-section"
                                  data-section-name="Splice variant" data-table-type="clinical">
                                 <h4 class="variant-type splice-title">- Splice variant
-                                    {% if report_data.splice_clinical.highlight %}:
-                                        <span class="clinical-highlight">{{ report_data.splice_clinical.highlight | safe }}</span>{% endif %}
+                                    <span class="clinical-highlight">
+                                        {{ render_highlight(report_data.splice_clinical.highlight) }}
+                                    </span>
                                 </h4>
                                 <table class="data-table full-width" id="splice-clinical-table">
                                     <thead>
@@ -330,7 +347,7 @@
                 <!-- Fusion gene -->
                 {% if report_data.fusion_unknown.data %}
                     <h4 class="variant-type">- Fusion gene{% if report_data.fusion_unknown.highlight %}:
-                            {{ report_data.fusion_unknown.highlight | safe }}
+                        {{ report_data.fusion_unknown.highlight | safe }}
                     {% endif %}
                     </h4>
                     <table class="data-table full-width" id="fusion-unknown-table">

@@ -27,20 +27,37 @@ class NGS_EXCEL2DB:
         self.IO = self.df.parse('IO', header=1, dtype=str).fillna('')
         self.panel = 'SA' if '.SA.' in self.clinical_dict["검체 유형"] else 'GE'
 
-    def _format_highlight(self, highlight_text: str) -> str:
+    def _parse_highlight_structure(self, highlight_text: str) -> List[Dict[str, Any]]:
         if not highlight_text:
-            return ""
+            return []
+
+        structured_items = []
         items = highlight_text.split(', ')
-        formatted_items = []
-        for item in items:
+
+        for idx, item in enumerate(items):
             parts = item.split(' ', 1)
+
+            # 1. 유전자명 (항상 이탤릭)
+            structured_items.append({
+                "text": parts[0],
+                "style": "italic"  # 스타일 정보를 명시적 키워드로 전달
+            })
+
+            # 2. 나머지 상세 내용 (정자체)
             if len(parts) > 1:
-                # 첫 단어(유전자명) 이탤릭 + 나머지 정자체
-                formatted_items.append(f"<i>{parts[0]}</i> {parts[1]}")
-            else:
-                # 단어가 하나뿐이면 전체 이탤릭
-                formatted_items.append(f"<i>{item}</i>")
-        return ', '.join(formatted_items)
+                structured_items.append({
+                    "text": " " + parts[1],
+                    "style": "normal"
+                })
+
+            # 3. 항목 간 구분자 (쉼표)
+            if idx < len(items) - 1:
+                structured_items.append({
+                    "text": ", ",
+                    "style": "normal"
+                })
+
+        return structured_items
     
     def close(self):
         """Excel 파일을 명시적으로 닫아 파일 잠금을 해제합니다."""
@@ -79,10 +96,10 @@ class NGS_EXCEL2DB:
     
 
     # SNVs & Indels
-    def get_SNV(self, data_type: str) -> Tuple[str, List]:
+    def get_SNV(self, data_type: str) -> Tuple[List[Dict[str, List]], List]:
         SNV_Data = self.SNV[self.SNV['Clinical_significance'] == data_type]
         raw_highlight = ', '.join(SNV_Data[SNV_Data["highlight"] != '']['highlight'].tolist())
-        SNV_Highlight = self._format_highlight(raw_highlight)
+        SNV_Highlight = self._parse_highlight_structure(raw_highlight)
         SNV_Row = ['Gene', 'Consequence', 'AA Change', 'VAF', 'HGVSc', 'HGVSp']
         # VAF 값 소수 2번째 자리까지 반올림 처리
         SNV_Data_processed = SNV_Data[SNV_Row].copy()
@@ -93,37 +110,37 @@ class NGS_EXCEL2DB:
     
 
     # Fusion Gene
-    def get_Fusion(self, data_type:str) -> Tuple[str, List]:
+    def get_Fusion(self, data_type:str) -> Tuple[List[Dict[str, List]], List]:
         Fusion_Data = self.Fusion[self.Fusion['Clinical_significance'] == data_type]
         raw_highlight = ', '.join(Fusion_Data[Fusion_Data["highlight"] != '']['highlight'].tolist())
-        Fusion_Highlight = self._format_highlight(raw_highlight)
+        Fusion_Highlight = self._parse_highlight_structure(raw_highlight)
         Fusion_Row = ['Gene fusion', 'Breakpoint 1', 'Breakpoint 2', 'Fusion supporting reads']
         return Fusion_Highlight, [Fusion_Row] + Fusion_Data[Fusion_Row].values.tolist()
     
 
     # Copy number variation
-    def get_CNV(self, data_type:str) -> Tuple[str, List]:
+    def get_CNV(self, data_type:str) -> Tuple[List[Dict[str, List]], List]:
         CNV_Data = self.CNV[self.CNV['Clinical_significance'] == data_type]
         raw_highlight = ', '.join(CNV_Data[CNV_Data["highlight"] != '']['highlight'].tolist())
-        CNV_Highlight = self._format_highlight(raw_highlight)
+        CNV_Highlight = self._parse_highlight_structure(raw_highlight)
         CNV_Row = ['Gene', 'Location', 'Fold Change', 'Estimated copy number']
         return CNV_Highlight, [CNV_Row] + CNV_Data[CNV_Row].values.tolist()
 
 
     # Large rearrangements in BRCA1/2
-    def get_LR_BRCA(self, data_type: str) -> Tuple[str, List]:
+    def get_LR_BRCA(self, data_type: str) -> Tuple[List[Dict[str, List]], List]:
         LR_BRCA_Data = self.LR_BRCA[self.LR_BRCA['Clinical_significance'] == data_type]
         raw_highlight = ', '.join(LR_BRCA_Data[LR_BRCA_Data["highlight"] != '']['highlight'].tolist())
-        LR_BRCA_Data_Highlight = self._format_highlight(raw_highlight)
+        LR_BRCA_Data_Highlight = self._parse_highlight_structure(raw_highlight)
         LR_BRCA_Row = ['Gene', 'Location', 'Affected exon', 'Fold Change', 'Estimated copy number']
         return LR_BRCA_Data_Highlight, [LR_BRCA_Row] + LR_BRCA_Data[LR_BRCA_Row].values.tolist()
 
 
     # Splice Variant
-    def get_Splice(self, data_type: str) -> Tuple[str, List]:
+    def get_Splice(self, data_type: str) -> Tuple[List[Dict[str, List]], List]:
         Splice_Data = self.Splice[self.Splice['Clinical_significance'] == data_type]
         raw_highlight = ', '.join(Splice_Data[Splice_Data["highlight"] != '']['highlight'].tolist())
-        Splice_Highlight = self._format_highlight(raw_highlight)
+        Splice_Highlight = self._parse_highlight_structure(raw_highlight)
         Splice_Row = ['Gene', 'Affected exon', 'Breakpoint 1', 'Breakpoint 2', 'Splice supporting reads']
         return Splice_Highlight, [Splice_Row] + Splice_Data[Splice_Row].values.tolist()
     

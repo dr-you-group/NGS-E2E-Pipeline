@@ -300,12 +300,12 @@ class NGS_PPT_Generator:
 
             rows = section_data.get('data', [])
             headers = section_data.get('headers', [])
-            highlight = section_data.get('highlight', '')
+            highlight_val = section_data.get('highlight', [])
 
             prototype_xml = analyzer.existing_elements["prototypes"].get(key)
 
             if rows and len(rows) > 0:
-                self._render_section_header(layout, title, highlight=highlight)
+                self._render_section_header(layout, title, highlight_data = highlight_val)
                 if prototype_xml:
                     self._render_table_using_prototype(layout, prototype_xml, rows)
                 else:
@@ -327,7 +327,7 @@ class NGS_PPT_Generator:
 
         layout.add_space(height + self.config.SPACE_TITLE_BOTTOM)
 
-    def _render_section_header(self, layout, title, highlight=None, is_none=False):
+    def _render_section_header(self, layout, title, highlight_data=None, is_none=False):
         height = Cm(0.8)
         layout.check_space(height)
         tb = layout.current_slide.shapes.add_textbox(layout.margin, layout.top, layout.width, height)
@@ -343,31 +343,26 @@ class NGS_PPT_Generator:
             self._set_run_style(p.add_run(), ": None",
                                 font_size=self.config.FONT_SIZE_HEADER,
                                 color=self.config.COLOR_BLACK)
-        elif highlight:
+        elif highlight_data:
+            # ": " 찍기
             self._set_run_style(p.add_run(), ": ", is_bold=True,
                                 font_size=self.config.FONT_SIZE_HEADER,
                                 color=self.config.COLOR_RED)
 
-            # 3. 하이라이트 파싱 (첫 단어 이탤릭)
-            variants = highlight.split(', ')
-            for idx, variant in enumerate(variants):
-                parts = variant.split(' ', 1)
+            # 1. 단순히 리스트를 하나씩 꺼내서 그림 (로직 없음)
+            for segment in highlight_data:
+                # 데이터에서 텍스트와 스타일을 꺼냄
+                text = segment['text']
+                style = segment.get('style', 'normal')
 
-                # 유전자명 (이탤릭)
-                self._set_run_style(p.add_run(), parts[0], is_bold=True,
+                # 스타일이 'italic'이면 True, 아니면 False
+                is_italic = (style == 'italic')
+
+                # 2. 그대로 출력 (조건문 분기 불필요)
+                self._set_run_style(p.add_run(), text, is_bold=True,
                                     font_size=self.config.FONT_SIZE_HEADER,
-                                    color=self.config.COLOR_RED, italic=True)
-
-                # 나머지 내용 (정자체)
-                if len(parts) > 1:
-                    self._set_run_style(p.add_run(), " " + parts[1], is_bold=True,
-                                        font_size=self.config.FONT_SIZE_HEADER,
-                                        color=self.config.COLOR_RED)
-
-                if idx < len(variants) - 1:
-                    self._set_run_style(p.add_run(), ", ", is_bold=True,
-                                        font_size=self.config.FONT_SIZE_HEADER,
-                                        color=self.config.COLOR_RED)
+                                    color=self.config.COLOR_RED,
+                                    italic=is_italic)  # 스타일 적용
 
         layout.add_space(height)
 
