@@ -265,21 +265,27 @@ table {
 }
 
 /* 헤더 배경색 지정 (우선순위 높임) */
-.data-table th, .info-table th, .split-table-continued th {
+.info-table th {
     background-color: var(--bg-header-blue) !important;
+    height: 3.2em; /* 정보 테이블 헤더는 조금 더 높음 */
+}
+
+.data-table th, .split-table-continued th {
+    background-color: var(--bg-header-gray) !important;
 }
 
 .biomarkers-table th {
     background-color: var(--bg-header-green) !important;
 }
 
-.info-table th {
-    height: 3.2em; /* 정보 테이블 헤더는 조금 더 높음 */
-}
-
 /* 4.3. 데이터 셀 (TD) 공통 스타일 */
 .data-table td, .info-table td, .biomarkers-table td, .split-table-continued td {
     height: 2.8em;
+}
+
+.data-table td, .split-table-continued td {
+    border-left: none !important;
+    border-right: none !important;
 }
 
 .data-table tbody tr {
@@ -1079,9 +1085,19 @@ table.spec-table {
     }
 
     /* 테이블 스타일 강제 유지 (배경색, 폰트색 등) */
-    .data-table th, .info-table th, .split-table-continued th {
+    .info-table th{
         background-color: var(--bg-header-blue) !important;
         border: 1pt solid #000 !important;
+    }
+
+    .data-table th, .split-table-continued th {
+        background-color: var(--bg-header-gray) !important;
+        border: 1pt solid #000 !important;
+    }
+
+    .data-table td, .split-table-continued td {
+        border-left: none !important;
+        border-right: none !important;
     }
 
     .biomarkers-table th {

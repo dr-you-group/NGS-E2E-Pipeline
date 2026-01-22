@@ -38,7 +38,7 @@
                     <!-- 검체 정보 -->
                     <div class="section">
                         <h2 class="section-title">▣ 검체 정보</h2>
-                        <table class="info-table full-width" border="1">
+                        <table class="info-table full-width">
                             <tr>
                                 <th>검체 정보</th>
                                 <th>성별</th>
@@ -95,7 +95,7 @@
                                     {% if report_data.snv_clinical.highlight %}
                                         <span class="clinical-highlight">: {{ report_data.snv_clinical.highlight | safe }}</span>{% endif %}
                                 </h4>
-                                <table class="data-table full-width" border="1" id="snv-clinical-table">
+                                <table class="data-table full-width" id="snv-clinical-table">
                                     <thead>
                                     <tr>
                                         <th>GENE</th>
@@ -129,7 +129,7 @@
                                     {% if report_data.fusion_clinical.highlight %}:
                                         <span class="clinical-highlight"> {{ report_data.fusion_clinical.highlight | safe }}</span>{% endif %}
                                 </h4>
-                                <table class="data-table full-width" border="1" id="fusion-clinical-table">
+                                <table class="data-table full-width" id="fusion-clinical-table">
                                     <thead>
                                     <tr>
                                         <th>GENE FUSION</th>
@@ -162,7 +162,7 @@
                                     {% if report_data.cnv_clinical.highlight %}:
                                         <span class="clinical-highlight"> {{ report_data.cnv_clinical.highlight | safe}}</span>{% endif %}
                                 </h4>
-                                <table class="data-table full-width" border="1" id="cnv-clinical-table">
+                                <table class="data-table full-width" id="cnv-clinical-table">
                                     <thead>
                                     <tr>
                                         <th>GENE</th>
@@ -194,7 +194,7 @@
                                     {% if report_data.lr_brca_clinical.highlight %}:
                                         <span class="clinical-highlight"> {{ report_data.lr_brca_clinical.highlight | safe}}</span>{% endif %}
                                 </h4>
-                                <table class="data-table full-width" border="1" id="lr-brca-clinical-table">
+                                <table class="data-table full-width" id="lr-brca-clinical-table">
                                     <thead>
                                     <tr>
                                         <th>GENE</th>
@@ -228,7 +228,7 @@
                                     {% if report_data.splice_clinical.highlight %}:
                                         <span class="clinical-highlight">{{ report_data.splice_clinical.highlight | safe }}</span>{% endif %}
                                 </h4>
-                                <table class="data-table full-width" border="1" id="splice-clinical-table">
+                                <table class="data-table full-width" id="splice-clinical-table">
                                     <thead>
                                     <tr>
                                         <th>GENE</th>
@@ -260,7 +260,7 @@
                     <!-- Other Biomarkers -->
                     <div class="section">
                         <h4 class="variant-type">- Other Biomarkers</h4>
-                        <table class="biomarkers-table full-width" border="1">
+                        <table class="biomarkers-table full-width">
                             <tr>
                                 <th>Estimated Tumor Mutation Burden (TMB)</th>
                                 <th>Microsatellite Instability (MSI) (% Unstable MSI Sites)</th>
@@ -306,7 +306,7 @@
                         {{ report_data.snv_unknown.highlight | safe }}
                     {% endif %}
                     </h4>
-                    <table class="data-table full-width" border="1" id="snv-unknown-table">
+                    <table class="data-table full-width" id="snv-unknown-table">
                         <tr>
                             <th>GENE</th>
                             <th>MUTATION TYPE</th>
@@ -333,7 +333,7 @@
                             {{ report_data.fusion_unknown.highlight | safe }}
                     {% endif %}
                     </h4>
-                    <table class="data-table full-width" border="1" id="fusion-unknown-table">
+                    <table class="data-table full-width" id="fusion-unknown-table">
                         <tr>
                             <th>GENE FUSION</th>
                             <th>BREAKPOINT 1</th>
@@ -356,7 +356,7 @@
                 {% if report_data.cnv_unknown.data %}
                     <h4 class="variant-type">- Copy number variation{% if report_data.cnv_unknown.highlight %}:
                         {{ report_data.cnv_unknown.highlight }}{% endif %}</h4>
-                    <table class="data-table full-width" border="1" id="cnv-unknown-table">
+                    <table class="data-table full-width" id="cnv-unknown-table">
                         <tr>
                             <th>GENE</th>
                             <th>LOCATION</th>
@@ -380,7 +380,7 @@
                     <h4 class="variant-type">- Large rearrangements in BRCA1/2
                         {% if report_data.lr_brca_unknown.highlight %}:
                             {{ report_data.lr_brca_unknown.highlight }}{% endif %}</h4>
-                    <table class="data-table full-width" border="1" id="lr-brca-unknown-table">
+                    <table class="data-table full-width" id="lr-brca-unknown-table">
                         <tr>
                             <th>GENE</th>
                             <th>LOCATION</th>
@@ -404,7 +404,7 @@
                 {% if report_data.splice_unknown.data %}
                     <h4 class="variant-type">- Splice variant{% if report_data.splice_unknown.highlight %}:
                         {{ report_data.splice_unknown.highlight }}{% endif %}</h4>
-                    <table class="data-table full-width" border="1" id="splice-unknown-table">
+                    <table class="data-table full-width" id="splice-unknown-table">
                         <tr>
                             <th>GENE</th>
                             <th>AFFECTED EXON</th>
@@ -696,7 +696,7 @@
             <!-- Other Biomarkers -->
             <div class="section">
                 <h4 class="variant-type">- Other Biomarkers</h4>
-                <table class="biomarkers-table full-width" border="1">
+                <table class="biomarkers-table full-width">
                     <tr>
                         <th>Estimated Tumor Mutation Burden (TMB)</th>
                         <th>Microsatellite Instability (MSI) (% Unstable MSI Sites)</th>
