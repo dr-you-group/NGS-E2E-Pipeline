@@ -15,7 +15,7 @@ from pptx.util import Pt, Cm
 class PPTReportConfig:
     """보고서 생성에 필요한 상수, 스타일, 규칙 등을 관리하는 설정 클래스"""
 
-    # 1. 레이아웃 & 폰트 설정
+    # 레이아웃 & 폰트 설정
     MARGIN_LEFT = Cm(1.0)
     DEFAULT_WIDTH = Cm(24.0)
     BODY_TOP_START = Cm(4.5)
@@ -36,7 +36,19 @@ class PPTReportConfig:
     SPACE_TABLE_BOTTOM = Cm(0.1)  # 테이블 하단 간격
     SPACE_TITLE_BOTTOM = Cm(0.05)  # 제목 하단 간격
 
-    # 2. 데이터 매핑
+    # 스타일 프리셋 정의
+    STYLES = {
+        "clinical": {"color": COLOR_RED, "bold": True},
+        "unknown": {"color": COLOR_BLACK, "bold": False}
+    }
+
+    # 섹션 시작점을 찾기 위한 텍스트 매핑
+    SECTION_START_MARKERS = {
+        "clinical": "1. Variants of clinical significance",
+        "unknown": "2. Variants of unknown significance"
+    }
+
+    # 데이터 매핑
     CLINICAL_INFO_MAPPING = {
         "검체 정보": "검체 정보", "성별": "성별", "나이": "나이",
         "Unit NO.": "Unit NO.", "환자명": "환자명", "채취 장기": "채취 장기",
@@ -48,16 +60,26 @@ class PPTReportConfig:
         "Microsatellite Instability": "msi"
     }
 
-    # 3. 섹션 순서 및 키
+    # 섹션 순서 및 키
     VARIANT_SECTIONS = [
-        {"key": "snv_clinical", "title": "SNVs & Indels"},
-        {"key": "fusion_clinical", "title": "Fusion gene"},
-        {"key": "cnv_clinical", "title": "Copy number variation"},
-        {"key": "lr_brca_clinical", "title": "Large rearrangements in BRCA1/2"},
-        {"key": "splice_clinical", "title": "Splice variant"}
+        # 1. Clinical Significance
+        {"key": "snv_clinical", "title": "SNVs & Indels", "type": "clinical", "prototype_key": "snv_clinical"},
+        {"key": "fusion_clinical", "title": "Fusion gene", "type": "clinical", "prototype_key": "fusion_clinical"},
+        {"key": "cnv_clinical", "title": "Copy number variation", "type": "clinical", "prototype_key": "cnv_clinical"},
+        {"key": "lr_brca_clinical", "title": "Large rearrangements in BRCA1/2", "type": "clinical",
+         "prototype_key": "lr_brca_clinical"},
+        {"key": "splice_clinical", "title": "Splice variant", "type": "clinical", "prototype_key": "splice_clinical"},
+
+        # 2. Unknown Significance
+        {"key": "snv_unknown", "title": "SNVs & Indels", "type": "unknown", "prototype_key": "snv_clinical"},
+        {"key": "fusion_unknown", "title": "Fusion gene", "type": "unknown", "prototype_key": "fusion_clinical"},
+        {"key": "cnv_unknown", "title": "Copy number variation", "type": "unknown", "prototype_key": "cnv_clinical"},
+        {"key": "lr_brca_unknown", "title": "Large rearrangements in BRCA1/2", "type": "unknown",
+         "prototype_key": "lr_brca_clinical"},
+        {"key": "splice_unknown", "title": "Splice variant", "type": "unknown", "prototype_key": "splice_clinical"}
     ]
 
-    # 4. 테이블 식별 규칙 (확장성 핵심)
+    # 테이블 식별 규칙 (확장성 핵심)
     # required: 반드시 포함되어야 할 헤더 키워드 (OR 조건은 튜플로 묶음)
     # excluded: 포함되면 안 되는 헤더 키워드
     TABLE_IDENTIFICATION_RULES = [
@@ -88,14 +110,13 @@ class PPTReportConfig:
         }
     ]
 
-    # 5. 삭제할 소제목 키워드
-    REMOVE_KEYWORDS = ["SNVs", "Fusion", "Copy", "Splice", "Rearrangement"]
+    # 삭제할 소제목 키워드
+    REMOVE_KEYWORDS = ["SNVs", "Fusion", "Copy", "Splice", "Rearrangement", "Failed gene"]
 
 
 class LayoutAnalyzer:
-    def __init__(self, prs, slide):
+    def __init__(self, prs):
         self.prs = prs
-        self.slide = slide
         self.page_width = prs.slide_width
         self.page_height = prs.slide_height
         self.config = PPTReportConfig()
@@ -105,47 +126,56 @@ class LayoutAnalyzer:
         self.body_bottom = self.config.BODY_BOTTOM_LIMIT
 
         self.existing_elements = {
-            "main_title": None,
             "prototypes": {}
         }
 
-        self._analyze_and_extract()
+        # 섹션별 시작 위치 저장소
+        self.section_locations = {}
 
-    def _analyze_and_extract(self):
+        self._analyze_all_slides()
+
+    def _analyze_all_slides(self):
+        for slide_idx, slide in enumerate(self.prs.slides):
+            self._analyze_single_slide(slide, slide_idx)
+
+    def _analyze_single_slide(self, slide, slide_idx):
         shapes_to_remove = []
-        section_2_top = self.page_height
+        found_section_on_this_slide = False
 
-        # 1. 섹션 2 위치 파악
-        for shape in self.slide.shapes:
-            if shape.has_text_frame:
-                text = shape.text_frame.text.strip()
-                if "2. Variants of unknown significance" in text:
-                    section_2_top = shape.top
-
-        # 2. 요소 분석 및 추출
-        for shape in self.slide.shapes:
-            # 2-1. 텍스트 분석
+        # 1. 텍스트 분석 (섹션 마커 및 Footer)
+        for shape in slide.shapes:
             if shape.has_text_frame:
                 text = shape.text_frame.text.strip()
 
-                if "1. Variants of clinical significance" in text:
-                    self.existing_elements["main_title"] = shape.top + shape.height + self.config.SPACE_TITLE_BOTTOM
-                    self.body_top = self.existing_elements["main_title"]
+                # 섹션 시작 마커 찾기
+                for section_type, marker in self.config.SECTION_START_MARKERS.items():
+                    if marker in text:
+                        self.section_locations[section_type] = {
+                            "slide_index": slide_idx,
+                            "top": shape.top + shape.height + self.config.SPACE_TITLE_BOTTOM,
+                            "has_title": True
+                        }
+                        found_section_on_this_slide = True
 
+                        # Clinical 섹션인 경우 기본 시작점 업데이트
+                        if section_type == "clinical":
+                            self.body_top = self.section_locations[section_type]["top"]
+
+                # Footer 위치 파악
                 if "검사기관" in text or "세브란스병원" in text:
                     if shape.top < self.page_height:
                         self.body_bottom = shape.top - Cm(0.5)
 
-                # 소제목 삭제 (섹션 2 위쪽만)
-                if shape.top < section_2_top:
-                    if text.startswith("- ") and any(k in text for k in self.config.REMOVE_KEYWORDS):
+                # 소제목 삭제 대상 수집
+                if found_section_on_this_slide:
+                    text_lower = text.lower()
+                    is_remove_target = any(k.lower() in text_lower for k in self.config.REMOVE_KEYWORDS)
+                    if is_remove_target:
                         shapes_to_remove.append(shape)
 
-            # 2-2. 테이블 분석 (규칙 기반 식별)
+        # 2. 테이블 요소 분석 및 프로토타입 추출
+        for shape in slide.shapes:
             if shape.has_table:
-                if shape.top >= section_2_top:
-                    continue
-
                 tbl = shape.table
                 try:
                     if len(tbl.rows) > 0:
@@ -155,8 +185,12 @@ class LayoutAnalyzer:
                         target_key = self._identify_table_type(header_str)
 
                         if target_key:
-                            self.existing_elements["prototypes"][target_key] = copy.deepcopy(shape.element)
-                            shapes_to_remove.append(shape)
+                            if target_key not in self.existing_elements['prototypes']:
+                                self.existing_elements['prototypes'][target_key] = copy.deepcopy(shape.element)
+
+                            if found_section_on_this_slide:
+                                shapes_to_remove.append(shape)
+
                 except Exception as e:
                     print(f"Table analysis warning: {e}")
 
@@ -196,14 +230,33 @@ class LayoutAnalyzer:
 
 
 class LayoutContext:
-    def __init__(self, prs, start_slide, analyzer: LayoutAnalyzer):
+    def __init__(self, prs, analyzer: LayoutAnalyzer):
         self.prs = prs
-        self.current_slide = start_slide
-        self.top = analyzer.body_top
+        self.analyzer = analyzer
+
+        start_loc = analyzer.section_locations.get("clinical")
+        if start_loc:
+            self.current_slide_index = start_loc["slide_index"]
+            self.top = start_loc["top"]
+        else:
+            self.current_slide_index = 0
+            self.top = analyzer.body_top
+
+        self.current_slide = prs.slides[self.current_slide_index]
         self.bottom_limit = analyzer.body_bottom
         self.margin = analyzer.config.MARGIN_LEFT
         self.width = analyzer.config.DEFAULT_WIDTH
         self.config = analyzer.config
+
+    def move_to_section(self, section_type):
+        """특정 섹션의 지정된 위치(템플릿 페이지)로 이동"""
+        loc = self.analyzer.section_locations.get(section_type)
+        if loc:
+            self.current_slide_index = loc["slide_index"]
+            self.current_slide = self.prs.slides[self.current_slide_index]
+            self.top = loc["top"]
+            return True
+        return False
 
     def check_space(self, height):
         if self.top + height > self.bottom_limit:
@@ -214,7 +267,7 @@ class LayoutContext:
         layout_idx = 6 if len(self.prs.slide_layouts) > 6 else -1
         blank_layout = self.prs.slide_layouts[layout_idx]
         self.current_slide = self.prs.slides.add_slide(blank_layout)
-        self.top = Cm(1.5)
+        self.top = Cm(0.5)
 
     def add_space(self, height):
         self.top += height
@@ -256,8 +309,8 @@ class NGS_PPT_Generator:
         if len(prs.slides) > 0:
             self._fill_clinical_info(prs.slides[0], report_data)
 
-        analyzer = LayoutAnalyzer(prs, prs.slides[0])
-        self._process_clinical_variants(prs, report_data, analyzer)
+        analyzer = LayoutAnalyzer(prs)
+        self._process_all_variants(prs, report_data, analyzer)
 
         output = BytesIO()
         prs.save(output)
@@ -287,27 +340,41 @@ class NGS_PPT_Generator:
 
             self._search_and_fill_cell_below(tables, ppt_label, final_value)
 
-    def _process_clinical_variants(self, prs, report_data, analyzer):
-        layout = LayoutContext(prs, prs.slides[0], analyzer)
+    def _process_all_variants(self, prs, report_data, analyzer):
+        layout = LayoutContext(prs, analyzer)
+        current_section_group = None
 
-        if not analyzer.existing_elements["main_title"]:
-            self._draw_main_section_title(layout, "1. Variants of clinical significance")
+        for section_config in self.config.VARIANT_SECTIONS:
+            key = section_config['key']
+            title = section_config['title']
+            style_type = section_config['type']
+            prototype_key = section_config['prototype_key']
 
-        for config in self.config.VARIANT_SECTIONS:
-            key = config['key']
-            title = config['title']
+            # 스타일 설정 가져오기 (clinical: Red/Bold, unknown: Black/Normal)
+            style_props = self.config.STYLES.get(style_type, self.config.STYLES["unknown"])
+
+            if current_section_group != style_type:
+                current_section_group = style_type
+
+                # 템플릿 내 지정된 섹션 위치로 이동 시도
+                found_anchor = layout.move_to_section(style_type)
+
+                # 지정된 위치가 없다면 직접 타이틀 그리기
+                if not found_anchor:
+                    main_title = self.config.SECTION_START_MARKERS.get(style_type)
+                    self._draw_main_section_title(layout, main_title)
+
             section_data = report_data.get(key, {})
-
             rows = section_data.get('data', [])
             headers = section_data.get('headers', [])
             highlight_val = section_data.get('highlight', [])
 
-            prototype_xml = analyzer.existing_elements["prototypes"].get(key)
+            prototype_xml = analyzer.existing_elements["prototypes"].get(prototype_key)
 
             if rows and len(rows) > 0:
-                self._render_section_header(layout, title, highlight_data = highlight_val)
+                self._render_section_header(layout, title, highlight_data=highlight_val)
                 if prototype_xml:
-                    self._render_table_using_prototype(layout, prototype_xml, rows)
+                    self._render_table_using_prototype(layout, prototype_xml, rows, style_props)
                 else:
                     self._render_table_from_scratch(layout, headers, rows)
             else:
@@ -375,7 +442,7 @@ class NGS_PPT_Generator:
         run.font.bold = is_bold
         run.font.italic = italic
 
-    def _render_table_using_prototype(self, layout, prototype_xml, rows):
+    def _render_table_using_prototype(self, layout, prototype_xml, rows, style_props):
         row_height = Cm(0.8)
         header_height = Cm(0.8)
 
@@ -388,15 +455,15 @@ class NGS_PPT_Generator:
         max_rows = int((available_height - header_height) / row_height)
 
         if max_rows >= len(rows):
-            self._insert_cloned_table(layout, prototype_xml, rows)
+            self._insert_cloned_table(layout, prototype_xml, rows, style_props)
         else:
             current_batch = rows[:max_rows]
             next_batch = rows[max_rows:]
-            self._insert_cloned_table(layout, prototype_xml, current_batch)
+            self._insert_cloned_table(layout, prototype_xml, current_batch, style_props)
             layout.add_new_slide()
-            self._render_table_using_prototype(layout, prototype_xml, next_batch)
+            self._render_table_using_prototype(layout, prototype_xml, next_batch, style_props)
 
-    def _insert_cloned_table(self, layout, prototype_xml, rows):
+    def _insert_cloned_table(self, layout, prototype_xml, rows, style_props):
         new_tbl_element = copy.deepcopy(prototype_xml)
         layout.current_slide.shapes._spTree.insert_element_before(new_tbl_element, 'p:extLst')
 
@@ -419,8 +486,8 @@ class NGS_PPT_Generator:
                     self._set_cell_text_preserving_style(
                         target_row.cells[c_idx],
                         str(val),
-                        is_bold=True,
-                        font_color=self.config.COLOR_RED
+                        is_bold=style_props['bold'],
+                        font_color=style_props['color']
                     )
 
         table_height = sum([row.height for row in table.rows])
