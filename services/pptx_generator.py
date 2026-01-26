@@ -1,8 +1,5 @@
 import copy
 import os
-import logging
-import config
-
 from io import BytesIO
 
 from pptx import Presentation
