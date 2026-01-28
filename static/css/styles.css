@@ -526,7 +526,7 @@ table.spec-table {
 
 /* Gene Content Table (Micro) */
 .gene-content-box {
-    text-align: left;
+    text-align: center;
     margin: 15px 0;
 }
 
@@ -542,7 +542,7 @@ table.spec-table {
     width: calc(100% - 4px);
     display: table;
     table-layout: fixed;
-    margin: 0;
+    margin: 0 auto;
     border-collapse: collapse;
 }
 
@@ -561,6 +561,7 @@ table.spec-table {
 .gene-content-table th {
     background-color: var(--bg-header-gray) !important;
     border-bottom: 3px double #000 !important;
+    text-align: center !important;
 }
 
 .gene-content-table tr td {
