@@ -13,13 +13,18 @@ class PPTReportConfig:
     """보고서 생성에 필요한 상수, 스타일, 규칙 등을 관리하는 설정 클래스"""
 
     # 레이아웃 & 폰트 설정
-    MARGIN_LEFT = Cm(1.0)
+    MARGIN_LEFT = Cm(1.0) # Default (사용처 확인 후 필요시 제거)
+    MARGIN_LEFT_L1 = Cm(0.62)       # Level 1: Main Sections, Failed gene
+    MARGIN_LEFT_COMMENT = Cm(0.52)  # Level 1.5: Comments
+    MARGIN_LEFT_L2 = Cm(0.72)       # Level 2: Sub-sections
+    MARGIN_LEFT_L3 = Cm(0.92)       # Level 3: Tables
+    
     DEFAULT_WIDTH = Cm(19.05)
     BODY_TOP_START = Cm(4.5)
     BODY_BOTTOM_LIMIT = Cm(18.0)
 
     FONT_NAME = "Arial"
-    FONT_SIZE_TITLE = Pt(12)  # 14 -> 12로 변경 (범용성 강화)
+    FONT_SIZE_TITLE = Pt(12)
     FONT_SIZE_HEADER = Pt(12)
     FONT_SIZE_BODY = Pt(9)
 
@@ -275,7 +280,7 @@ class LayoutContext:
             self.top = analyzer.body_top
 
         self.current_slide = prs.slides[self.current_slide_index]
-        self.margin = analyzer.config.MARGIN_LEFT
+        self.margin = analyzer.config.MARGIN_LEFT_L3 # Default for content/tables
         self.width = analyzer.config.DEFAULT_WIDTH
         self.config = analyzer.config
 
@@ -397,13 +402,73 @@ class NGS_PPT_Generator:
         if len(prs.slides) > 0:
             self._fill_clinical_info(prs.slides[0], report_data)
 
+
         analyzer = LayoutAnalyzer(prs)
         self._process_all_variants(prs, report_data, analyzer)
+        
+        # 코멘트 섹션의 빈 슬라이드(Ghost Page)만 안전하게 제거
+        self._remove_ghost_comment_slides(prs)
 
         output = BytesIO()
         prs.save(output)
         output.seek(0)
         return output
+
+    def _remove_ghost_comment_slides(self, prs):
+        """
+        'Comments' 헤더는 있지만 실제 코멘트 내용(본문 박스)이 비어있는 슬라이드를 찾아 삭제합니다.
+        (정적 슬라이드인 Method, Gene Content 등은 건드리지 않음)
+        """
+        slides_to_remove = []
+        
+        # 헤더 키워드 (부분 일치 허용)
+        # '3. Comments', '▣ Comment', '▣ Comment (continued)' 등 모두 커버
+        HEADER_KEYWORDS = ["Comment", "Comments"]
+        
+        for i, slide in enumerate(prs.slides):
+            print(f"DEBUG: Checking Slide {i} for ghost content...")
+            has_comment_header = False
+            has_meaningful_content = False
+            
+            for shape in slide.shapes:
+                if not shape.has_text_frame:
+                    continue
+                
+                text = shape.text_frame.text.strip()
+                if not text:
+                    continue
+                
+                print(f"  - Found Text: '{text[:30]}...' (Len: {len(text)})")
+
+                # 헤더 확인 (유연한 매칭)
+                if any(k in text for k in HEADER_KEYWORDS) and len(text) < 40:
+                    if "▣" in text or text.startswith("3."): # 3. Comments
+                         has_comment_header = True
+                         continue
+                
+                # Footer 확인 (무시)
+                # "• 본 검사의 raw data" 혹은 "* 본 검사의 raw data" 등 다양한 불렛 대응
+                if "raw data" in text and "보관" in text:
+                    continue
+                    
+                # 그 외 텍스트가 있다면 의미있는 콘텐츠로 간주 (코멘트 본문, 고지문 등)
+                has_meaningful_content = True
+            
+            # 헤더 유무와 상관없이, '의미 있는 본문'이 없으면 Ghost Page로 간주하고 삭제
+            # (Header만 있거나, Footer만 있거나, 아예 빈 슬라이드인 경우 모두 포함)
+            if not has_meaningful_content:
+                slides_to_remove.append(i)
+        
+        # 역순 삭제
+        for idx in sorted(slides_to_remove, reverse=True):
+            try:
+                # Slide 객체가 아닌 _sldIdLst(XML 요소)에서 rId를 가져와야 함
+                slide_id_elem = prs.slides._sldIdLst[idx]
+                rId = slide_id_elem.rId
+                prs.part.drop_rel(rId)
+                del prs.slides._sldIdLst[idx]
+            except Exception:
+                 pass
 
     def _fill_clinical_info(self, slide, report_data):
         # 1. clinical_info 딕셔너리 추출 (없으면 빈 딕셔너리)
@@ -533,7 +598,6 @@ class NGS_PPT_Generator:
                 if should_move:
                     found_anchor = layout.move_to_section(style_type)
                 else:
-                    # [정리 로직]
                     # 이동하지 않기로 결정했다면(오버플로우 등), 
                     # 중복 방지를 위해 원래 템플릿 슬라이드의 제목을 제거해야 함
                     if target_loc and "title_shape" in target_loc:
@@ -567,20 +631,20 @@ class NGS_PPT_Generator:
                     layout.add_new_slide()
 
                 self._render_section_header(layout, title, highlight_data=highlight_val)
-                if prototype_xml:
-                    self._render_table_using_prototype(layout, prototype_xml, rows, style_props)
+                if prototype_xml is not None:
+                    self._render_table_using_prototype(layout, prototype_xml, rows, style_props, margin_left=self.config.MARGIN_LEFT_L3)
                 else:
-                    self._render_table_from_scratch(layout, headers, rows)
+                    self._render_table_from_scratch(layout, headers, rows, margin_left=self.config.MARGIN_LEFT_L3)
             else:
                 self._render_section_header(layout, title, is_none=True)
 
             layout.add_space(self.config.SPACE_SECTION)
 
-        # [복구] 3. Failed gene 섹션 (Variants 처리 루프 종료 후)
+        # 3. Failed gene 섹션 (Variants 처리 루프 종료 후)
         failed_gene = report_data.get('failed_gene')
         self._draw_failed_gene(layout, failed_gene)
 
-        # [복구] Comments 섹션
+        # Comments 섹션
         comments = report_data.get('comments', [])
         highlight_keywords = self._extract_highlight_keywords(report_data)
         self._draw_comments(layout, comments, highlight_keywords)
@@ -588,7 +652,7 @@ class NGS_PPT_Generator:
     def _draw_main_section_title(self, layout, text, font_size=None, color=None):
         height = Cm(1.0)
         layout.check_space(height)
-        tb = layout.current_slide.shapes.add_textbox(layout.margin, layout.top, layout.width, height)
+        tb = layout.current_slide.shapes.add_textbox(self.config.MARGIN_LEFT_L1, layout.top, layout.width, height)
         p = tb.text_frame.paragraphs[0]
         
         # 기본값 설정 (None일 경우 Config 기본값 사용)
@@ -604,7 +668,7 @@ class NGS_PPT_Generator:
     def _render_section_header(self, layout, title, highlight_data=None, is_none=False):
         height = Cm(0.8)
         layout.check_space(height)
-        tb = layout.current_slide.shapes.add_textbox(layout.margin, layout.top, layout.width, height)
+        tb = layout.current_slide.shapes.add_textbox(self.config.MARGIN_LEFT_L2, layout.top, layout.width, height)
         p = tb.text_frame.paragraphs[0]
 
         # 1. 제목
@@ -649,7 +713,11 @@ class NGS_PPT_Generator:
         run.font.bold = is_bold
         run.font.italic = italic
 
-    def _render_table_using_prototype(self, layout, prototype_xml, rows, style_props):
+    def _render_table_using_prototype(self, layout, prototype_xml, rows, style_props, margin_left=None):
+        """프로토타입 XML을 사용하여 테이블을 그립니다. margin_left 지정 가능."""
+        
+        # margin_left가 없는 경우 기본값(1.0cm) 사용 - 호환성
+        final_margin = margin_left if margin_left else layout.margin
         row_height = Cm(0.8)
         header_height = Cm(0.8)
 
@@ -662,21 +730,21 @@ class NGS_PPT_Generator:
         max_rows = int((available_height - header_height) / row_height)
 
         if max_rows >= len(rows):
-            self._insert_cloned_table(layout, prototype_xml, rows, style_props)
+            self._insert_cloned_table(layout, prototype_xml, rows, style_props, final_margin)
         else:
             current_batch = rows[:max_rows]
             next_batch = rows[max_rows:]
-            self._insert_cloned_table(layout, prototype_xml, current_batch, style_props)
+            self._insert_cloned_table(layout, prototype_xml, current_batch, style_props, final_margin)
             layout.add_new_slide()
-            self._render_table_using_prototype(layout, prototype_xml, next_batch, style_props)
+            self._render_table_using_prototype(layout, prototype_xml, next_batch, style_props, margin_left=final_margin)
 
-    def _insert_cloned_table(self, layout, prototype_xml, rows, style_props):
+    def _insert_cloned_table(self, layout, prototype_xml, rows, style_props, margin_left):
         new_tbl_element = copy.deepcopy(prototype_xml)
         layout.current_slide.shapes._spTree.insert_element_before(new_tbl_element, 'p:extLst')
 
         table_shape = layout.current_slide.shapes[-1]
         table_shape.top = int(layout.top)
-        table_shape.left = int(layout.margin)
+        table_shape.left = int(margin_left)
         table = table_shape.table
 
         current_rows = len(table.rows)
@@ -730,13 +798,14 @@ class NGS_PPT_Generator:
                         p.remove(child)
         table._tbl.append(new_row)
 
-    def _render_table_from_scratch(self, layout, headers, rows):
+    def _render_table_from_scratch(self, layout, headers, rows, margin_left=None):
+        final_margin = margin_left if margin_left else layout.margin
         rows_count = len(rows) + 1
         cols_count = len(headers)
         table_height = Cm(0.8 * rows_count)
 
         shape = layout.current_slide.shapes.add_table(
-            rows_count, cols_count, layout.margin, layout.top, layout.width, table_height
+            rows_count, cols_count, final_margin, layout.top, layout.width, table_height
         )
         table = shape.table
 
@@ -806,7 +875,7 @@ class NGS_PPT_Generator:
         height = Cm(1.0)
         layout.check_space(height)
         
-        tb = layout.current_slide.shapes.add_textbox(layout.margin, layout.top, layout.width, height)
+        tb = layout.current_slide.shapes.add_textbox(self.config.MARGIN_LEFT_L1, layout.top, layout.width, height)
         p = tb.text_frame.paragraphs[0]
         
         # "3. Failed gene" 부분 (Unknown과 동일하게 12pt Black 적용)ㄴ
@@ -822,150 +891,55 @@ class NGS_PPT_Generator:
 
 
     def _draw_comments(self, layout, comments, highlight_keywords=None):
-        """Comments 섹션과 하단 고지문을 그립니다."""
-        # 섹션 헤더: "▣ Comment"
+        """Comments 섹션과 하단 고지문을 통합하여 그립니다."""
+        # 1. 첫 페이지 헤더 그리기
+        self._draw_comment_header(layout, is_continued=False)
+
+        # 2. 통합 콘텐츠 그리기 (코멘트 + 고지문)
+        self._draw_merged_content(layout, comments, highlight_keywords)
+
+    def _draw_comment_header(self, layout, is_continued=False):
         header_height = Cm(1.0)
         layout.check_space(header_height)
         
-        tb_header = layout.current_slide.shapes.add_textbox(layout.margin, layout.top, layout.width, header_height)
+        # 박스와 동일한 좌측 여백 계산 (페이지 중앙 정렬)
+        # 박스 너비(17.55cm) 기준으로 정렬 맞춤
+        BOX_WIDTH = Cm(17.55)
+        slide_width = layout.prs.slide_width
+        left_position = (slide_width - BOX_WIDTH) / 2
+        
+        tb_header = layout.current_slide.shapes.add_textbox(left_position, layout.top, layout.width, header_height)
         p_header = tb_header.text_frame.paragraphs[0]
-        # 기본값이 12pt Black으로 변경되었으므로 Config 참조
-        self._set_run_style(p_header.add_run(), "▣ Comment", is_bold=True, 
+        
+        title_text = "▣ Comment (continued)" if is_continued else "▣ Comment"
+        
+        self._set_run_style(p_header.add_run(), title_text, is_bold=True, 
                             font_size=self.config.FONT_SIZE_TITLE, color=self.config.COLOR_BLACK)
         layout.add_space(header_height)
 
-        # 주의사항/고지문 (Disclaimer) 템플릿 요소 가져오기
-        disclaimer_xml = layout.analyzer.existing_elements.get('disclaimer')
-        
-        if disclaimer_xml:
-            self._insert_disclaimer_element(layout, disclaimer_xml, comments, highlight_keywords)
-        else:
-            self._draw_default_disclaimer(layout, comments, highlight_keywords)
+    def _draw_merged_content(self, layout, comments, highlight_keywords):
+        if not comments:
+            comments = [] 
 
-    def _insert_disclaimer_element(self, layout, element_xml, comments=None, highlight_keywords=None):
-        """템플릿에서 추출한 XML 요소를 사용하여 고지문을 그립니다. (코멘트 포함)"""
-        import re
-        
-        # 1. 요소 복제 및 추가
-        new_sp = copy.deepcopy(element_xml)
-        layout.current_slide.shapes._spTree.append(new_sp)
-        
-        # 2. Shape 래핑
-        disclaimer_shape = layout.current_slide.shapes[-1]
-        
-        # 3. 코멘트 내용 주입 (TextFrame의 맨 앞에 추가)
-        if comments:
-            if isinstance(comments, str):
-                comments = [comments]
-            
-            tf = disclaimer_shape.text_frame
-            tf.auto_size = MSO_AUTO_SIZE.SHAPE_TO_FIT_TEXT  # 텍스트 양에 맞춰 도형 크기 자동 조절
-            tf.word_wrap = True
+        if isinstance(comments, str):
+            comments = [comments]
 
-            # 기존 문단(고지문) 앞에 빈 줄 추가 (구분용)
-            # tf.paragraphs[0].insert_paragraph_before() -> 지원하지 않음. OxmlElement 사용
-            p_xml = OxmlElement('a:p')
-            tf.paragraphs[0]._p.addprevious(p_xml)
-            p_empty = tf.paragraphs[0] # 새로 추가된 빈 문단
-            
-            # 코멘트 삽입 (역순으로 맨 앞에 계속 추가하면 정순서가 됨)
-            for comment in reversed(comments):
-                # 1. Spacer (빈 줄) 추가 (각 대상 사이 간격)
-                spacer_xml = OxmlElement('a:p')
-                # spacer_xml.set('h', '100') # 높이 조절 가능하나 기본값 사용
-                tf.paragraphs[0]._p.addprevious(spacer_xml)
-
-                # 2. Comment 문단 추가
-                p_xml = OxmlElement('a:p')
-                tf.paragraphs[0]._p.addprevious(p_xml)
-                p = tf.paragraphs[0]
-                
-                p.alignment = PP_ALIGN.LEFT # 정렬 보정
-                
-                # 범용 볼드 처리 로직 (Extractor 기반)
-                # 추출된 highlight_keywords 중 코멘트에 포함된 가장 긴 키워드를 찾아 볼드 처리
-                # (중복 매칭 방지를 위해 하나만 찾거나, re.split으로 모두 처리)
-                
-                matched = False
-                if highlight_keywords:
-                    # 길이 역순 정렬 (긴 키워드 우선)
-                    keywords_sorted = sorted(highlight_keywords, key=len, reverse=True)
-                    
-                    # 가장 먼저 매칭되는 키워드 하나를 찾아서 처리 (복잡한 중첩 처리 방지)
-                    # "MET exon14 skipping"이 "MET"보다 먼저 매칭되도록 정렬됨
-                    for kw in keywords_sorted:
-                        if kw in comment:
-                             parts = re.split(f"({re.escape(kw)})", comment)
-                             for part in parts:
-                                 is_bold_part = (part == kw)
-                                 self._set_run_style(p.add_run(), part, is_bold=is_bold_part, 
-                                                     font_size=Pt(8), color=self.config.COLOR_BLACK)
-                             matched = True
-                             break
-                
-                if not matched:
-                    # 매칭되는 키워드가 없으면 2순위 Regex (Colon) 시도
-                    match_col = re.match(r"^([^:]+)(:)(.*)$", comment, re.DOTALL)
-                    if match_col:
-                        subject = match_col.group(1)
-                        colon = match_col.group(2)
-                        rest = match_col.group(3)
-                        self._set_run_style(p.add_run(), subject, is_bold=True, 
-                                            font_size=Pt(8), color=self.config.COLOR_BLACK)
-                        self._set_run_style(p.add_run(), colon + rest, is_bold=False, 
-                                            font_size=Pt(8), color=self.config.COLOR_BLACK)
-                    else:
-                        # 그냥 출력
-                        self._set_run_style(p.add_run(), comment, is_bold=False, 
-                                            font_size=Pt(8), color=self.config.COLOR_BLACK)
-            
-            # [수정] 텍스트 박스 높이 수동 계산 및 보정
-            # SHAPE_TO_FIT_TEXT가 파일 오픈 시점에 바로 반영되지 않는 문제 해결책
-            # 대략적인 높이를 계산하여 명시적으로 top을 조정하거나 height를 늘려줌
-            # Disclaimer 텍스트 길이 + 코멘트 길이 + 줄바꿈
-            total_text_len = sum([len(c) for c in comments]) + 500 # Disclaimer approx 400-500 chars
-            est_lines = (total_text_len / 70) + len(comments) * 2 + 5 # 70 chars/line, spacers, paragraphs
-            est_height = Cm(est_lines * 0.5) # 0.5cm line height (approx for 8pt)
-            
-            # 기존 height보다 크면 반영 (단, SHAPE_TO_FIT_TEXT가 켜져있으면 무시될 수 있으나 초기 렌더링 힌트로 작용)
-            if est_height > disclaimer_shape.height:
-                 disclaimer_shape.height = int(est_height)
-
-        # 4. 높이 확인 및 페이지 넘김
-        item_height = disclaimer_shape.height
+        # 상수 정의
+        LINE_HEIGHT = Cm(0.4) 
+        CHARS_PER_LINE = 90
+        BOX_WIDTH = Cm(17.55)
         
-        if layout.top + item_height > layout.bottom_limit:
-            sp = disclaimer_shape._element
-            sp.getparent().remove(sp)
-            layout.add_new_slide()
-            
-            # 재귀 호출로 다시 그림 (로직 재사용)
-            # 단, 이미 코멘트를 주입한 XML 상태가 아니므로(copy본에 주입함), 
-            # 원본 XML과 comments를 다시 넘겨야 함. 
-            # 하지만 여기서 'new_sp'는 이미 수정된 상태임. 
-            # 수정된 'new_sp'를 다시 쓰는 게 좋음.
-            
-            # 수정된 요소를 복제해서 새 슬라이드에 추가
-            new_sp_2 = copy.deepcopy(new_sp) 
-            layout.current_slide.shapes._spTree.append(new_sp_2)
-            disclaimer_shape = layout.current_slide.shapes[-1]
-            
-        # 5. 위치 설정
-        disclaimer_shape.top = int(layout.top)
-        layout.add_space(item_height + Cm(0.2))
-
-    def _draw_default_disclaimer(self, layout, comments=None, highlight_keywords=None):
-        """템플릿 요소가 없을 경우 기본 텍스트로 그립니다."""
-        # 코멘트 처리
-        if comments:
-            if isinstance(comments, str):
-                comments = [comments]
-            for comment in comments:
-                # is_bold_keyword 제거 -> _draw_long_text 내부 범용 로직 사용
-                self._draw_long_text(layout, comment, font_size=Pt(8), highlight_keywords=highlight_keywords)
-            layout.add_space(Cm(0.2))
-            
-        disclaimer_text = (
+        # 하단 Footer (Raw Data 등) 위치
+        FOOTER_TOP = Cm(23.49)
+        # Footer가 들어갈 공간을 제외한 한계선 (코멘트 박스가 침범하면 안 되는 라인)
+        # Footer Top(23.49)보다 약간 위(0.5cm)에서 멈춰야 함
+        BODY_BOTTOM_LIMIT = FOOTER_TOP - Cm(0.5)
+        
+        if layout.bottom_limit < BODY_BOTTOM_LIMIT:
+             BODY_BOTTOM_LIMIT = layout.bottom_limit
+        
+        # 1. Main Disclaimer (bordered box에 포함될 긴 문구)
+        disclaimer_main = (
             "*본 기관의 유전자 정보 검색 및 해석은 dbSNP, COSMIC, ClinVar, c-bioportal 등의 유전자 정보검색 사이트를 참고로 하고 있습니다. "
             "또한, 발견된 유전자 변이의 임상적 의미에 대하여, 아래 참고 문헌에 기반한 4단계 시스템 (Tier I: Strong clinical significance, "
             "Tier II: Potential Clinical significance, Tier III: Unknown Clinical significance, Tier IV: Benign or Likely Benign) 을 "
@@ -974,14 +948,163 @@ class NGS_PPT_Generator:
             "of the Association for Molecular Pathology, American Society of Clinical Oncology and College of American Pathologists. "
             "J Mol Diagn. 2017; 19(1):4-23."
         )
-        additional_info = (
-            "• 본 검사의 raw data (BAM, FASTQ, VCF) 파일은 분자 병리 검사실 내 병리과 서버 컴퓨터에서 보관, 관리되고 있습니다.\n"
-            "• 본 검사의 결과는 검체에 포함된 정상세포와 암세포의 비율에 따라 위음성의 결과를 배제 할 수 없습니다."
-        )
+        # 메인 고지문 예상 높이 (약 5~6줄)
+        DISCLAIMER_MAIN_HEIGHT = Cm(3.0)
         
-        self._draw_long_text(layout, disclaimer_text, font_size=Pt(8))
-        layout.add_space(Cm(0.2))
-        self._draw_long_text(layout, additional_info, font_size=Pt(8))
+        current_batch = []
+        current_batch_height = 0 
+        
+        # 2. 코멘트 배치 루프
+        for idx, comment in enumerate(comments):
+            text_len = len(comment)
+            lines = int((text_len / CHARS_PER_LINE) + 1)
+            est_height = (lines * LINE_HEIGHT) + Cm(0.2)
+            
+            # 공간 체크 (Footer 영역 침범 확인)
+            if (layout.top + current_batch_height + est_height) > BODY_BOTTOM_LIMIT:
+                 # 넘치면 현재 배치 그리기 (Main Disclaimer 없이)
+                 self._render_box(layout, current_batch, current_batch_height, BOX_WIDTH, highlight_keywords, main_disclaimer=None)
+                 
+                 # 현재 페이지 하단에 Footer 추가
+                 self._draw_footer_info(layout, FOOTER_TOP)
+                 
+                 # 다음 페이지 이동
+                 layout.add_new_slide()
+                 self._draw_comment_header(layout, is_continued=True)
+                 
+                 current_batch = []
+                 current_batch_height = 0
+            
+            current_batch.append(comment)
+            current_batch_height += est_height
+
+        # 3. 마지막 배치 및 Main Disclaimer 처리
+        # 남은 공간에 Main Disclaimer가 들어갈 수 있는지?
+        # (Footer 공간은 BODY_BOTTOM_LIMIT로 이미 확보됨)
+        
+        if (layout.top + current_batch_height + DISCLAIMER_MAIN_HEIGHT) <= BODY_BOTTOM_LIMIT:
+            # 공간 충분: 코멘트 + 메인 고지문 함께 그리기
+            self._render_box(layout, current_batch, current_batch_height + DISCLAIMER_MAIN_HEIGHT, BOX_WIDTH, highlight_keywords, main_disclaimer=disclaimer_main)
+            self._draw_footer_info(layout, FOOTER_TOP)
+        else:
+            # 공간 부족: 코멘트 먼저 그리고
+            if current_batch:
+                self._render_box(layout, current_batch, current_batch_height, BOX_WIDTH, highlight_keywords, main_disclaimer=None)
+                self._draw_footer_info(layout, FOOTER_TOP)
+            
+            # 새 페이지에 메인 고지문만 그리기
+            layout.add_new_slide()
+            self._draw_comment_header(layout, is_continued=True)
+            self._render_box(layout, [], DISCLAIMER_MAIN_HEIGHT, BOX_WIDTH, highlight_keywords, main_disclaimer=disclaimer_main)
+            self._draw_footer_info(layout, FOOTER_TOP)
+
+
+    def _render_box(self, layout, comments_batch, height, width, highlight_keywords, main_disclaimer=None):
+        if not comments_batch and not main_disclaimer:
+            return
+
+        from pptx.dml.color import RGBColor
+        from pptx.util import Pt
+        
+        # 페이지 중앙 정렬
+        slide_width = layout.prs.slide_width
+        left_position = (slide_width - width) / 2
+        
+        tb = layout.current_slide.shapes.add_textbox(left_position, layout.top, width, height)
+        
+        # 테두리 설정 (검은색 0.75pt)
+        line = tb.line
+        line.color.rgb = RGBColor(0, 0, 0)
+        line.width = Pt(0.75)
+        
+        tf = tb.text_frame
+        tf.word_wrap = True
+        tf.margin_top = Cm(0.2)
+        tf.margin_bottom = Cm(0.2)
+        tf.margin_left = Cm(0.2)
+        tf.margin_right = Cm(0.2)
+        
+        import re
+        is_first_paragraph = True
+        
+        # 코멘트 그리기
+        for comment in comments_batch:
+            if is_first_paragraph:
+                p = tf.paragraphs[0]
+                is_first_paragraph = False
+            else:
+                p = tf.add_paragraph()
+                p.space_before = Pt(6) 
+            
+            p.alignment = PP_ALIGN.LEFT
+            
+            matched = False
+            if highlight_keywords:
+                keywords_sorted = sorted(highlight_keywords, key=len, reverse=True)
+                for kw in keywords_sorted:
+                    if kw in comment:
+                         parts = re.split(f"({re.escape(kw)})", comment)
+                         for part in parts:
+                             is_bold_part = (part == kw)
+                             self._set_run_style(p.add_run(), part, is_bold=is_bold_part, 
+                                                 font_size=Pt(8), color=self.config.COLOR_BLACK)
+                         matched = True
+                         break
+            
+            if not matched:
+                match_col = re.match(r"^([^:]+)(:)(.*)$", comment, re.DOTALL)
+                if match_col:
+                    subject = match_col.group(1)
+                    colon = match_col.group(2)
+                    rest = match_col.group(3)
+                    self._set_run_style(p.add_run(), subject, is_bold=True, 
+                                        font_size=Pt(8), color=self.config.COLOR_BLACK)
+                    self._set_run_style(p.add_run(), colon + rest, is_bold=False, 
+                                        font_size=Pt(8), color=self.config.COLOR_BLACK)
+                else:
+                    self._set_run_style(p.add_run(), comment, is_bold=False, 
+                                        font_size=Pt(8), color=self.config.COLOR_BLACK)
+        
+        # 메인 고지문 추가
+        if main_disclaimer:
+            if not is_first_paragraph: # 코멘트가 있었다면 띄움
+                p_spacer = tf.add_paragraph()
+                p_spacer.space_before = Pt(12)
+            
+            p_disc = tf.add_paragraph() if not is_first_paragraph else tf.paragraphs[0]
+            if not is_first_paragraph:
+                p_disc.space_before = Pt(6)
+            
+            self._set_run_style(p_disc.add_run(), main_disclaimer, font_size=Pt(8), color=self.config.COLOR_BLACK)
+
+        layout.add_space(height)
+
+    def _draw_footer_info(self, layout, top_position):
+        """페이지 하단에 고정된 Raw Data 안내 문구 (투명 박스)"""
+        from pptx.util import Pt
+        
+        footer_text_1 = "• 본 검사의 raw data (BAM, FASTQ, VCF) 파일은 분자 병리 검사실 내 병리과 서버 컴퓨터에서 보관, 관리되고 있습니다."
+        footer_text_2 = "• 본 검사의 결과는 검체에 포함된 정상세포와 암세포의 비율에 따라 위음성의 결과를 배제 할 수 없습니다."
+        
+        width = Cm(17.55) 
+        height = Cm(1.5)
+        
+        # [CENTERING] 페이지 중앙 정렬
+        slide_width = layout.prs.slide_width
+        left_position = (slide_width - width) / 2
+        
+        tb = layout.current_slide.shapes.add_textbox(left_position, top_position, width, height)
+        # 투명 박스 (기본값)
+        
+        tf = tb.text_frame
+        tf.word_wrap = True
+        
+        p1 = tf.paragraphs[0]
+        self._set_run_style(p1.add_run(), footer_text_1, font_size=Pt(8), color=self.config.COLOR_BLACK)
+        
+        p2 = tf.add_paragraph()
+        p2.space_before = Pt(6)
+        self._set_run_style(p2.add_run(), footer_text_2, font_size=Pt(8), color=self.config.COLOR_BLACK)
 
     def _draw_long_text(self, layout, text, font_size=Pt(8), is_bold_keyword=None, highlight_keywords=None):
         height = Cm(0.8)
