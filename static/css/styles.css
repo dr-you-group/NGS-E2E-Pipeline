@@ -5,13 +5,17 @@
     /* 색상 팔레트 */
     --bg-body: #f5f5f5;
     --bg-white: #ffffff;
-    --bg-header-blue: #C6D9F1; /* 일반 테이블 헤더 */
-    --bg-header-green: #E3F3D1; /* 바이오마커 테이블 헤더 */
-    --bg-header-gray: #D5E4F1; /* Spec/Gene 테이블 헤더 */
+    --bg-header-blue: #C6D9F1;
+    /* 일반 테이블 헤더 */
+    --bg-header-green: #E3F3D1;
+    /* 바이오마커 테이블 헤더 */
+    --bg-header-gray: #D5E4F1;
+    /* Spec/Gene 테이블 헤더 */
 
     --text-primary: #333333;
     --text-black: #000000;
-    --text-red: #FF0000; /* 통합된 하이라이트 색상 (제목 & 테이블 데이터 동일) */
+    --text-red: #FF0000;
+    /* 통합된 하이라이트 색상 (제목 & 테이블 데이터 동일) */
 
     --border-black: #000000;
     --border-gray: #ddd;
@@ -49,7 +53,8 @@ body {
     margin: 0 auto 20px;
     background-color: var(--bg-white);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    border: 2px solid var(--text-red); /* 개발용 테두리 (인쇄시 제거됨) */
+    border: 2px solid var(--text-red);
+    /* 개발용 테두리 (인쇄시 제거됨) */
     position: relative;
     page-break-after: always;
     box-sizing: border-box;
@@ -93,7 +98,8 @@ body {
     background-color: var(--bg-white);
     z-index: 10;
     margin-top: auto;
-    position: absolute; /* 절대 위치로 하단 고정 */
+    position: absolute;
+    /* 절대 위치로 하단 고정 */
     bottom: 0;
     left: 0;
     right: 0;
@@ -171,8 +177,9 @@ body {
 /* 제목 스타일 */
 .section-title {
     color: var(--text-primary);
-    padding-bottom: 5px;
-    margin-bottom: 10px;
+    padding-bottom: 3px;
+    margin-bottom: 5px;
+    border-collapse: collapse;
     font-size: 18px;
     border-bottom: none;
 }
@@ -180,8 +187,9 @@ body {
 .result-title {
     color: var(--text-black);
     font-weight: bold;
-    margin-top: 10px;
-    margin-bottom: 8px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    border-collapse: collapse;
     font-size: 15px;
 }
 
@@ -194,13 +202,23 @@ body {
 }
 
 /* 페이지 분할 방지 (제목과 내용 분리 방지) */
-h1, h2, h3, h4, .section-title, .result-title, .variant-type {
+h1,
+h2,
+h3,
+h4,
+.section-title,
+.result-title,
+.variant-type {
     page-break-after: avoid;
     break-after: avoid;
     page-break-inside: avoid;
 }
 
-.result-title + *, .variant-type + *, .section-title + *, h3 + *, h4 + * {
+.result-title+*,
+.variant-type+*,
+.section-title+*,
+h3+*,
+h4+* {
     page-break-before: avoid;
     break-before: avoid;
 }
@@ -232,7 +250,7 @@ h1, h2, h3, h4, .section-title, .result-title, .variant-type {
 table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
     page-break-inside: auto;
 }
 
@@ -242,10 +260,14 @@ table {
 }
 
 /* 4.1. 공통 테이블 셀 스타일 (헤더/데이터 공통) */
-.data-table th, .data-table td,
-.info-table th, .info-table td,
-.biomarkers-table th, .biomarkers-table td,
-.split-table-continued th, .split-table-continued td {
+.data-table th,
+.data-table td,
+.info-table th,
+.info-table td,
+.biomarkers-table th,
+.biomarkers-table td,
+.split-table-continued th,
+.split-table-continued td {
     text-align: center;
     vertical-align: middle;
     border: 1pt solid var(--border-black);
@@ -255,22 +277,29 @@ table {
     word-break: break-word;
     overflow-wrap: break-word;
     box-sizing: border-box;
-    padding: 2px 1px; /* 공통 패딩 */
+    padding: 2px 1px;
+    /* 공통 패딩 */
 }
 
 /* 4.2. 헤더 (TH) 공통 스타일 */
-.data-table th, .info-table th, .biomarkers-table th, .split-table-continued th {
+.data-table th,
+.info-table th,
+.biomarkers-table th,
+.split-table-continued th {
     font-weight: bold;
-    height: 2.8em; /* 2줄 기준 고정 높이 */
+    height: 2.8em;
+    /* 2줄 기준 고정 높이 */
 }
 
 /* 헤더 배경색 지정 (우선순위 높임) */
 .info-table th {
     background-color: var(--bg-header-blue) !important;
-    height: 3.2em; /* 정보 테이블 헤더는 조금 더 높음 */
+    height: 3.2em;
+    /* 정보 테이블 헤더는 조금 더 높음 */
 }
 
-.data-table th, .split-table-continued th {
+.data-table th,
+.split-table-continued th {
     background-color: var(--bg-header-gray) !important;
 }
 
@@ -279,11 +308,15 @@ table {
 }
 
 /* 4.3. 데이터 셀 (TD) 공통 스타일 */
-.data-table td, .info-table td, .biomarkers-table td, .split-table-continued td {
+.data-table td,
+.info-table td,
+.biomarkers-table td,
+.split-table-continued td {
     height: 2.8em;
 }
 
-.data-table td, .split-table-continued td {
+.data-table td,
+.split-table-continued td {
     border-left: none !important;
     border-right: none !important;
 }
@@ -493,7 +526,8 @@ table.spec-table {
     margin: 0 !important;
 }
 
-.spec-table th, .spec-table td {
+.spec-table th,
+.spec-table td {
     border-top: 1px solid #666;
     border-bottom: 1px solid #666;
     border-left: none;
@@ -546,7 +580,8 @@ table.spec-table {
     border-collapse: collapse;
 }
 
-.gene-content-table th, .gene-content-table td {
+.gene-content-table th,
+.gene-content-table td {
     padding: 0 !important;
     margin: 0 !important;
     height: 13px !important;
@@ -569,7 +604,8 @@ table.spec-table {
 }
 
 /* 페이지별 Gene Content 조정 */
-.page-3 .gene-content-box, .page-4 .gene-content-box {
+.page-3 .gene-content-box,
+.page-4 .gene-content-box {
     margin: 0 !important;
     width: 100%;
 }
@@ -602,7 +638,8 @@ table.spec-table {
     font-size: 8pt;
 }
 
-.qc-header, .qc-row-simple {
+.qc-header,
+.qc-row-simple {
     display: flex;
     align-items: center;
     line-height: 1.4;
@@ -623,7 +660,8 @@ table.spec-table {
     width: 20%;
 }
 
-.qc-col-tight:nth-child(2), .qc-col-tight:nth-child(3) {
+.qc-col-tight:nth-child(2),
+.qc-col-tight:nth-child(3) {
     width: 20%;
     text-align: center !important;
 }
@@ -635,16 +673,12 @@ table.spec-table {
 }
 
 /* 2. DNA/RNA 섹션 라벨: Bold 해제 (3번째 섹션의 info-label 타겟팅) */
-.page-2-content > .section:nth-of-type(3) .info-label {
+.page-2-content>.section:nth-of-type(3) .info-label {
     font-weight: normal !important;
 }
 
 /* 코멘트 박스 */
-.comment-section {
-    border: 2px solid #666;
-    padding: 8px;
-    margin-bottom: 15px;
-}
+/* .comment-section 제거됨 (Outer Box 삭제) */
 
 .comment-box {
     border: 1px solid #000;
@@ -701,7 +735,8 @@ table.spec-table {
     font-size: 12pt;
 }
 
-.user-analyzed, .user-signed {
+.user-analyzed,
+.user-signed {
     font-size: 12pt;
 }
 
@@ -712,7 +747,8 @@ table.spec-table {
     border-collapse: collapse;
 }
 
-.user-number-label, .user-number-value {
+.user-number-label,
+.user-number-value {
     padding: 4px 8px;
     text-align: center;
     vertical-align: middle;
@@ -773,7 +809,7 @@ table.spec-table {
     display: flex;
     flex-direction: column;
     height: 100%;
-    margin-top: 0px !important;
+    margin-top: 15px !important;
 }
 
 .page-2-content .section {
@@ -786,7 +822,8 @@ table.spec-table {
     margin-bottom: 2px !important;
 }
 
-.page-3-content, .page-4-content {
+.page-3-content,
+.page-4-content {
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -1043,8 +1080,11 @@ table.spec-table {
     }
 
     /* 인쇄 시 숨김 요소 */
-    .report-controls, .a4-page::after, .a4-page::before,
-    .a4-page.overflow-warning::after, .page-content-continued::before {
+    .report-controls,
+    .a4-page::after,
+    .a4-page::before,
+    .a4-page.overflow-warning::after,
+    .page-content-continued::before {
         display: none !important;
     }
 
@@ -1088,17 +1128,19 @@ table.spec-table {
     }
 
     /* 테이블 스타일 강제 유지 (배경색, 폰트색 등) */
-    .info-table th{
+    .info-table th {
         background-color: var(--bg-header-blue) !important;
         border: 1pt solid #000 !important;
     }
 
-    .data-table th, .split-table-continued th {
+    .data-table th,
+    .split-table-continued th {
         background-color: var(--bg-header-gray) !important;
         border: 1pt solid #000 !important;
     }
 
-    .data-table td, .split-table-continued td {
+    .data-table td,
+    .split-table-continued td {
         border-left: none !important;
         border-right: none !important;
     }
@@ -1136,12 +1178,19 @@ table.spec-table {
         page-break-inside: auto;
     }
 
-    h2, h3, h4, .result-title, .section-title, .variant-type {
+    h2,
+    h3,
+    h4,
+    .result-title,
+    .section-title,
+    .variant-type {
         page-break-after: avoid !important;
         page-break-inside: avoid !important;
     }
 
-    .result-title + *, .variant-type + *, .section-title + * {
+    .result-title+*,
+    .variant-type+*,
+    .section-title+* {
         page-break-before: avoid !important;
     }
 
@@ -1153,9 +1202,7 @@ table.spec-table {
     }
 
     /* Comment 스타일 강제 */
-    .comment-section {
-        border: 2px solid #666 !important;
-    }
+    /* .comment-section 제거됨 */
 
     .comment-box {
         border: 1px solid #000 !important;
