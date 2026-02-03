@@ -408,6 +408,10 @@ class NGS_PPT_Generator:
         
         # 코멘트 섹션의 빈 슬라이드(Ghost Page)만 안전하게 제거
         self._remove_ghost_comment_slides(prs)
+        
+        # 마지막 페이지에 Footer 정보(Tested by, Signed by 등) 기입
+        if len(prs.slides) > 0:
+            self._fill_footer_info(prs.slides[-1], report_data)
 
         output = BytesIO()
         prs.save(output)
@@ -426,7 +430,7 @@ class NGS_PPT_Generator:
         HEADER_KEYWORDS = ["Comment", "Comments"]
         
         for i, slide in enumerate(prs.slides):
-            print(f"DEBUG: Checking Slide {i} for ghost content...")
+            # print(f"DEBUG: Checking Slide {i} for ghost content...")
             has_comment_header = False
             has_meaningful_content = False
             
@@ -438,7 +442,7 @@ class NGS_PPT_Generator:
                 if not text:
                     continue
                 
-                print(f"  - Found Text: '{text[:30]}...' (Len: {len(text)})")
+                # print(f"  - Found Text: '{text[:30]}...' (Len: {len(text)})")
 
                 # 헤더 확인 (유연한 매칭)
                 if any(k in text for k in HEADER_KEYWORDS) and len(text) < 40:
@@ -1151,3 +1155,72 @@ class NGS_PPT_Generator:
                     self._set_run_style(p.add_run(), text, font_size=font_size, color=self.config.COLOR_BLACK)
 
         layout.add_space(height)
+
+    def _fill_footer_info(self, slide, report_data):
+        """
+        마지막 페이지의 템플릿 요소(TextBox, Table)를 찾아 Footer 정보를 기입합니다.
+        - 분자 접수 번호: 테이블 (Row 0, Col 1)
+        - Tested by, Analyzed by, Signed by: 텍스트 박스 (기존 텍스트 뒤에 Append)
+        """
+        diagnosis_user = report_data.get('diagnosis_user', {})
+        if not diagnosis_user:
+            return
+
+        # 데이터 매핑
+        receipt_no = diagnosis_user.get('분자접수번호', '')
+        user_info_map = {
+            "Tested by:": diagnosis_user.get('Tested by', ''),
+            "Analyzed by:": diagnosis_user.get('Analyzed by', ''),
+            "Signed by:": diagnosis_user.get('Signed by', '')
+        }
+
+        for shape in slide.shapes:
+            # 1. 텍스트 박스 처리 (Tested by, Analyzed by, Signed by)
+            if shape.has_text_frame:
+                text = shape.text_frame.text.strip()
+                for key, value in user_info_map.items():
+                    # 키워드가 포함되어 있고, 아직 값이 채워지지 않은 경우(길이 체크 등)
+                    if key in text and value:
+                        # 이미 값이 들어있는지 확인 (중복 방지)
+                        if value in text: 
+                            continue
+
+                        # 템플릿의 기존 텍스트에 공백이 많을 수 있으므로 정리
+                        # 예: "Signed by:              " -> "Signed by:"
+                        # 첫 번째 문단의 모든 런을 순회하며 텍스트 정리
+                        paragraph = shape.text_frame.paragraphs[0]
+                        
+                        # 기존 텍스트가 키워드만 남도록 정리 (오른쪽 공백 제거)
+                        full_text = "".join([run.text for run in paragraph.runs])
+                        if key in full_text:
+                            # 전체 텍스트를 재설정하는 것은 스타일이 깨질 수 있으므로,
+                            # 마지막 런의 텍스트를 rstrip() 하는 방식으로 시도
+                            if paragraph.runs:
+                                last_run = paragraph.runs[-1]
+                                last_run.text = last_run.text.rstrip()
+
+                        # 값 추가
+                        run = paragraph.add_run()
+                        run.text = f" {value}"
+                        run.font.bold = False # 값은 Bold 처리 안 함
+                        # 폰트 사이즈나 이름은 템플릿 상속 혹은 명시적 지정 가능
+                        # run.font.name = self.config.FONT_NAME 
+                        
+            # 2. 테이블 처리 (분자 접수 번호)
+            elif shape.has_table:
+                tbl = shape.table
+                try:
+                    # (0, 0) 셀이 "분자 접수 번호" 인지 확인
+                    if len(tbl.rows) > 0 and len(tbl.rows[0].cells) > 0:
+                        header_text = tbl.rows[0].cells[0].text_frame.text.strip()
+                        if "분자 접수 번호" in header_text or "분자접수번호" in header_text:
+                            if len(tbl.rows[0].cells) > 1:
+                                target_cell = tbl.rows[0].cells[1]
+                                self._set_cell_text_preserving_style(
+                                    target_cell, 
+                                    str(receipt_no), 
+                                    is_bold=False, # Bold 처리 안 함
+                                    font_color=self.config.COLOR_BLACK
+                                )
+                except Exception as e:
+                    print(f"Footer table update error: {e}")
