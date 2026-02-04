@@ -16,11 +16,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NGS Panel Level II Analysis Report</title>
+    <title>NGS Report</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <!-- Critical CSS for Loading Overlay -->
+    <style>
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            z-index: 99999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #333;
+            /* Dark grey for professional look */
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        .loading-text {
+            font-family: 'Noto Sans KR', sans-serif;
+            font-size: 16px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        body.loaded #loading-overlay {
+            opacity: 0;
+            visibility: hidden;
+        }
+    </style>
     <link rel="stylesheet" href="/static/css/styles.css?v=4">
 </head>
 
 <body>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">리포트 생성 중...</div>
+    </div>
     <div class="container">
         <!-- PDF 다운로드 버튼 -->
         <div class="report-controls">
@@ -1071,18 +1127,16 @@
         document.addEventListener('DOMContentLoaded', function () {
             console.log('DOM Content Loaded');
 
-            // 다양한 타이밍에 실행
-            setTimeout(() => {
-                console.log('Checking tables after 500ms');
-                checkAndSplitTables();
-            }, 500);
-
+            /* 
+             Legacy code removed to prevent conflict with script.js dynamicClinicalPagination
             setTimeout(() => {
                 console.log('Final check after 1500ms');
                 checkAndSplitTables();
             }, 1500);
+            */
         });
 
+        /*
         // 윈도우 리사이즈 시에도 체크
         window.addEventListener('resize', function () {
             console.log('Window resized');
@@ -1099,8 +1153,13 @@
                 checkAndSplitTables();
             }, 2000);
         });
+        
+        function checkAndSplitTables() {
+             // Disabled
+        }
+        */
     </script>
-    <script src="/static/js/script.js"></script>
+    <script src="/static/js/script.js?v=18.8"></script>
 
     <!-- PDF 다운로드 스크립트 -->
     <!-- <script src="/static/js/report.js"></script> -->

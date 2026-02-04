@@ -271,480 +271,517 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 3000);
     }
 
-    // 동적 페이지 분할 기능 - 개선된 버전 (제목 처리 포함)
-    function dynamicPageSplit() {
-        const continuedPages = document.querySelectorAll('.page-continued');
-        if (!continuedPages.length) return;
+    // Clinical Variants 동적 분할 기능 (Robust Debug Mode with Overlay Control)
+    function dynamicClinicalPagination() {
+        console.log("%c[Pagination Start] dynamicClinicalPagination triggered", "color: green; font-weight: bold; font-size: 14px;");
 
-        continuedPages.forEach(continuedPage => {
-            const content = continuedPage.querySelector('.report-content');
-            if (!content) return;
+        const page1 = document.querySelector('.page-1');
+        if (!page1) {
+            console.error("[Pagination] .page-1 not found!");
+            hideLoadingOverlay(); // Fail safe
+            return;
+        }
 
-            // A4 페이지 최대 높이 계산
-            const maxHeight = continuedPage.clientHeight - 100; // 패딩 고려
-            const elements = Array.from(content.children);
+        const content = page1.querySelector('.report-content');
+        if (!content) {
+            console.error("[Pagination] .report-content not found!");
+            hideLoadingOverlay(); // Fail safe
+            return;
+        }
 
-            let currentHeight = 0;
-            let pageCount = parseInt(continuedPage.className.match(/page-continued-(\d+)/)?.[1] || '1');
-            let elementsToMove = [];
-            let tableToSplit = null;
+        // 1. 기준점 설정 (Deadline Calculation)
+        // .page-bottom-fixed might be outside .report-content, so search in page1
+        let deadlineY = 0;
+        const fixedContainer = page1.querySelector('.page-bottom-fixed');
 
-            // 각 요소의 높이를 실제로 측정하면서 체크
-            for (let i = 0; i < elements.length; i++) {
-                const element = elements[i];
-                const elementHeight = element.offsetHeight;
+        if (fixedContainer) {
+            deadlineY = fixedContainer.offsetTop;
+            console.log(`[Pagination] Deadline set by .page-bottom-fixed: ${deadlineY}px`);
+        } else {
+            // Fallback: look for Other Biomarkers inside content if fixed container missing
+            const allSections = Array.from(content.querySelectorAll('.section, div'));
+            const otherBiomarkersSection = allSections.find(sec => {
+                return sec.textContent && sec.textContent.includes('Other Biomarkers') && sec.tagName !== 'SCRIPT';
+            });
 
-                // 제목 요소인지 체크
-                const isTitle = element.tagName.match(/^H[2-4]$/) ||
-                    element.classList.contains('result-title') ||
-                    element.classList.contains('variant-type');
+            if (otherBiomarkersSection) {
+                deadlineY = otherBiomarkersSection.offsetTop;
+                console.log(`[Pagination] Deadline set by Other Biomarkers Content: ${deadlineY}px`);
+            } else {
+                deadlineY = page1.clientHeight - 200;
+                console.log(`[Pagination] Deadline set by Page Height limit: ${deadlineY}px`);
+            }
+        }
 
-                // 테이블인 경우 행 단위로 분할 검토
-                if (element.tagName === 'TABLE') {
-                    const rows = Array.from(element.querySelectorAll('tr'));
-                    const headerRow = rows[0];
-                    let accumulatedTableHeight = headerRow ? headerRow.offsetHeight : 0;
-                    let splitAtRow = -1;
+        // [DEBUG] Visual Line Removed
 
-                    // 헤더 이후 각 행을 순서대로 체크
-                    for (let j = 1; j < rows.length; j++) {
-                        const rowHeight = rows[j].offsetHeight;
+        // 2. 검사 대상 설정 (Safe Title Search)
+        // Search for H3 containing "clinical significance" regardless of structure
+        const allH3 = Array.from(content.querySelectorAll('h3, .result-title'));
+        const clinicalTitle = allH3.find(el => {
+            return el.innerText.includes('clinical significance') || el.innerText.includes('clinical-highlight');
+        });
 
-                        // 현재 높이 + 헤더 + 지금까지의 행들 + 이번 행이 페이지를 넘는지 체크
-                        if (currentHeight + accumulatedTableHeight + rowHeight > maxHeight) {
-                            if (j > 1) { // 헤더 + 최소 1개 행은 있어야 함
-                                splitAtRow = j;
+        if (!clinicalTitle) {
+            console.error("[Pagination] '1. Variants of clinical significance' Title not found! (Checked H3/Title classes)");
+            hideLoadingOverlay(); // Fail safe
+            return;
+        }
+
+        const parentContainer = clinicalTitle.parentElement;
+        const allChildren = Array.from(parentContainer.children);
+        const startIndex = allChildren.indexOf(clinicalTitle) + 1;
+
+        console.log(`[Pagination] Found Title: "${clinicalTitle.innerText.trim()}". Start Index: ${startIndex}, Total Children: ${allChildren.length}`);
+
+        let elementsToCheck = [];
+        for (let i = startIndex; i < allChildren.length; i++) {
+            const currentElement = allChildren[i];
+
+            // Stop logic
+            const textContent = currentElement.innerText || "";
+            // REMOVED: Stop at Unknown Variants. We MUST include them to move them if previous content overflows.
+            // if (currentElement.tagName === 'H3' && textContent.includes('Variants of unknown significance')) {
+            //     console.log(`[Pagination] Stop Condition Met: Next Section 'Unknown Variants'`);
+            //     break;
+            // }
+            if (currentElement.classList.contains('result-title') && i > startIndex) {
+                // Also allow other result titles to be collected so they move with the flow
+                console.log(`[Pagination] (Debug) Found another result title: ${currentElement.className}. Keeping it in flow.`);
+                // break; // DON'T BREAK
+            }
+
+            if (currentElement.classList.contains('page-bottom-fixed')) {
+                console.log(`[Pagination] Stop Condition Met: Fixed Bottom`);
+                break;
+            }
+            elementsToCheck.push(currentElement);
+        }
+
+        console.log(`[Pagination] Elements to be checked for overflow: ${elementsToCheck.length}`);
+
+        // 3. 순회하며 침범 여부 검사 및 분할
+        // Pass a callback to hide overlay when done
+        processPage(page1, elementsToCheck, deadlineY, 1, hideLoadingOverlay);
+    }
+
+    // processPage and other helpers remain identifying logic as v10...
+    function processPage(pageElement, elements, limitY, pageNum, onComplete, depth = 0) {
+        if (depth > 20) {
+            console.error("[Pagination CRITICAL] Max recursion depth reached. Stopping to prevent infinite loop.");
+            if (onComplete) onComplete();
+            return;
+        }
+
+        if (elements.length === 0) {
+            if (onComplete) onComplete();
+            return;
+        }
+
+        // ... (Logics are same as before, just ensuring header preservation)
+        console.log(`%c[ProcessPage] Page ${pageNum} | Limit: ${limitY} | Elements: ${elements.length}`, "color: blue; font-weight: bold;");
+
+        let splitTableResult = null;
+        let overflowIndex = -1;
+
+        // Overflow Check
+        for (let i = 0; i < elements.length; i++) {
+            const el = elements[i];
+            const elementBottom = el.offsetTop + el.offsetHeight;
+
+            console.log(`  [Check] Item [${i}]: ${el.tagName}.${el.className} | Bottom: ${elementBottom} | Limit: ${limitY}`);
+
+            if (elementBottom > limitY - 5) {
+                console.warn(`  [OVERFLOW DETECTED] Index ${i} (${el.tagName}) flows over limit! Bottom: ${elementBottom}`);
+
+                // el 자체가 TABLE인 경우도 처리 (Unknown Variants의 DOM 구조)
+                const isTableElement = el.tagName === 'TABLE';
+                const table = isTableElement ? el : el.querySelector('table');
+                console.log(`    -> TABLE Detection: el.tagName=${el.tagName}, querySelector('table') result: ${table ? 'FOUND' : 'NULL'}, isTableElement=${isTableElement}`);
+                if (table) {
+                    // TABLE이 직접 자식인 경우 제목은 별도 요소(이전 형제)이므로 titleHeight=0
+                    const title = isTableElement ? null : el.querySelector('h4, .variant-type');
+                    const titleHeight = title ? title.offsetHeight : 0;
+                    console.log(`    -> Title: ${title ? title.textContent.substring(0, 30) : 'N/A (TABLE is direct child)'}, titleHeight=${titleHeight}`);
+
+                    if (el.offsetTop + titleHeight > limitY - 5) { // Reduced margin
+                        console.log("    -> Title overflow. Decision: MOVE WHOLE BLOCK.");
+                        if (i === 0) {
+                            console.warn("    -> Index 0 Title overflow. FORCING FIT.");
+                            if (elements.length > 1) {
+                                overflowIndex = 1;
+                                break;
+                            } else {
+                                overflowIndex = -1;
                                 break;
                             }
                         }
-                        accumulatedTableHeight += rowHeight;
+                        overflowIndex = i;
+                        break;
                     }
 
-                    // 테이블 분할이 필요한 경우
-                    if (splitAtRow > 0) {
-                        tableToSplit = {
-                            originalTable: element,
-                            splitRowIndex: splitAtRow,
-                            headerRow: headerRow.cloneNode(true)
-                        };
+                    const tbody = table.querySelector('tbody');
+                    const rows = tbody ? Array.from(tbody.rows) : Array.from(table.rows).filter(r => r.parentNode.tagName !== 'THEAD');
+                    const thead = table.querySelector('thead');
+                    const theadHeight = thead ? thead.offsetHeight : (rows.length > 0 ? rows[0].offsetHeight : 30);
 
-                        // 현재 페이지에 남을 행들의 높이만 추가
-                        let keepHeight = headerRow.offsetHeight;
-                        for (let k = 1; k < splitAtRow; k++) {
-                            keepHeight += rows[k].offsetHeight;
+                    const availableSpace = limitY - (el.offsetTop + titleHeight);
+                    console.log(`    -> Table found. Avail Space: ${availableSpace}, Header H: ${theadHeight}`);
+
+                    if (availableSpace < theadHeight * 2) {
+                        console.log("    -> Not enough space for header. Decision: MOVE WHOLE BLOCK.");
+                        if (i === 0) {
+                            console.warn("    -> Index 0 Header overflow. FORCING FIT.");
+                            if (elements.length > 1) {
+                                overflowIndex = 1;
+                                break;
+                            } else {
+                                overflowIndex = -1;
+                                break;
+                            }
                         }
-                        currentHeight += keepHeight;
-
-                        // 이후 모든 요소는 다음 페이지로
-                        elementsToMove = elements.slice(i + 1);
-                        break;
-                    }
-                }
-
-                // 일반 요소 처리
-                if (currentHeight + elementHeight > maxHeight && currentHeight > 0) {
-                    // 제목이면 전체를 다음 페이지로
-                    if (isTitle) {
-                        console.log(`📋 제목이 페이지 경계에 걸치므로 다음 페이지로 이동`);
-                        elementsToMove = elements.slice(i);
+                        overflowIndex = i;
                         break;
                     }
 
-                    // 제목을 포함한 섹션인지 체크
-                    const hasTitle = element.querySelector('h3, h4, .result-title, .variant-type');
-                    if (hasTitle) {
-                        const title = element.querySelector('h3, h4, .result-title, .variant-type');
-                        const titleHeight = title ? title.offsetHeight : 0;
+                    let checkY = el.offsetTop + titleHeight + theadHeight;
+                    let splitRowIdx = -1;
 
-                        // 제목만 걸치는 경우 전체 섹션을 다음 페이지로
-                        if (currentHeight + titleHeight > maxHeight - 5) {
-                            console.log(`📋 섹션 제목이 걸치므로 전체 섹션을 다음 페이지로`);
-                            elementsToMove = elements.slice(i);
+                    for (let r = 0; r < rows.length; r++) {
+                        checkY += rows[r].offsetHeight;
+                        if (checkY > limitY) { // No additional margin - maximize rows
+                            splitRowIdx = r;
+                            console.log(`    -> Row ${r} causes overflow at Y=${checkY}`);
                             break;
                         }
                     }
 
-                    elementsToMove = elements.slice(i);
+                    if (splitRowIdx === -1) {
+                        console.log("    -> Logic says rows fit, but element flows over? Margin/Padding issue? Decision: MOVE WHOLE BLOCK.");
+                        overflowIndex = i;
+                        break;
+                    }
+
+                    if (splitRowIdx === 0) {
+                        console.log("    -> 1st Data Row overflows. Decision: MOVE WHOLE BLOCK.");
+                        overflowIndex = i;
+                        break;
+                    }
+
+                    console.log(`    -> SPLIT POSSIBLE at Row ${splitRowIdx}.`);
+                    splitTableResult = {
+                        elementIndex: i,
+                        splitRowInTbody: splitRowIdx
+                    };
+                    overflowIndex = i;
+                    break;
+
+                } else {
+                    console.log("    -> Non-table element. Decision: MOVE WHOLE BLOCK.");
+                    if (i === 0) {
+                        console.warn("    -> Index 0 Non-Table. FORCING FIT.");
+                        if (elements.length > 1) {
+                            overflowIndex = 1;
+                            break;
+                        } else {
+                            overflowIndex = -1;
+                            break;
+                        }
+                    }
+                    overflowIndex = i;
                     break;
                 }
-
-                currentHeight += elementHeight;
             }
+        }
 
-            // 테이블 분할 실행
-            if (tableToSplit) {
-                const {originalTable, splitRowIndex, headerRow} = tableToSplit;
-                const rows = Array.from(originalTable.querySelectorAll('tr'));
+        if (overflowIndex === -1) {
+            console.log("  [ProcessPage] No overflow detected. Page fits.");
+            if (onComplete) onComplete();
+            return;
+        }
 
-                // 새 테이블 생성
-                const newTable = originalTable.cloneNode(false);
+        let nextElements = [];
 
-                // 원본 테이블의 모든 클래스와 속성 복사
-                Array.from(originalTable.attributes).forEach(attr => {
-                    if (attr.name !== 'id') { // id는 중복 방지
-                        newTable.setAttribute(attr.name, attr.value);
+        if (splitTableResult) {
+            const idx = splitTableResult.elementIndex;
+            const splitPoint = splitTableResult.splitRowInTbody;
+            const originalEl = elements[idx];
+
+            console.log(`  [Action] Splitting Element [${idx}] at Row ${splitPoint}`);
+
+            // 1. Clone Creation
+            const clonedEl = originalEl.cloneNode(true);
+            // originalEl 자체가 TABLE인 경우 처리
+            const isOrigTableElement = originalEl.tagName === 'TABLE';
+            const origTable = isOrigTableElement ? originalEl : originalEl.querySelector('table');
+            const clonedTable = isOrigTableElement ? clonedEl : clonedEl.querySelector('table');
+            const origTbody = origTable.querySelector('tbody');
+            const clonedTbody = clonedTable.querySelector('tbody');
+
+            // thead 존재 여부 확인
+            const hasThead = origTable.querySelector('thead') !== null;
+            console.log(`    -> hasThead: ${hasThead}`);
+
+            // 2. Column Width Sync
+            const origThs = origTable.querySelectorAll('thead th');
+            const clonedThs = clonedTable.querySelectorAll('thead th');
+            if (origThs.length > 0) {
+                origThs.forEach((th, k) => {
+                    const w = th.getBoundingClientRect().width;
+                    th.style.width = `${w}px`;
+                    th.style.minWidth = `${w}px`;
+                    if (clonedThs[k]) {
+                        clonedThs[k].style.width = `${w}px`;
+                        clonedThs[k].style.minWidth = `${w}px`;
                     }
                 });
-                originalTable.classList.forEach(className => {
-                    newTable.classList.add(className);
-                });
-                newTable.classList.add('split-table-continued');
-
-                // 헤더 행 추가
-                newTable.appendChild(headerRow);
-
-                // 분할점 이후의 행들을 새 테이블로 이동
-                const rowsToMove = [];
-                for (let i = splitRowIndex; i < rows.length; i++) {
-                    rowsToMove.push(rows[i]);
-                }
-
-                rowsToMove.forEach(row => {
-                    newTable.appendChild(row);
-                });
-
-                // elementsToMove 배열의 맨 앞에 새 테이블 추가
-                elementsToMove.unshift(newTable);
             }
 
-            // 새 페이지 생성이 필요한 경우
-            if (elementsToMove.length > 0) {
-                pageCount++;
-                const newPage = document.createElement('div');
-                newPage.className = `a4-page page-continued page-continued-${pageCount}`;
-
-                const pageContent = document.createElement('div');
-                pageContent.className = 'page-border';
-                const reportContent = document.createElement('div');
-                reportContent.className = 'report-content';
-
-                pageContent.appendChild(reportContent);
-                newPage.appendChild(pageContent);
-
-                // 요소들을 새 페이지로 이동
-                elementsToMove.forEach(element => {
-                    reportContent.appendChild(element);
-                });
-
-                // 현재 페이지 다음에 새 페이지 삽입
-                continuedPage.parentNode.insertBefore(newPage, continuedPage.nextSibling);
-
-                // 새 페이지도 재귀적으로 검사
-                setTimeout(() => {
-                    dynamicPageSplit();
-                }, 100);
-
-                return; // 현재 페이지 처리 완료
-            }
-        });
-    }
-
-    // A4 페이지 분할 체크 기능 (제목 체크 포함)
-    function checkPageOverflow() {
-        const a4Pages = document.querySelectorAll('.a4-page');
-
-        a4Pages.forEach((page, pageIndex) => {
-            // 각 페이지 내의 섹션들을 확인
-            const sections = page.querySelectorAll('.section');
-            let totalHeight = 0;
-            const pageHeight = page.clientHeight - 100; // 패딩 고려
-
-            sections.forEach((section) => {
-                const sectionHeight = section.offsetHeight;
-                totalHeight += sectionHeight;
-
-                // 페이지 높이를 초과하는 섹션에 대해 경고
-                if (totalHeight > pageHeight) {
-                    console.warn(`Page ${pageIndex + 1}: 컨텐츠가 A4 페이지 크기를 초과합니다!`);
-
-                    // 제목이 잘리는지 체크
-                    const titles = section.querySelectorAll('h2, h3, h4, .result-title, .section-title, .variant-type');
-                    titles.forEach(title => {
-                        const rect = title.getBoundingClientRect();
-                        const pageRect = page.getBoundingClientRect();
-                        if (rect.bottom > pageRect.bottom - 10) {
-                            console.warn(`⚠️ 제목이 페이지 경계에서 잘림: ${title.textContent}`);
-                        }
-                    });
+            // 3. Modify Original (splitPoint 이후 행 삭제)
+            const origRows = Array.from(origTbody.rows);
+            for (let r = splitPoint; r < origRows.length; r++) {
+                if (origRows[r] && origRows[r].parentNode === origTbody) {
+                    origTbody.removeChild(origRows[r]);
                 }
+            }
+
+            // 제목 처리: TABLE이 직접 자식인 경우 이전 형제에서 제목 찾기
+            let origTitle = originalEl.querySelector('h4, .variant-type');
+            if (!origTitle && isOrigTableElement) {
+                // 이전 형제 요소들 중에서 H4 찾기
+                let prev = originalEl.previousElementSibling;
+                while (prev) {
+                    if (prev.matches('h4, .variant-type')) {
+                        origTitle = prev;
+                        break;
+                    }
+                    prev = prev.previousElementSibling;
+                }
+            }
+            addPageNumberToTitle(origTitle, pageNum, pageNum + 1);
+
+            // 4. Modify Clone (splitPoint 이전 데이터 행 삭제, 헤더 행은 보존)
+            const clonedRows = Array.from(clonedTbody.rows);
+            // thead가 없으면 첫 번째 행(index 0)이 헤더이므로 보존
+            const startRemoveIdx = hasThead ? 0 : 1;
+            console.log(`    -> Removing cloned rows from ${startRemoveIdx} to ${splitPoint - 1}`);
+            for (let r = startRemoveIdx; r < splitPoint; r++) {
+                if (clonedRows[r] && clonedRows[r].parentNode === clonedTbody) {
+                    clonedTbody.removeChild(clonedRows[r]);
+                }
+            }
+
+            // Clone에 제목 추가 (TABLE이 직접 자식인 경우)
+            if (isOrigTableElement && origTitle) {
+                const newTitle = origTitle.cloneNode(true);
+                addPageNumberToTitle(newTitle, pageNum + 1, pageNum + 1);
+                nextElements.push(newTitle);
+            } else {
+                addPageNumberToTitle(clonedEl.querySelector('h4, .variant-type'), pageNum + 1, pageNum + 1);
+            }
+
+            nextElements.push(clonedEl);
+
+            // Add remaining elements
+            for (let k = idx + 1; k < elements.length; k++) {
+                nextElements.push(elements[k]);
+            }
+
+        } else {
+            console.log(`  [Action] Moving FULL elements starting from index ${overflowIndex}`);
+            for (let k = overflowIndex; k < elements.length; k++) {
+                console.log(`    -> MOVING: [${k}] ${elements[k].tagName}.${elements[k].className}`);
+                nextElements.push(elements[k]);
+            }
+        }
+
+        if (nextElements.length > 0) {
+            console.log(`  [NewPage] Creating Page ${pageNum + 1} with ${nextElements.length} moved elements.`);
+            const newPage = createClinicalContinuedPage(pageElement, pageNum + 1);
+            const newContent = newPage.querySelector('.report-content');
+            console.log(`    -> newContent found: ${newContent ? 'YES' : 'NO'}`);
+
+            nextElements.forEach((el, idx) => {
+                console.log(`    -> APPEND to new page: [${idx}] ${el.tagName}.${el.className}`);
+                newContent.appendChild(el);
             });
 
-            // 페이지 크기 초과 시 시각적 표시
-            if (totalHeight > pageHeight) {
-                page.classList.add('overflow-warning');
-            } else {
-                page.classList.remove('overflow-warning');
-            }
-        });
+            setTimeout(() => {
+                // Clamping Height: Ensure we don't use an expanded container height.
+                // A4 (25.4cm) @ 96dpi is ~960px. Safe limit is ~900-950px.
+                let border = newPage.querySelector('.page-border');
+                let h = border ? border.clientHeight : 0;
+
+                // If height seems abnormally large (expanded by content), force A4 limit
+                if (h > 1000 || h < 100) {
+                    console.warn(`[Pagination] Page height ${h}px seems abnormal. Forcing safety limit.`);
+                    h = 960; // A4 (25.4cm) exactly
+                }
+
+                const newLimit = h - 50;
+                console.log(`  [Recursive] Triggering check for Page ${pageNum + 1}. Border H: ${h}, Limit: ${newLimit}`);
+
+                const nextChildren = Array.from(newContent.children);
+                if (nextChildren.length > 0) {
+                    processPage(newPage, nextChildren, newLimit, pageNum + 1, onComplete, depth + 1);
+                } else {
+                    if (onComplete) onComplete();
+                }
+            }, 100);
+        } else {
+            // Should be handled by overflowIndex === -1 check, but for safety
+            if (onComplete) onComplete();
+        }
     }
 
-    // 첫 페이지 처리를 위한 함수 - 공간 최대 활용 버전 (제목 처리 포함)
-    function handleFirstPage() {
-        const firstPage = document.querySelector('.page-1');
-        if (!firstPage) return;
+    // Helper: Overlay Control
+    function hideLoadingOverlay() {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+            document.body.classList.add('loaded'); // Trigger CSS opacity transition via class
+            setTimeout(() => {
+                if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            }, 600); // 0.6s wait (CSS transition is 0.5s)
+            console.log("[Pagination] Loading Overlay Hidden.");
+        }
+    }
 
-        const content = firstPage.querySelector('.report-content');
-        if (!content) return;
+    // Helper: Add Numbering (분할 시 임시 마킹, 나중에 후처리)
+    function addPageNumberToTitle(titleEl, current, total) {
+        if (!titleEl) return;
+        // 제목에 data-split-group 속성 추가 (같은 테이블에서 분할된 제목들 그룹화)
+        const groupId = titleEl.dataset.splitGroup || titleEl.textContent.trim().replace(/\s*\(\d+\/\d+\)/g, '').substring(0, 20);
+        titleEl.dataset.splitGroup = groupId;
+        titleEl.dataset.splitIndex = current;
+        console.log(`    -> Title marked: group="${groupId}", index=${current}`);
+    }
 
-        // 하단 고정 컨텐츠 확인
-        const bottomFixed = firstPage.querySelector('.page-bottom-fixed');
-        const bottomFixedHeight = bottomFixed ? bottomFixed.offsetHeight : 0;
+    // Helper: 분할 완료 후 페이지 번호 업데이트
+    function finalizePageNumbers() {
+        // 같은 그룹의 제목들을 찾아서 (1/N), (2/N), ..., (N/N) 형식으로 업데이트
+        const groups = {};
+        document.querySelectorAll('[data-split-group]').forEach(el => {
+            const group = el.dataset.splitGroup;
+            if (!groups[group]) groups[group] = [];
+            groups[group].push(el);
+        });
 
-        // 첫 페이지 컨텐츠 영역의 최대 높이 (패딩 최소화에 맞춰 조정)
-        const pageHeight = firstPage.clientHeight;
-        const maxContentHeight = pageHeight - bottomFixedHeight - 5; // 여백을 최소화 (20px → 5px)
+        for (const group in groups) {
+            const titles = groups[group];
+            const total = titles.length;
 
-        console.log(`첫 페이지 전체 높이: ${pageHeight}px, 하단 고정: ${bottomFixedHeight}px, 사용 가능: ${maxContentHeight}px`);
-
-        // 원래 순서대로 모든 children 처리
-        const elements = Array.from(content.children);
-        let currentHeight = 0;
-        let elementsToMove = [];
-
-        for (let i = 0; i < elements.length; i++) {
-            const element = elements[i];
-            const elementHeight = element.offsetHeight;
-
-            // 제목 요소인지 체크
-            const isTitle = element.tagName.match(/^H[2-4]$/) ||
-                element.classList.contains('result-title') ||
-                element.classList.contains('section-title');
-
-            console.log(`요소 ${i}: ${element.tagName}${element.className ? '.' + element.className : ''} - 높이: ${elementHeight}px, 누적: ${currentHeight}px + ${elementHeight}px = ${currentHeight + elementHeight}px, 제목: ${isTitle}`);
-
-            // 검사결과 타이틀과 첫 섹션은 첫 페이지에 유지
-            if (i < 3) {
-                currentHeight += elementHeight;
-                console.log(`필수 요소 ${i} 첫 페이지에 강제 유지, 누적 높이: ${currentHeight}px`);
+            // 분할이 없으면 (total == 1) 번호 표시 안함
+            if (total === 1) {
+                // 기존 번호 제거
+                titles[0].innerHTML = titles[0].innerHTML.replace(/\s*<span.*<\/span>/gi, '').replace(/\s*\(\d+\/\d+\)/g, '');
                 continue;
             }
 
-            // 3번째 요소부터는 공간 체크
-            if (currentHeight + elementHeight > maxContentHeight - 2) { // 여백을 극도로 줄임 (10px → 2px)
-                console.log(`⚠️ 오버플로우! 요소 ${i}부터 처리 필요 (필요: ${currentHeight + elementHeight}px, 사용가능: ${maxContentHeight}px)`);
+            // splitIndex 기준으로 정렬
+            titles.sort((a, b) => parseInt(a.dataset.splitIndex) - parseInt(b.dataset.splitIndex));
 
-                // 제목이나 제목을 포함한 섹션인 경우 전체를 다음 페이지로
-                if (isTitle) {
-                    console.log(`📋 제목 요소가 잘리므로 전체를 다음 페이지로 이동`);
-                    elementsToMove.push(...elements.slice(i));
-                    break;
-                }
-
-                // 제목을 포함한 섹션인 경우 (제목 + 테이블)
-                const hasTitle = element.querySelector('h3, h4, .result-title, .variant-type');
-                if (hasTitle) {
-                    const title = element.querySelector('h3, h4, .result-title, .variant-type');
-                    const titleHeight = title ? title.offsetHeight : 0;
-
-                    // 제목만 걸치는 경우 전체 섹션을 다음 페이지로
-                    if (currentHeight + titleHeight > maxContentHeight - 2) {
-                        console.log(`📋 섹션 제목이 잘리므로 전체 섹션을 다음 페이지로 이동`);
-                        elementsToMove.push(...elements.slice(i));
-                        break;
-                    }
-                }
-
-                // 테이블인 경우 행별로 분할 시도
-                if (element.querySelector('table')) {
-                    const availableSpace = maxContentHeight - currentHeight - 2; // 여백 최소화 (10px → 2px)
-                    const table = element.querySelector('table');
-                    const result = tryTableSplit(table, availableSpace);
-                    if (result.canSplit) {
-                        console.log(`✂️ 테이블 분할: ${result.splitRowIndex}번째 행에서 분할`);
-
-                        // 원본 테이블의 tbody에서 초과 행 제거
-                        const tbody = table.querySelector('tbody');
-                        const rows = Array.from(tbody.querySelectorAll('tr'));
-
-                        // 새로운 섹션 생성 (나머지 행들을 위한)
-                        const newSection = element.cloneNode(true);
-                        const newTable = newSection.querySelector('table');
-                        const newTbody = newTable.querySelector('tbody');
-
-                        // 새 테이블의 모든 행 제거
-                        newTbody.innerHTML = '';
-
-                        // 분할점 이후의 행들을 새 테이블로 이동
-                        for (let j = result.splitRowIndex; j < rows.length; j++) {
-                            newTbody.appendChild(rows[j].cloneNode(true));
-                        }
-
-                        // 원본 테이블에서 초과 행 제거
-                        for (let j = rows.length - 1; j >= result.splitRowIndex; j--) {
-                            rows[j].remove();
-                        }
-
-                        // 제목 수정
-                        const title = element.querySelector('.variant-type, h4');
-                        const newTitle = newSection.querySelector('.variant-type, h4');
-                        if (title && newTitle) {
-                            const titleText = title.textContent.replace(/\s*\(\d+\/\d+\).*/, '');
-                            title.innerHTML = title.innerHTML.replace(titleText, titleText + ' (1/2)');
-                            newTitle.innerHTML = newTitle.innerHTML.replace(titleText, titleText + ' (2/2)');
-                        }
-
-                        elementsToMove.push(newSection);
-
-                        // 분할 후 남은 요소들도 이동
-                        elementsToMove.push(...elements.slice(i + 1));
-                        break;
-                    }
-                }
-
-                // 테이블 분할이 안 되거나 일반 요소인 경우 전체 이동
-                elementsToMove.push(...elements.slice(i));
-                break;
-            }
-
-            currentHeight += elementHeight;
-            console.log(`✅ 요소 ${i} 첫 페이지에 유지, 누적 높이: ${currentHeight}px`);
+            titles.forEach((titleEl, idx) => {
+                const current = idx + 1;
+                let text = titleEl.innerHTML.replace(/\s*<span.*<\/span>/gi, '').replace(/\s*\(\d+\/\d+\)/g, '');
+                titleEl.innerHTML = text + ` <span>(${current}/${total})</span>`;
+            });
         }
-
-        // 다음 페이지로 이동할 요소가 있으면 이동
-        if (elementsToMove.length > 0) {
-            moveElementsToNextPage(elementsToMove, '.page-continued-1');
-            console.log(`${elementsToMove.length}개 요소를 다음 페이지로 이동`);
-        }
+        console.log(`[Pagination] Page numbers finalized for ${Object.keys(groups).length} groups.`);
     }
 
-    // 테이블 분할 가능성 체크 - 더 공격적으로 공간 활용
-    function tryTableSplit(table, availableHeight) {
-        const tbody = table.querySelector('tbody');
-        if (!tbody) return {canSplit: false};
-
-        const rows = Array.from(tbody.querySelectorAll('tr'));
-        if (rows.length <= 1) return {canSplit: false};
-
-        const thead = table.querySelector('thead');
-        const headerHeight = thead ? thead.offsetHeight : 0;
-        let accumulatedHeight = headerHeight;
-
-        // 최대한 많은 행을 첫 페이지에 넣기
-        for (let i = 0; i < rows.length; i++) {
-            const rowHeight = rows[i].offsetHeight;
-
-            if (accumulatedHeight + rowHeight > availableHeight) {
-                if (i > 0) { // 최소 1개 행이라도 들어가면 분할
-                    return {canSplit: true, splitRowIndex: i};
-                } else {
-                    return {canSplit: false}; // 1행도 안 들어가면 분할 불가
-                }
-            }
-
-            accumulatedHeight += rowHeight;
-        }
-
-        return {canSplit: false}; // 전체 테이블이 들어가면 분할 불필요
-    }
-
-    // 테이블 분할 실행
-    function splitTableAtRow(originalTable, splitRowIndex) {
-        const rows = Array.from(originalTable.querySelectorAll('tr'));
-        const headerRow = rows[0];
-
-        // 새 테이블 생성
-        const newTable = originalTable.cloneNode(false);
-
-        // 원본 테이블의 모든 속성 복사
-        Array.from(originalTable.attributes).forEach(attr => {
-            if (attr.name !== 'id') {
-                newTable.setAttribute(attr.name, attr.value);
-            }
-        });
-        originalTable.classList.forEach(className => {
-            newTable.classList.add(className);
-        });
-        newTable.classList.add('split-table-continued');
-
-        // 헤더 추가
-        newTable.appendChild(headerRow.cloneNode(true));
-
-        // 분할점 이후의 행들을 새 테이블로 이동
-        for (let i = splitRowIndex; i < rows.length; i++) {
-            newTable.appendChild(rows[i]);
-        }
-
-        return newTable;
-    }
-
-    // 요소들을 다음 페이지로 이동
-    function moveElementsToNextPage(elements, nextPageSelector) {
-        let nextPage = document.querySelector(nextPageSelector);
-
-        // 다음 페이지가 없으면 생성
-        if (!nextPage) {
-            nextPage = createNewPage(nextPageSelector);
-        }
-
-        const nextContent = nextPage.querySelector('.report-content');
-        if (!nextContent) return;
-
-        // 요소들을 다음 페이지로 이동
-        elements.forEach(element => {
-            nextContent.appendChild(element);
-        });
-    }
-
-    // 새 페이지 생성
-    function createNewPage(pageSelector) {
-        const pageClass = pageSelector.replace('.', '');
-        const pageNumber = pageClass.includes('continued-') ?
-            pageClass.split('continued-')[1] : '1';
-
+    // Helper: Create Page
+    function createClinicalContinuedPage(prevPage, pageNum) {
         const newPage = document.createElement('div');
-        newPage.className = `a4-page page-continued ${pageClass}`;
-
-        const pageContent = document.createElement('div');
-        pageContent.className = 'page-border';
-        const reportContent = document.createElement('div');
-        reportContent.className = 'report-content';
-
-        pageContent.appendChild(reportContent);
-        newPage.appendChild(pageContent);
-
-        // 적절한 위치에 삽입
-        const firstPage = document.querySelector('.page-1');
-        if (firstPage) {
-            firstPage.parentNode.insertBefore(newPage, firstPage.nextSibling);
-        }
-
+        newPage.className = `a4-page page-clinical-continued page-num-${pageNum}`;
+        // Important: Ensure the layout matches exactly
+        newPage.innerHTML = `<div class="page-border"><div class="report-content"></div></div>`;
+        prevPage.parentNode.insertBefore(newPage, prevPage.nextSibling);
         return newPage;
     }
 
-    // 보고서 페이지가 있을 경우에만 실행 - 개선된 버전
-    if (document.querySelector('.a4-page')) {
-        // DOM이 완전히 렌더링된 후 페이지 분할 처리
-        setTimeout(() => {
-            // 첫 페이지 처리
-            handleFirstPage();
-            // 동적 페이지 분할 적용
-            dynamicPageSplit();
-            // 오버플로우 체크
-            checkPageOverflow();
+    // Unknown Variants 동적 분할 기능
+    function dynamicUnknownPagination() {
+        console.log("%c[Pagination Start] dynamicUnknownPagination triggered", "color: purple; font-weight: bold; font-size: 14px;");
 
-            // 추가적인 체크를 위해 조금 더 기다린 후 한 번 더
-            setTimeout(() => {
-                handleFirstPage();
-                dynamicPageSplit();
-                checkPageOverflow();
-            }, 500);
+        const pageUnknown = document.querySelector('.page-continued-1');
+        if (!pageUnknown) {
+            console.error("[Pagination] .page-continued-1 not found!");
+            return;
+        }
 
-            // 이미지 로드 후 최종 체크
-            setTimeout(() => {
-                handleFirstPage();
-                dynamicPageSplit();
-            }, 1000);
-        }, 100);
+        const content = pageUnknown.querySelector('.report-content');
+        if (!content) {
+            console.error("[Pagination] .report-content not found in page-continued-1!");
+            return;
+        }
 
-        // 윈도우 크기 변경 시 다시 체크
-        window.addEventListener('resize', () => {
-            setTimeout(() => {
-                handleFirstPage();
-                dynamicPageSplit();
-                checkPageOverflow();
-            }, 100);
-        });
+        // 1. 기준점 설정 (페이지 테두리 높이 기준)
+        // !! 핵심 수정: offsetTop이 아닌 페이지 자체의 높이를 기준으로 함 !!
+        const border = pageUnknown.querySelector('.page-border');
+        let deadlineY = 960 - 50; // Fallback: A4 기준
+
+        if (border) {
+            // 페이지 테두리의 clientHeight에서 margin을 뺀 값 사용
+            deadlineY = border.clientHeight - 5; // Minimal margin (5px) to fit more rows
+            console.log(`[Pagination-Unknown] Deadline set by page-border height: ${deadlineY}px (border=${border.clientHeight}px)`);
+        } else {
+            console.log(`[Pagination-Unknown] Deadline set by Fallback: ${deadlineY}px`);
+        }
+
+        // 2. additional-info (안내문) 저장 후 제거 - 마지막 페이지로 이동할 예정
+        const additionalInfo = content.querySelector('.additional-info');
+        if (additionalInfo) {
+            additionalInfo.remove();
+            console.log(`[Pagination-Unknown] .additional-info removed temporarily for relocation.`);
+        }
+
+        // 3. 검사 대상 설정
+        const allChildren = Array.from(content.children);
+        console.log(`[Pagination-Unknown] Elements to be checked for overflow: ${allChildren.length}`);
+
+        // 4. 순회하며 침범 여부 검사 및 분할
+        // 완료 후 콜백에서 페이지 번호 후처리 및 additional-info 배치
+        processPage(pageUnknown, allChildren, deadlineY, 2, () => {
+            console.log(`[Pagination-Unknown] onComplete callback triggered.`);
+
+            // 4-1. 페이지 번호 후처리
+            finalizePageNumbers();
+
+            // 4-2. additional-info를 Unknown Variants 섹션의 마지막 페이지에 추가
+            if (additionalInfo) {
+                // pageUnknown(.page-continued-1)에서 시작해서 nextSibling으로 마지막 관련 페이지 찾기
+                let lastUnknownPage = pageUnknown;
+                let sibling = pageUnknown.nextElementSibling;
+
+                // page-clinical-continued 또는 page-num-N 클래스를 가진 연속된 페이지 찾기
+                while (sibling && sibling.classList.contains('a4-page') &&
+                    (sibling.classList.contains('page-clinical-continued') ||
+                        sibling.className.includes('page-num-'))) {
+                    lastUnknownPage = sibling;
+                    sibling = sibling.nextElementSibling;
+                }
+
+                const targetContent = lastUnknownPage.querySelector('.report-content');
+                if (targetContent) {
+                    targetContent.appendChild(additionalInfo);
+                    console.log(`[Pagination-Unknown] .additional-info appended to (${lastUnknownPage.className}).`);
+                } else {
+                    console.error(`[Pagination-Unknown] .report-content not found in target page.`);
+                }
+            }
+        }, 0);
     }
+
+    // Init
+    if (document.querySelector('.a4-page')) {
+        setTimeout(() => {
+            dynamicClinicalPagination();
+            setTimeout(dynamicUnknownPagination, 500);
+        }, 500);
+
+        setTimeout(hideLoadingOverlay, 5000);
+    }
+
 
     // PDF 다운로드 버튼 기능
     const pdfDownloadBtn = document.getElementById('pdf-download-btn');
