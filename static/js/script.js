@@ -699,6 +699,101 @@ document.addEventListener('DOMContentLoaded', function () {
         return newPage;
     }
 
+    // Unknown 요소들을 Clinical 마지막 페이지로 이동 (Clinical 오버플로우 시)
+    function attachUnknownToClinicalFlow() {
+        console.log("%c[Pagination] attachUnknownToClinicalFlow triggered", "color: orange; font-weight: bold; font-size: 14px;");
+
+        // 1. 마지막 Clinical 페이지 찾기
+        const allClinicalPages = document.querySelectorAll('.page-1, .page-clinical-continued');
+        if (allClinicalPages.length === 0) {
+            console.error("[Pagination] No clinical pages found!");
+            hideLoadingOverlay();
+            return;
+        }
+        const lastClinicalPage = allClinicalPages[allClinicalPages.length - 1];
+        console.log(`[Pagination] Last clinical page: ${lastClinicalPage.className}`);
+
+        // 2. Unknown 페이지에서 요소 추출
+        const unknownPage = document.querySelector('.page-continued-1');
+        if (!unknownPage) {
+            console.error("[Pagination] .page-continued-1 not found!");
+            hideLoadingOverlay();
+            return;
+        }
+        const unknownContent = unknownPage.querySelector('.report-content');
+        if (!unknownContent) {
+            console.error("[Pagination] .report-content not found in .page-continued-1!");
+            hideLoadingOverlay();
+            return;
+        }
+
+        // 3. additional-info 미리 저장 (마지막에 다시 붙일 예정)
+        const additionalInfo = unknownContent.querySelector('.additional-info');
+        if (additionalInfo) {
+            additionalInfo.remove();
+            console.log("[Pagination] .additional-info saved for later relocation.");
+        }
+
+        // 4. Unknown 요소들을 배열로 추출
+        const unknownElements = Array.from(unknownContent.children);
+        console.log(`[Pagination] Moving ${unknownElements.length} elements from Unknown page to Clinical flow.`);
+
+        // 5. 마지막 Clinical 페이지의 content로 이동
+        const targetContent = lastClinicalPage.querySelector('.report-content');
+        if (!targetContent) {
+            console.error("[Pagination] .report-content not found in last clinical page!");
+            hideLoadingOverlay();
+            return;
+        }
+
+        unknownElements.forEach(el => {
+            targetContent.appendChild(el);
+        });
+
+        // 6. 빈 Unknown 페이지 제거
+        unknownPage.remove();
+        console.log("[Pagination] Empty .page-continued-1 removed.");
+
+        // 7. 이동된 요소들 재-페이지네이션
+        // 마지막 Clinical 페이지의 기준점 계산
+        const border = lastClinicalPage.querySelector('.page-border');
+        let deadlineY = 960 - 50; // Fallback: A4 기준
+
+        if (border) {
+            deadlineY = border.clientHeight - 5;
+            console.log(`[Pagination] Deadline for merged page: ${deadlineY}px`);
+        }
+
+        // 현재 페이지 번호 계산 (Clinical 페이지 수 기준)
+        const currentPageNum = allClinicalPages.length;
+
+        // 이동된 요소들만 다시 체크 (기존 Clinical 요소 제외)
+        const allChildrenNow = Array.from(targetContent.children);
+        console.log(`[Pagination] Re-checking ${allChildrenNow.length} elements in merged page.`);
+
+        processPage(lastClinicalPage, allChildrenNow, deadlineY, currentPageNum, () => {
+            console.log("[Pagination] Merged page pagination complete.");
+
+            // 페이지 번호 후처리
+            finalizePageNumbers();
+
+            // additional-info를 마지막 페이지에 추가
+            if (additionalInfo) {
+                // 마지막 페이지 다시 찾기 (추가 페이지가 생겼을 수 있음)
+                const finalPages = document.querySelectorAll('.page-1, .page-clinical-continued');
+                const finalLastPage = finalPages[finalPages.length - 1];
+                const finalContent = finalLastPage.querySelector('.report-content');
+
+                if (finalContent) {
+                    finalContent.appendChild(additionalInfo);
+                    console.log(`[Pagination] .additional-info appended to (${finalLastPage.className}).`);
+                }
+            }
+
+            hideLoadingOverlay();
+        }, 0);
+    }
+
     // Unknown Variants 동적 분할 기능
     function dynamicUnknownPagination() {
         console.log("%c[Pagination Start] dynamicUnknownPagination triggered", "color: purple; font-weight: bold; font-size: 14px;");
@@ -776,7 +871,19 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.querySelector('.a4-page')) {
         setTimeout(() => {
             dynamicClinicalPagination();
-            setTimeout(dynamicUnknownPagination, 500);
+            setTimeout(() => {
+                // 조건 분기: Clinical 오버플로우 여부 확인
+                const clinicalOverflowed = document.querySelector('.page-clinical-continued') !== null;
+                console.log(`[Pagination] Clinical overflowed: ${clinicalOverflowed}`);
+
+                if (clinicalOverflowed) {
+                    // Clinical이 1페이지 초과 → Unknown을 Clinical 직후에 연속 배치
+                    attachUnknownToClinicalFlow();
+                } else {
+                    // Clinical이 1페이지 이내 → 기존 로직 유지 (별도 페이지)
+                    dynamicUnknownPagination();
+                }
+            }, 500);
         }, 500);
 
         setTimeout(hideLoadingOverlay, 5000);

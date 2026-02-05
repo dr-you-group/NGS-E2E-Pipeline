@@ -23,7 +23,7 @@ class PPTReportConfig:
     BODY_TOP_START = Cm(4.5)
     BODY_BOTTOM_LIMIT = Cm(18.0)
 
-    FONT_NAME = "Arial"
+    FONT_NAME = "Malgun Gothic"
     FONT_SIZE_TITLE = Pt(12)
     FONT_SIZE_HEADER = Pt(12)
     FONT_SIZE_BODY = Pt(9)
@@ -402,6 +402,11 @@ class NGS_PPT_Generator:
         if len(prs.slides) > 0:
             self._fill_clinical_info(prs.slides[0], report_data)
 
+        # QC 및 DNA/RNA 정보는 4번째 페이지(Index 3)에 위치함
+        if len(prs.slides) > 3:
+            self._fill_qc_table(prs.slides[3], report_data)
+            self._fill_dna_rna_info(prs.slides[3], report_data)
+
 
         analyzer = LayoutAnalyzer(prs)
         self._process_all_variants(prs, report_data, analyzer)
@@ -496,6 +501,93 @@ class NGS_PPT_Generator:
             final_value = str(value) if value is not None else ""
 
             self._search_and_fill_cell_below(tables, ppt_label, final_value)
+
+    def _fill_qc_table(self, slide, report_data):
+        qc_data = report_data.get('qc', {})
+        if not qc_data: return
+
+        rows_data = qc_data.get('data', [])
+        if not rows_data: return
+
+        qc_map = {}
+        for row in rows_data:
+            if len(row) >= 2:
+                key = str(row[0]).strip().replace(" ", "").lower()
+                val = str(row[-1])
+                qc_map[key] = val
+        
+        tables = [shape.table for shape in slide.shapes if shape.has_table]
+        for table in tables:
+            for row in table.rows:
+                if len(row.cells) > 0:
+                    first_text = row.cells[0].text_frame.text.strip().replace(" ", "").lower()
+                    
+                    matched_val = None
+                    for k, v in qc_map.items():
+                        # 부분 일치 허용 (예: 데이터 키 'pct_pf_reads'가 테이블 텍스트 'pct_pf_reads(%)'에 포함되는지 확인)
+                        # 혹은 반대 경우도 고려
+                        if k in first_text or first_text in k:
+                            matched_val = v
+                            break
+                    
+                    if matched_val:
+                        # 마지막 컬럼에 채우기
+                        last_idx = len(row.cells) - 1
+                        self._set_cell_text_preserving_style(row.cells[last_idx], matched_val, is_bold=True)
+
+    def _fill_dna_rna_info(self, slide, report_data):
+        drna = report_data.get('drna_qubit', {})
+        if not drna: return
+        
+        dna_val = drna.get('DNA')
+        rna_val = drna.get('RNA')
+        
+        t_dna = "DNA (ng/ul)"
+        t_rna = "RNA (ng/ul)"
+
+        for shape in slide.shapes:
+            if shape.has_text_frame:
+                self._process_text_frame_for_drna(shape.text_frame, t_dna, t_rna, dna_val, rna_val)
+            if shape.has_table:
+                for row in shape.table.rows:
+                    for cell in row.cells:
+                        self._process_text_frame_for_drna(cell.text_frame, t_dna, t_rna, dna_val, rna_val)
+
+    def _process_text_frame_for_drna(self, text_frame, t_dna, t_rna, v_dna, v_rna):
+        if t_dna not in text_frame.text and t_rna not in text_frame.text:
+            return
+            
+        for p in text_frame.paragraphs:
+            txt = p.text
+            modified = False
+            
+            # DNA 채우기
+            if v_dna and t_dna in txt:
+                idx = txt.find(t_dna)
+                c_idx = txt.find(":", idx)
+                if c_idx != -1:
+                    # 중복 삽입 방지 로직이 없으므로, 템플릿이 깨끗하다고 가정하고 삽입
+                    prefix = txt[:c_idx+1]
+                    suffix = txt[c_idx+1:]
+                    # 값 삽입 (한 칸 띄움)
+                    txt = f"{prefix} {v_dna}{suffix}"
+                    modified = True
+            
+            # RNA 채우기 (DNA 처리된 텍스트에서 검색)
+            if v_rna and t_rna in txt:
+                idx = txt.find(t_rna) # 뒤쪽에 위치한 RNA 찾기
+                c_idx = txt.find(":", idx)
+                if c_idx != -1:
+                    prefix = txt[:c_idx+1]
+                    suffix = txt[c_idx+1:]
+                    txt = f"{prefix} {v_rna}{suffix}"
+                    modified = True
+            
+            if modified:
+                p.text = txt
+                # 스타일(폰트) 유지 노력
+                if p.runs:
+                    p.runs[0].font.name = self.config.FONT_NAME
 
     def _extract_highlight_keywords(self, report_data):
         """Report Data에서 코멘트 강조를 위한 키워드(유전자명 등)를 추출합니다."""
@@ -634,9 +726,33 @@ class NGS_PPT_Generator:
                 if layout.top + required_height > layout.bottom_limit:
                     layout.add_new_slide()
 
-                self._render_section_header(layout, title, highlight_data=highlight_val)
+                # 먼저 테이블 분할 여부 계산
                 if prototype_xml is not None:
-                    self._render_table_using_prototype(layout, prototype_xml, rows, style_props, margin_left=self.config.MARGIN_LEFT_L3)
+                    total_pages = self._calculate_table_pages(layout, len(rows))
+                else:
+                    total_pages = 1  # scratch 테이블은 분할 미지원
+                
+                # 분할 시 첫 페이지 제목에 (1/N) 추가
+                display_title = f"{title} (1/{total_pages})" if total_pages > 1 else title
+                self._render_section_header(layout, display_title, highlight_data=highlight_val)
+                
+                if prototype_xml is not None:
+                    # 테이블 분할 시 제목과 페이지 번호 표시를 위한 정보 전달
+                    if total_pages > 1:
+                        pagination_info = {
+                            "title": title,
+                            "current_page": 1,
+                            "total_pages": total_pages,
+                            "is_first": True
+                        }
+                    else:
+                        pagination_info = None
+                    
+                    self._render_table_using_prototype(
+                        layout, prototype_xml, rows, style_props,
+                        margin_left=self.config.MARGIN_LEFT_L3,
+                        pagination_info=pagination_info
+                    )
                 else:
                     self._render_table_from_scratch(layout, headers, rows, margin_left=self.config.MARGIN_LEFT_L3)
             else:
@@ -717,10 +833,38 @@ class NGS_PPT_Generator:
         run.font.bold = is_bold
         run.font.italic = italic
 
-    def _render_table_using_prototype(self, layout, prototype_xml, rows, style_props, margin_left=None):
-        """프로토타입 XML을 사용하여 테이블을 그립니다. margin_left 지정 가능."""
+    def _calculate_table_pages(self, layout, total_rows):
+        """테이블이 몇 페이지에 걸쳐 분할될지 미리 계산합니다."""
+        row_height = Cm(0.8)
+        header_height = Cm(0.8)
+        page_count = 0
+        remaining_rows = total_rows
         
-        # margin_left가 없는 경우 기본값(1.0cm) 사용 - 호환성
+        # 첫 페이지 가용 공간
+        available_height = layout.bottom_limit - layout.top
+        if available_height < (header_height + row_height):
+            available_height = layout.bottom_limit - self.config.BODY_TOP_START
+        
+        while remaining_rows > 0:
+            page_count += 1
+            max_rows = int((available_height - header_height) / row_height)
+            remaining_rows -= max(1, max_rows)  # 최소 1행은 들어감
+            # 이후 페이지는 새 슬라이드 기준
+            available_height = layout.bottom_limit - self.config.BODY_TOP_START
+        
+        return max(1, page_count)
+
+    def _render_table_using_prototype(self, layout, prototype_xml, rows, style_props, 
+                                       margin_left=None, pagination_info=None):
+        """프로토타입 XML을 사용하여 테이블을 그립니다.
+        
+        Args:
+            pagination_info: 분할 시 페이지 번호 표시를 위한 정보 dict
+                - title: 섹션 제목 (예: "SNVs & Indels")
+                - current_page: 현재 페이지 번호
+                - total_pages: 전체 페이지 수
+                - is_first: 첫 페이지 여부 (첫 페이지는 별도 렌더링되므로 제목 스킵)
+        """
         final_margin = margin_left if margin_left else layout.margin
         row_height = Cm(0.8)
         header_height = Cm(0.8)
@@ -733,14 +877,48 @@ class NGS_PPT_Generator:
 
         max_rows = int((available_height - header_height) / row_height)
 
+        # 페이지 정보 초기화 (첫 호출 시)
+        if pagination_info is None:
+            total_pages = self._calculate_table_pages(layout, len(rows))
+            if total_pages > 1:
+                pagination_info = {
+                    "title": None,  # 호출자가 설정
+                    "current_page": 1,
+                    "total_pages": total_pages,
+                    "is_first": True
+                }
+
         if max_rows >= len(rows):
+            # 마지막 페이지 또는 분할 없음
             self._insert_cloned_table(layout, prototype_xml, rows, style_props, final_margin)
         else:
             current_batch = rows[:max_rows]
             next_batch = rows[max_rows:]
             self._insert_cloned_table(layout, prototype_xml, current_batch, style_props, final_margin)
             layout.add_new_slide()
-            self._render_table_using_prototype(layout, prototype_xml, next_batch, style_props, margin_left=final_margin)
+            
+            # 다음 페이지 정보 업데이트 및 제목 렌더링
+            if pagination_info:
+                next_page = pagination_info["current_page"] + 1
+                total = pagination_info["total_pages"]
+                title = pagination_info.get("title")
+                
+                # 제목이 있으면 (n/N) 형식으로 렌더링
+                if title:
+                    title_with_page = f"{title} ({next_page}/{total})"
+                    self._render_section_header(layout, title_with_page)
+                
+                next_info = {
+                    "title": title,
+                    "current_page": next_page,
+                    "total_pages": total,
+                    "is_first": False
+                }
+            else:
+                next_info = None
+                
+            self._render_table_using_prototype(layout, prototype_xml, next_batch, style_props, 
+                                                margin_left=final_margin, pagination_info=next_info)
 
     def _insert_cloned_table(self, layout, prototype_xml, rows, style_props, margin_left):
         new_tbl_element = copy.deepcopy(prototype_xml)
@@ -896,18 +1074,44 @@ class NGS_PPT_Generator:
 
     def _draw_comments(self, layout, comments, highlight_keywords=None):
         """Comments 섹션과 하단 고지문을 통합하여 그립니다."""
-        # 1. 첫 페이지 헤더 그리기
-        self._draw_comment_header(layout, is_continued=False)
+        # 상수 정의 (총 페이지 계산에 필요)
+        LINE_HEIGHT = Cm(0.4)
+        CHARS_PER_LINE = 90
+        FOOTER_TOP = Cm(23.49)
+        BODY_BOTTOM_LIMIT = FOOTER_TOP - Cm(0.5)
+        if layout.bottom_limit < BODY_BOTTOM_LIMIT:
+            BODY_BOTTOM_LIMIT = layout.bottom_limit
+        DISCLAIMER_MAIN_HEIGHT = Cm(3.0)
+        
+        # 총 페이지 수 미리 계산
+        if not comments:
+            comments_list = []
+        elif isinstance(comments, str):
+            comments_list = [comments]
+        else:
+            comments_list = comments
+            
+        total_pages = self._calculate_comment_pages(
+            layout, comments_list, BODY_BOTTOM_LIMIT, LINE_HEIGHT, CHARS_PER_LINE, DISCLAIMER_MAIN_HEIGHT
+        )
+        
+        # 1. 첫 페이지 헤더 그리기 (분할 시 (1/N) 형식)
+        page_info = (1, total_pages) if total_pages > 1 else None
+        self._draw_comment_header(layout, page_info=page_info)
 
         # 2. 통합 콘텐츠 그리기 (코멘트 + 고지문)
         self._draw_merged_content(layout, comments, highlight_keywords)
 
-    def _draw_comment_header(self, layout, is_continued=False):
+    def _draw_comment_header(self, layout, page_info=None):
+        """Comments 헤더를 그립니다.
+        
+        Args:
+            page_info: (current_page, total_pages) 튜플. None이면 번호 없이 그림.
+        """
         header_height = Cm(1.0)
         layout.check_space(header_height)
         
         # 박스와 동일한 좌측 여백 계산 (페이지 중앙 정렬)
-        # 박스 너비(17.55cm) 기준으로 정렬 맞춤
         BOX_WIDTH = Cm(17.55)
         slide_width = layout.prs.slide_width
         left_position = (slide_width - BOX_WIDTH) / 2
@@ -915,7 +1119,11 @@ class NGS_PPT_Generator:
         tb_header = layout.current_slide.shapes.add_textbox(left_position, layout.top, layout.width, header_height)
         p_header = tb_header.text_frame.paragraphs[0]
         
-        title_text = "▣ Comment (continued)" if is_continued else "▣ Comment"
+        # 페이지 번호 형식: 분할 시 (1/N), (2/N) 등
+        if page_info and page_info[1] > 1:
+            title_text = f"▣ Comment ({page_info[0]}/{page_info[1]})"
+        else:
+            title_text = "▣ Comment"
         
         self._set_run_style(p_header.add_run(), title_text, is_bold=True, 
                             font_size=self.config.FONT_SIZE_TITLE, color=self.config.COLOR_BLACK)
@@ -935,14 +1143,12 @@ class NGS_PPT_Generator:
         
         # 하단 Footer (Raw Data 등) 위치
         FOOTER_TOP = Cm(23.49)
-        # Footer가 들어갈 공간을 제외한 한계선 (코멘트 박스가 침범하면 안 되는 라인)
-        # Footer Top(23.49)보다 약간 위(0.5cm)에서 멈춰야 함
         BODY_BOTTOM_LIMIT = FOOTER_TOP - Cm(0.5)
         
         if layout.bottom_limit < BODY_BOTTOM_LIMIT:
              BODY_BOTTOM_LIMIT = layout.bottom_limit
         
-        # 1. Main Disclaimer (bordered box에 포함될 긴 문구)
+        # Main Disclaimer
         disclaimer_main = (
             "*본 기관의 유전자 정보 검색 및 해석은 dbSNP, COSMIC, ClinVar, c-bioportal 등의 유전자 정보검색 사이트를 참고로 하고 있습니다. "
             "또한, 발견된 유전자 변이의 임상적 의미에 대하여, 아래 참고 문헌에 기반한 4단계 시스템 (Tier I: Strong clinical significance, "
@@ -952,13 +1158,18 @@ class NGS_PPT_Generator:
             "of the Association for Molecular Pathology, American Society of Clinical Oncology and College of American Pathologists. "
             "J Mol Diagn. 2017; 19(1):4-23."
         )
-        # 메인 고지문 예상 높이 (약 5~6줄)
         DISCLAIMER_MAIN_HEIGHT = Cm(3.0)
+        
+        # 총 페이지 수 미리 계산
+        total_pages = self._calculate_comment_pages(
+            layout, comments, BODY_BOTTOM_LIMIT, LINE_HEIGHT, CHARS_PER_LINE, DISCLAIMER_MAIN_HEIGHT
+        )
+        current_page = 1
         
         current_batch = []
         current_batch_height = 0 
         
-        # 2. 코멘트 배치 루프
+        # 코멘트 배치 루프
         for idx, comment in enumerate(comments):
             text_len = len(comment)
             lines = int((text_len / CHARS_PER_LINE) + 1)
@@ -966,15 +1177,14 @@ class NGS_PPT_Generator:
             
             # 공간 체크 (Footer 영역 침범 확인)
             if (layout.top + current_batch_height + est_height) > BODY_BOTTOM_LIMIT:
-                 # 넘치면 현재 배치 그리기 (Main Disclaimer 없이)
+                 # 넘치면 현재 배치 그리기
                  self._render_box(layout, current_batch, current_batch_height, BOX_WIDTH, highlight_keywords, main_disclaimer=None)
-                 
-                 # 현재 페이지 하단에 Footer 추가
                  self._draw_footer_info(layout, FOOTER_TOP)
                  
                  # 다음 페이지 이동
                  layout.add_new_slide()
-                 self._draw_comment_header(layout, is_continued=True)
+                 current_page += 1
+                 self._draw_comment_header(layout, page_info=(current_page, total_pages))
                  
                  current_batch = []
                  current_batch_height = 0
@@ -982,25 +1192,47 @@ class NGS_PPT_Generator:
             current_batch.append(comment)
             current_batch_height += est_height
 
-        # 3. 마지막 배치 및 Main Disclaimer 처리
-        # 남은 공간에 Main Disclaimer가 들어갈 수 있는지?
-        # (Footer 공간은 BODY_BOTTOM_LIMIT로 이미 확보됨)
-        
+        # 마지막 배치 및 Main Disclaimer 처리
         if (layout.top + current_batch_height + DISCLAIMER_MAIN_HEIGHT) <= BODY_BOTTOM_LIMIT:
-            # 공간 충분: 코멘트 + 메인 고지문 함께 그리기
             self._render_box(layout, current_batch, current_batch_height + DISCLAIMER_MAIN_HEIGHT, BOX_WIDTH, highlight_keywords, main_disclaimer=disclaimer_main)
             self._draw_footer_info(layout, FOOTER_TOP)
         else:
-            # 공간 부족: 코멘트 먼저 그리고
             if current_batch:
                 self._render_box(layout, current_batch, current_batch_height, BOX_WIDTH, highlight_keywords, main_disclaimer=None)
                 self._draw_footer_info(layout, FOOTER_TOP)
             
-            # 새 페이지에 메인 고지문만 그리기
             layout.add_new_slide()
-            self._draw_comment_header(layout, is_continued=True)
+            current_page += 1
+            self._draw_comment_header(layout, page_info=(current_page, total_pages))
             self._render_box(layout, [], DISCLAIMER_MAIN_HEIGHT, BOX_WIDTH, highlight_keywords, main_disclaimer=disclaimer_main)
             self._draw_footer_info(layout, FOOTER_TOP)
+
+    def _calculate_comment_pages(self, layout, comments, body_limit, line_height, chars_per_line, disclaimer_height):
+        """Comment 섹션이 몇 페이지에 걸칠지 미리 계산합니다."""
+        if not comments:
+            return 1
+        
+        page_count = 1
+        current_top = layout.top
+        current_batch_height = 0
+        
+        for comment in comments:
+            text_len = len(comment)
+            lines = int((text_len / chars_per_line) + 1)
+            est_height = (lines * line_height) + Cm(0.2)
+            
+            if (current_top + current_batch_height + est_height) > body_limit:
+                page_count += 1
+                current_top = self.config.BODY_TOP_START
+                current_batch_height = Cm(1.0)  # header height
+            
+            current_batch_height += est_height
+        
+        # 마지막 페이지에 disclaimer가 들어가는지 확인
+        if (current_top + current_batch_height + disclaimer_height) > body_limit:
+            page_count += 1
+        
+        return page_count
 
 
     def _render_box(self, layout, comments_batch, height, width, highlight_keywords, main_disclaimer=None):

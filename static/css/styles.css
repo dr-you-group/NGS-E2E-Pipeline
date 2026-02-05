@@ -31,7 +31,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: Arial, sans-serif;
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', Arial, sans-serif;
 }
 
 body {
@@ -180,7 +180,7 @@ body {
     padding-bottom: 3px;
     margin-bottom: 5px;
     border-collapse: collapse;
-    font-size: 18px;
+    font-size: 12pt;
     border-bottom: none;
 }
 
@@ -199,6 +199,7 @@ body {
     font-size: 13px;
     color: var(--text-primary);
     font-weight: bold;
+    margin-left: 0.1cm;
 }
 
 /* 페이지 분할 방지 (제목과 내용 분리 방지) */
@@ -223,6 +224,7 @@ h4+* {
     break-before: avoid;
 }
 
+
 /* 텍스트 하이라이트 유틸리티 */
 .clinical-highlight {
     color: var(--text-red) !important;
@@ -241,7 +243,7 @@ h4+* {
 
 .small-text {
     font-size: 7pt;
-    font-weight: normal;
+    font-weight: bold;
 }
 
 /* ==========================================================================
@@ -257,6 +259,12 @@ table {
 .full-width {
     width: 100%;
     table-layout: fixed;
+}
+
+.data-table,
+.biomarkers-table {
+    margin-left: 0.1cm;
+    width: calc(100% - 0.1cm);
 }
 
 /* 4.1. 공통 테이블 셀 스타일 (헤더/데이터 공통) */
@@ -630,12 +638,13 @@ table.spec-table {
 
 .info-label {
     font-weight: bold;
+    font-size: 10pt;
 }
 
 /* QC 그리드 (Grid Layout) */
 .qc-simple {
     margin: 10px 0;
-    font-size: 8pt;
+    font-size: 10pt;
 }
 
 .qc-header,
@@ -670,6 +679,12 @@ table.spec-table {
 /* 1. QC 헤더: Bold 해제 */
 .page-2-content .qc-header {
     font-weight: normal !important;
+}
+
+/* QC Value 컬럼 (3번째) Bold 처리 */
+.qc-row-simple .qc-col-tight:nth-child(3) {
+    font-weight: bold !important;
+    text-align: center !important;
 }
 
 /* 2. DNA/RNA 섹션 라벨: Bold 해제 (3번째 섹션의 info-label 타겟팅) */

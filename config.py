@@ -28,7 +28,7 @@ def setup_logging():
 
     # 3. PPT 생성 설정 (pptx_generator.py에서 가져옴)
     PPT_CONFIG = {
-        "FONT_NAME": "Arial",
+        "FONT_NAME": "Malgun Gothic",
         "MARGIN_LEFT_CM": 1.0,
         "DEFAULT_WIDTH_CM": 24.0,
     }
