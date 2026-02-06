@@ -266,9 +266,11 @@ class LayoutAnalyzer:
 
 
 class LayoutContext:
-    def __init__(self, prs, analyzer: LayoutAnalyzer):
+    def __init__(self, prs, analyzer: LayoutAnalyzer, generator=None):
         self.prs = prs
         self.analyzer = analyzer
+        self.generator = generator
+        self.current_main_title = None
         self.current_slide = prs.slides[0]
 
         start_loc = analyzer.section_locations.get("clinical")
@@ -341,6 +343,10 @@ class LayoutContext:
         # 4. 트래킹 정보 업데이트
         self.current_slide_index = target_index
         self.top = Cm(0.5)
+
+        # [Repeat Main Header] 새 슬라이드에서도 메인 섹션 제목 그리기
+        if self.current_main_title and self.generator:
+            self.generator._draw_main_section_title(self, self.current_main_title)
 
     def _copy_template_style(self, target_slide, source_slide):
         """소스 슬라이드에서 배경이나 테두리 같은 정적 도형을 복사"""
@@ -657,7 +663,7 @@ class NGS_PPT_Generator:
         return list(set(final_keywords))
 
     def _process_all_variants(self, prs, report_data, analyzer):
-        layout = LayoutContext(prs, analyzer)
+        layout = LayoutContext(prs, analyzer, generator=self)
         current_section_group = None
 
         for section_config in self.config.VARIANT_SECTIONS:
@@ -710,6 +716,9 @@ class NGS_PPT_Generator:
                     if main_title:
                         # 기본값이 12pt Black으로 변경되었으므로 별도 파라미터 불필요
                         self._draw_main_section_title(layout, main_title)
+                
+                # [Tracking] 현재 메인 타이틀 업데이트 (페이지 분할 시 반복용)
+                layout.current_main_title = self.config.SECTION_START_MARKERS.get(style_type)
 
             section_data = report_data.get(key, {})
             rows = section_data.get('data', [])
@@ -760,6 +769,9 @@ class NGS_PPT_Generator:
 
             layout.add_space(self.config.SPACE_SECTION)
 
+        # [Safety Reset] Variants 섹션 종료 후, 후속 섹션(Failed Gene 등)에 이전 타이틀이 반복되지 않도록 초기화
+        layout.current_main_title = None
+
         # 3. Failed gene 섹션 (Variants 처리 루프 종료 후)
         failed_gene = report_data.get('failed_gene')
         self._draw_failed_gene(layout, failed_gene)
@@ -775,13 +787,38 @@ class NGS_PPT_Generator:
         tb = layout.current_slide.shapes.add_textbox(self.config.MARGIN_LEFT_L1, layout.top, layout.width, height)
         p = tb.text_frame.paragraphs[0]
         
-        # 기본값 설정 (None일 경우 Config 기본값 사용)
+        # 기본값 설정
         final_size = font_size if font_size else self.config.FONT_SIZE_TITLE
-        final_color = color if color else self.config.COLOR_BLACK  # Navy -> Black 변경
-
-        self._set_run_style(p.add_run(), text, is_bold=True,
-                            font_size=final_size,
-                            color=final_color)
+        
+        # [Color Logic Improvement for Header Repetition]
+        # "1. ", "2. " 등 번호 부분은 검정색, 뒷부분은 섹션 성격에 따라 색상 적용
+        # 명시적 color 파라미터가 있으면 그것을 따름 (기존 호환성)
+        
+        import re
+        match = re.match(r"^(\d+\.)\s*(.*)", text)
+        
+        if match and not color:
+            number_part = match.group(1)
+            title_part = match.group(2)
+            
+            # 색상 결정: "Unknown"이 포함되면 검정, 아니면(Clinical) 빨강
+            # (Unknown Variants 제목은 보통 검정색, Clinical은 빨강색)
+            is_unknown = "Unknown" in text or "unknown" in text
+            title_color = self.config.COLOR_BLACK if is_unknown else self.config.COLOR_RED
+            
+            # 1. Number Part (Always Black)
+            self._set_run_style(p.add_run(), f"{number_part} ", is_bold=True,
+                                font_size=final_size, color=self.config.COLOR_BLACK)
+            
+            # 2. Title Part (Context Color)
+            self._set_run_style(p.add_run(), title_part, is_bold=True,
+                                font_size=final_size, color=title_color)
+        else:
+            # 기존 로직 (전체 검정 또는 지정색)
+            final_color = color if color else self.config.COLOR_BLACK 
+            self._set_run_style(p.add_run(), text, is_bold=True,
+                                font_size=final_size,
+                                color=final_color)
 
         layout.add_space(height + self.config.SPACE_TITLE_BOTTOM)
 
@@ -965,7 +1002,7 @@ class NGS_PPT_Generator:
         run.font.name = self.config.FONT_NAME
         run.font.size = self.config.FONT_SIZE_BODY
 
-        if is_bold: run.font.bold = True
+        run.font.bold = is_bold
         if font_color: run.font.color.rgb = font_color
         run.text = text
 

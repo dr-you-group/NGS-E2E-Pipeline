@@ -166,7 +166,8 @@ body {
 .report-header h1 {
     color: var(--text-primary);
     padding-bottom: 10px;
-    font-size: 24px;
+    font-size: 22pt;
+    /* Changed from 24px to 22pt per request */
 }
 
 .section {
@@ -190,13 +191,15 @@ body {
     margin-top: 5px;
     margin-bottom: 5px;
     border-collapse: collapse;
-    font-size: 15px;
+    font-size: 12pt;
+    /* Changed from 15px to 12pt per request */
 }
 
 .variant-type {
     margin-top: 8px;
     margin-bottom: 4px;
-    font-size: 13px;
+    font-size: 12pt;
+    /* Changed from 13px to 12pt per request */
     color: var(--text-primary);
     font-weight: bold;
     margin-left: 0.1cm;
@@ -357,6 +360,8 @@ table {
 .split-table-continued td {
     color: var(--text-red) !important;
     font-weight: bold !important;
+    font-size: 9pt !important;
+    /* User requested 9pt */
 }
 
 /* 4.5. 의미 불명/정상(Unknown/Normal) 테이블 - 검은색/Normal */
@@ -367,6 +372,8 @@ table {
 #splice-unknown-table td {
     color: var(--text-black) !important;
     font-weight: normal !important;
+    font-size: 9pt !important;
+    /* Changed from 8pt to 9pt per request */
 }
 
 /* 4.6. 컬럼 너비 설정 (Column Widths) */
@@ -514,7 +521,8 @@ table {
 #splice-clinical-table td:nth-child(4),
 #splice-unknown-table td:nth-child(4) {
     word-break: break-all;
-    font-size: 7pt;
+    font-size: 9pt;
+    /* Changed from 7pt to 9pt per request */
     line-height: 1.2;
 }
 
@@ -586,6 +594,8 @@ table.spec-table {
     table-layout: fixed;
     margin: 0 auto;
     border-collapse: collapse;
+    height: 20.8cm;
+    /* Fixed Height per user request */
 }
 
 .gene-content-table th,
@@ -593,7 +603,7 @@ table.spec-table {
     padding: 0 !important;
     margin: 0 !important;
     height: 13px !important;
-    font-size: 6px !important;
+    font-size: 6pt !important;
     line-height: 1.0 !important;
     border: none !important;
     vertical-align: middle;
@@ -602,7 +612,8 @@ table.spec-table {
 }
 
 .gene-content-table th {
-    background-color: var(--bg-header-gray) !important;
+    background-color: #D5E4F1 !important;
+    /* Explicit Color */
     border-bottom: 3px double #000 !important;
     text-align: center !important;
 }
@@ -718,7 +729,6 @@ table.spec-table {
 .user-info-section {
     margin-bottom: 5px;
     font-size: 10pt;
-    margin-top: -25px;
 }
 
 /* 위치 조정 */
@@ -757,37 +767,66 @@ table.spec-table {
 
 /* 접수번호 테이블 */
 .user-number-table {
-    border: 1px solid #000;
+    border: 1.5px solid #000;
     display: inline-table;
     border-collapse: collapse;
-}
-
-.user-number-label,
-.user-number-value {
-    padding: 4px 8px;
-    text-align: center;
-    vertical-align: middle;
-    font-size: 11pt;
-    font-weight: bold;
-    height: 2.5em;
-    overflow: hidden;
-    border: 1px solid #000;
+    width: 5.6cm;
+    /* Fixed Width */
 }
 
 .user-number-label {
-    background-color: #f0f0f0;
+    padding: 0;
+    /* Remove padding to fit fixed height */
+    text-align: center;
+    vertical-align: middle;
+    font-size: 9pt;
+    font-weight: bold;
+    height: 0.64cm;
+    /* Fixed Height */
+    width: 2.8cm;
+    /* Fixed Width (half of 5.6cm) */
+    overflow: hidden;
+    border: 1.5px solid #000;
+    box-sizing: border-box;
+    /* Include border/padding in width */
 }
+
+.user-number-value {
+    padding: 0;
+    /* Remove padding to fit fixed height */
+    text-align: center;
+    vertical-align: middle;
+    font-size: 9pt;
+    font-weight: normal;
+    height: 0.64cm;
+    /* Fixed Height */
+    width: 2.8cm;
+    /* Fixed Width (half of 5.6cm) */
+    overflow: hidden;
+    border: 1.5px solid #000;
+    box-sizing: border-box;
+    /* Include border/padding in width */
+}
+
+
 
 /* Footer (하단 로고 및 주소) */
 .report-footer {
-    margin-top: 5px;
-    padding-top: 2px;
+    margin-top: -15px;
+    /* Push up to fit inside border */
+    padding-top: 0;
 }
 
 .footer-container {
-    border-top: 2px dashed #000;
     padding: 5px 0;
     font-size: 10pt;
+}
+
+/* 첫 번째 페이지 Footer에만 점선 추가 및 위치 미세 조정 */
+.page-1 .footer-container {
+    border-top: 2px dashed #000;
+    margin-top: -5px;
+    padding-top: 5px;
 }
 
 .footer-row {
@@ -797,7 +836,7 @@ table.spec-table {
 }
 
 .footer-org {
-    font-weight: bold;
+    font-weight: normal;
     margin-bottom: 2px;
     font-size: 7pt;
     line-height: 1.2;

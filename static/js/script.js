@@ -362,11 +362,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // 3. 순회하며 침범 여부 검사 및 분할
         // Pass a callback to hide overlay when done
-        processPage(page1, elementsToCheck, deadlineY, 1, hideLoadingOverlay);
+        // [Repeating Header] Pass the initial Clinical Title
+        processPage(page1, elementsToCheck, deadlineY, 1, hideLoadingOverlay, 0, clinicalTitle);
     }
 
     // processPage and other helpers remain identifying logic as v10...
-    function processPage(pageElement, elements, limitY, pageNum, onComplete, depth = 0) {
+    function processPage(pageElement, elements, limitY, pageNum, onComplete, depth = 0, activeMainTitle = null) {
         if (depth > 20) {
             console.error("[Pagination CRITICAL] Max recursion depth reached. Stopping to prevent infinite loop.");
             if (onComplete) onComplete();
@@ -388,6 +389,12 @@ document.addEventListener('DOMContentLoaded', function () {
         for (let i = 0; i < elements.length; i++) {
             const el = elements[i];
             const elementBottom = el.offsetTop + el.offsetHeight;
+
+            // [Repeating Header] Update Active Main Title if encountered
+            if (el.matches && (el.matches('.result-title'))) {
+                activeMainTitle = el;
+                console.log(`  [Header Update] Active Main Title updated via loop: "${el.textContent.trim()}"`);
+            }
 
             console.log(`  [Check] Item [${i}]: ${el.tagName}.${el.className} | Bottom: ${elementBottom} | Limit: ${limitY}`);
 
@@ -601,6 +608,41 @@ document.addEventListener('DOMContentLoaded', function () {
             const newContent = newPage.querySelector('.report-content');
             console.log(`    -> newContent found: ${newContent ? 'YES' : 'NO'}`);
 
+            // [Repeating Header] Prepend Main Title Logic (Generalized)
+            // Condition: 
+            // 1. There is an active main title from the previous page.
+            // 2. The *first* element moving to the new page is NOT a new Main Title (H2/H3/result-title).
+            //    - If the first element IS a new title (e.g., "▣ Comment"), we don't need to repeat the old one.
+            //    - If the first element is content (p, table, div, h4), it means the previous section is continuing.
+
+            if (activeMainTitle && nextElements.length > 0) {
+                const firstEl = nextElements[0];
+                let isNewMainHeader = (firstEl.matches && (firstEl.matches('.result-title') || firstEl.matches('.section-title') || firstEl.tagName === 'H2' || firstEl.tagName === 'H3'));
+
+                // If not a direct header, check if it's a container (DIV) starting with a header
+                if (!isNewMainHeader && (firstEl.tagName === 'DIV' || firstEl.tagName === 'SECTION') && firstEl.children.length > 0) {
+                    const firstChild = firstEl.firstElementChild;
+                    if (firstChild && (firstChild.matches('.result-title') || firstChild.matches('.section-title') || firstChild.tagName === 'H2' || firstChild.tagName === 'H3')) {
+                        isNewMainHeader = true;
+                        console.log(`  [DEBUG] Found nested header in DIV: ${firstChild.tagName}.${firstChild.className}`);
+                    }
+                }
+
+                console.log(`[DEBUG] Repeating Header Check:`);
+                console.log(`  - Active Title: "${activeMainTitle.textContent.trim()}"`);
+                console.log(`  - First Moved Element: <${firstEl.tagName} class="${firstEl.className}">...`);
+                console.log(`  - Is New Main Header?: ${isNewMainHeader}`);
+
+                if (!isNewMainHeader) {
+                    const clonedTitle = activeMainTitle.cloneNode(true);
+                    clonedTitle.removeAttribute('id');
+                    console.log(`    -> DECISION: REPEAT. Prepending title.`);
+                    newContent.appendChild(clonedTitle);
+                } else {
+                    console.log(`    -> DECISION: SKIP. New section detected.`);
+                }
+            }
+
             nextElements.forEach((el, idx) => {
                 console.log(`    -> APPEND to new page: [${idx}] ${el.tagName}.${el.className}`);
                 newContent.appendChild(el);
@@ -623,7 +665,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const nextChildren = Array.from(newContent.children);
                 if (nextChildren.length > 0) {
-                    processPage(newPage, nextChildren, newLimit, pageNum + 1, onComplete, depth + 1);
+                    processPage(newPage, nextChildren, newLimit, pageNum + 1, onComplete, depth + 1, activeMainTitle);
                 } else {
                     if (onComplete) onComplete();
                 }
@@ -771,6 +813,15 @@ document.addEventListener('DOMContentLoaded', function () {
         const allChildrenNow = Array.from(targetContent.children);
         console.log(`[Pagination] Re-checking ${allChildrenNow.length} elements in merged page.`);
 
+        // [Repeating Header] Find existing title in the merged context
+        // Try to find the last .result-title in the current content to use as starting point
+        let currentActiveTitle = null;
+        const resultTitles = Array.from(targetContent.querySelectorAll('.result-title'));
+        if (resultTitles.length > 0) {
+            currentActiveTitle = resultTitles[resultTitles.length - 1];
+            console.log(`[Pagination] Found initial active title for merged page: "${currentActiveTitle.textContent.trim()}"`);
+        }
+
         processPage(lastClinicalPage, allChildrenNow, deadlineY, currentPageNum, () => {
             console.log("[Pagination] Merged page pagination complete.");
 
@@ -833,6 +884,16 @@ document.addEventListener('DOMContentLoaded', function () {
         // 3. 검사 대상 설정
         const allChildren = Array.from(content.children);
         console.log(`[Pagination-Unknown] Elements to be checked for overflow: ${allChildren.length}`);
+
+        // [Repeating Header] Identify active title
+        let activeTitle = null;
+        if (allChildren.length > 0) {
+            const first = allChildren[0];
+            if (first.matches && (first.matches('.result-title') || first.tagName === 'H3')) {
+                activeTitle = first;
+                console.log(`[Pagination-Unknown] Initial Active Title: "${activeTitle.innerText.trim()}"`);
+            }
+        }
 
         // 4. 순회하며 침범 여부 검사 및 분할
         // 완료 후 콜백에서 페이지 번호 후처리 및 additional-info 배치
