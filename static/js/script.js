@@ -188,32 +188,74 @@ document.addEventListener('DOMContentLoaded', function () {
         const totalFiles = fileArray.length;
         let successCount = 0;
         let failedFiles = [];
-        let uploadedSpecimenIds = [];
 
-        // 진행률 표시
+        // 진행률 표시 영역 보이기
         uploadProgress.style.display = 'block';
         progressFill.style.width = '0%';
 
-        // 파일 목록 표시
-        const uploadedFilesDiv = document.createElement('div');
-        uploadedFilesDiv.className = 'uploaded-files';
-        uploadProgress.appendChild(uploadedFilesDiv);
+        // 닫기 버튼 추가 (없으면 생성)
+        if (!uploadProgress.querySelector('.close-upload-btn')) {
+            console.log("Creating Close Button"); // Debug log
+            const closeBtn = document.createElement('span');
+            closeBtn.className = 'close-upload-btn';
+            closeBtn.innerHTML = '&times;';
+            closeBtn.title = '닫기 (목록 초기화)';
+            // 스타일 지정
+            closeBtn.style.float = 'right';
+            closeBtn.style.cursor = 'pointer';
+            closeBtn.style.fontSize = '24px'; // Slightly larger
+            closeBtn.style.fontWeight = 'bold';
+            closeBtn.style.color = '#666'; // Dark gray for visibility on light background
+            closeBtn.style.marginLeft = '10px';
+            closeBtn.style.lineHeight = '0.8'; // Better vertical alignment
 
-        // 각 파일에 대한 상태 표시
+            closeBtn.onmouseover = function () { this.style.color = '#000'; };
+            closeBtn.onmouseout = function () { this.style.color = '#666'; };
+
+            closeBtn.onclick = function () {
+                uploadProgress.style.display = 'none';
+                const list = uploadProgress.querySelector('.uploaded-files');
+                if (list) list.remove(); // 목록 내용 제거 (초기화)
+                this.remove(); // 닫기 버튼 자체도 제거 (다음 업로드 시 재생성)
+            };
+            // progress-text 이전에 삽입 (상단 우측 배치)
+            const textEl = uploadProgress.querySelector('.progress-text');
+            if (textEl) uploadProgress.insertBefore(closeBtn, textEl);
+            else uploadProgress.appendChild(closeBtn);
+        }
+
+        // 파일 목록 컨테이너 (없으면 생성 - Append Mode)
+        let uploadedFilesDiv = uploadProgress.querySelector('.uploaded-files');
+        if (!uploadedFilesDiv) {
+            uploadedFilesDiv = document.createElement('div');
+            uploadedFilesDiv.className = 'uploaded-files';
+            uploadProgress.appendChild(uploadedFilesDiv);
+        }
+
+        // 이번에 업로드할 파일들의 UI 요소 생성 (Append)
+        const currentFileItems = [];
         fileArray.forEach(file => {
             const fileItem = document.createElement('div');
             fileItem.className = 'file-item';
+            // Flexbox 스타일 적용으로 좌우 배치 구현
+            fileItem.style.display = 'flex';
+            fileItem.style.justifyContent = 'space-between';
+            fileItem.style.alignItems = 'center';
+            fileItem.style.padding = '8px 0';
+            fileItem.style.borderBottom = '1px solid #eee';
+
             fileItem.innerHTML = `
-                <span class="file-name">${file.name}</span>
-                <span class="file-status processing">대기중...</span>
+                <span class="file-name" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">${file.name}</span>
+                <span class="file-status processing" style="flex-shrink: 0; display: flex; align-items: center;">대기중...</span>
             `;
             uploadedFilesDiv.appendChild(fileItem);
+            currentFileItems.push(fileItem);
         });
 
         // 파일들을 순차적으로 업로드
         for (let i = 0; i < fileArray.length; i++) {
             const file = fileArray[i];
-            const fileItem = uploadedFilesDiv.children[i];
+            const fileItem = currentFileItems[i]; // 생성해둔 요소 사용
             const statusSpan = fileItem.querySelector('.file-status');
 
             progressText.textContent = `업로드 중... (${i + 1}/${totalFiles})`;
@@ -233,8 +275,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (data.success) {
                     successCount++;
-                    uploadedSpecimenIds.push(data.specimen_id);
-                    statusSpan.textContent = `성공 (${data.specimen_id})`;
+
+                    // [결과 보기] 버튼 생성
+                    // 스타일: 작고 깔끔한 버튼
+                    const viewBtn = document.createElement('button');
+                    viewBtn.textContent = '결과 보기';
+                    viewBtn.className = 'view-report-btn';
+                    // 인라인 스타일 (CSS 수정 최소화) - 필요시 CSS 파일로 이동 가능
+                    viewBtn.style.marginLeft = '10px';
+                    viewBtn.style.padding = '2px 8px';
+                    viewBtn.style.fontSize = '12px';
+                    viewBtn.style.cursor = 'pointer';
+                    viewBtn.style.backgroundColor = '#4CAF50';
+                    viewBtn.style.color = 'white';
+                    viewBtn.style.border = 'none';
+                    viewBtn.style.borderRadius = '4px';
+
+                    viewBtn.onclick = function () {
+                        redirectToReport(data.specimen_id);
+                    };
+
+                    // 순서 변경: (Specimen ID) 성공
+                    statusSpan.innerHTML = `<span style="margin-right: 5px; font-weight: bold;">(${data.specimen_id})</span> 성공 `;
+                    statusSpan.appendChild(viewBtn);
                     statusSpan.className = 'file-status success';
                 } else {
                     failedFiles.push({
@@ -253,22 +316,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 statusSpan.className = 'file-status error';
             }
 
-            // 진행률 업데이트
+            // 진행률 업데이트 (전체 진행률은 100%로 채워짐)
             const progress = ((i + 1) / totalFiles) * 100;
             progressFill.style.width = `${progress}%`;
         }
 
-        // 업로드 완료
-        progressText.textContent = `업로드 완료! 성공: ${successCount}, 실패: ${failedFiles.length}`;
+        // 업로드 완료 메시지
+        progressText.textContent = `업로드 완료! (성공: ${successCount}, 실패: ${failedFiles.length})`;
 
         // 파일 입력 초기화
         fileInput.value = '';
 
-        // 3초 후 진행률 숨기기
-        setTimeout(() => {
-            uploadProgress.style.display = 'none';
-            uploadedFilesDiv.remove();
-        }, 3000);
+        // 기존 자동 숨김 로직 제거됨 (Persistent Mode)
     }
 
     // Clinical Variants 동적 분할 기능 (Robust Debug Mode with Overlay Control)
