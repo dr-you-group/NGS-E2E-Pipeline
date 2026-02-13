@@ -797,7 +797,8 @@ table.spec-table {
     text-align: center;
     vertical-align: middle;
     font-size: 9pt;
-    font-weight: normal;
+    font-weight: bold;
+    /* [Changed] Bold 처리 (사용자 요청) */
     height: 0.64cm;
     /* Fixed Height */
     width: 2.8cm;

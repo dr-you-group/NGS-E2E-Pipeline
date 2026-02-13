@@ -1259,7 +1259,7 @@ class NGS_PPT_Generator:
     def _draw_comments(self, layout, comments, highlight_keywords=None):
         """Comments 섹션과 하단 고지문을 통합하여 그립니다."""
         # 상수 정의 (총 페이지 계산에 필요)
-        LINE_HEIGHT = Cm(0.4)
+        LINE_HEIGHT = Cm(0.6) # [Changed] 1.5 Spacing 고려하여 높이 증가 (0.4 -> 0.6)
         CHARS_PER_LINE = 90
         FOOTER_TOP = Cm(23.49)
         BODY_BOTTOM_LIMIT = FOOTER_TOP - Cm(0.5)
@@ -1321,7 +1321,7 @@ class NGS_PPT_Generator:
             comments = [comments]
 
         # 상수 정의
-        LINE_HEIGHT = Cm(0.4) 
+        LINE_HEIGHT = Cm(0.6) # [Changed] 1.5 Spacing 고려하여 높이 증가
         CHARS_PER_LINE = 90
         BOX_WIDTH = Cm(17.55)
         
@@ -1456,7 +1456,9 @@ class NGS_PPT_Generator:
                 p = tf.add_paragraph()
                 p.space_before = Pt(6) 
             
-            p.alignment = PP_ALIGN.LEFT
+            p.alignment = PP_ALIGN.JUSTIFY # [Changed] 양쪽 정렬
+            p.line_spacing = 1.5 # [Changed] 줄 간격 1.5
+            
             
             matched = False
             if highlight_keywords:
@@ -1625,7 +1627,7 @@ class NGS_PPT_Generator:
                                 self._set_cell_text_preserving_style(
                                     target_cell, 
                                     str(receipt_no), 
-                                    is_bold=False, # Bold 처리 안 함
+                                    is_bold=True, # [Changed] Bold 처리 (사용자 요청)
                                     font_color=self.config.COLOR_BLACK
                                 )
                 except Exception as e:
