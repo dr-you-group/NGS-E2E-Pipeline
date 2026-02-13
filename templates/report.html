@@ -333,17 +333,41 @@
                     <!-- 첫 페이지 하단 고정 컨텐츠 -->
                     <div class="page-bottom-fixed">
                         <!-- Other Biomarkers -->
+                        <!-- 5. Other Biomarkers -->
                         <div class="section">
-                            <h4 class="variant-type">- Other Biomarkers</h4>
+                            {% set tmb_status = report_data.biomarkers.TMB.status | lower if
+                            report_data.biomarkers.TMB.status else '' %}
+                            {% set msi_status = report_data.biomarkers.MSI.status | lower if
+                            report_data.biomarkers.MSI.status else '' %}
+                            {% set is_tmb_high = 'high' in tmb_status %}
+                            {% set is_msi_high = 'high' in msi_status %}
+
+                            <h4 class="variant-type">- Other Biomarkers
+                                {% if is_tmb_high and is_msi_high %}
+                                <span class="clinical-highlight">: TMB-High and MSI-High</span>
+                                {% elif is_tmb_high %}
+                                <span class="clinical-highlight">: TMB-High</span>
+                                {% elif is_msi_high %}
+                                <span class="clinical-highlight">: MSI-High</span>
+                                {% endif %}
+                            </h4>
                             <table class="biomarkers-table full-width">
-                                <tr>
-                                    <th>Estimated Tumor Mutation Burden (TMB)</th>
-                                    <th>Microsatellite Instability (MSI) (% Unstable MSI Sites)</th>
-                                </tr>
-                                <tr>
-                                    <td>{{ report_data.biomarkers.TMB }}</td>
-                                    <td>{{ report_data.biomarkers.MSI }}</td>
-                                </tr>
+                                <thead>
+                                    <tr>
+                                        <th>Tumor Mutational Burden (TMB)</th>
+                                        <th>Microsatellite Instability (MSI)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="{% if is_tmb_high %}clinical-highlight{% endif %}">{{
+                                                report_data.biomarkers.TMB.value }}</span> {{
+                                            report_data.biomarkers.TMB.unit }}</td>
+                                        <td><span class="{% if is_msi_high %}clinical-highlight{% endif %}">{{
+                                                report_data.biomarkers.MSI.value }}</span> {{
+                                            report_data.biomarkers.MSI.unit }}</td>
+                                    </tr>
+                                </tbody>
                             </table>
                         </div>
 
@@ -781,21 +805,45 @@
 
             <!-- 첫 페이지 하단 고정 컨텐츠 복사 -->
             <div class="page-bottom-fixed">
-                <!-- Other Biomarkers -->
+                <!-- 5. Other Biomarkers -->
                 <div class="section">
-                    <h4 class="variant-type">- Other Biomarkers</h4>
-                    <table class="biomarkers-table full-width">
-                        <tr>
-                            <th>Estimated Tumor Mutation Burden (TMB)</th>
-                            <th>Microsatellite Instability (MSI) (% Unstable MSI Sites)</th>
-                        </tr>
-                        <tr>
-                            <td>{{ report_data.biomarkers.TMB }}</td>
-                            <td>{{ report_data.biomarkers.MSI }}</td>
-                        </tr>
+                    {% set tmb_status = report_data.biomarkers.TMB.status | lower %}
+                    {% set msi_status = report_data.biomarkers.MSI.status | lower %}
+                    {% set is_tmb_high = 'high' in tmb_status %}
+                    {% set is_msi_high = 'high' in msi_status %}
+
+                    <h3 class="result-title">5. Other Biomarkers
+                        {% if is_tmb_high and is_msi_high %}
+                        <span class="clinical-highlight">: TMB-High and MSI-High</span>
+                        {% elif is_tmb_high %}
+                        <span class="clinical-highlight">: TMB-High</span>
+                        {% elif is_msi_high %}
+                        <span class="clinical-highlight">: MSI-High</span>
+                        {% endif %}
+                    </h3>
+                    <table class="biomarkers-table">
+                        <thead>
+                            <tr>
+                                <th>Biomarker</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Tumor Mutational Burden (TMB)</td>
+                                <td><span class="{% if is_tmb_high %}clinical-highlight{% endif %}">{{
+                                        report_data.biomarkers.TMB.value }}</span> {{ report_data.biomarkers.TMB.unit }}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Microsatellite Instability (MSI)</td>
+                                <td><span class="{% if is_msi_high %}clinical-highlight{% endif %}">{{
+                                        report_data.biomarkers.MSI.value }}</span> {{ report_data.biomarkers.MSI.unit }}
+                                </td>
+                            </tr>
+                        </tbody>
                     </table>
                 </div>
-
                 <!-- Footer (로고와 검사기관 정보만) -->
                 <div class="report-footer">
                     <div class="footer-container">

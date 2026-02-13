@@ -4,7 +4,7 @@ from io import BytesIO
 
 from pptx import Presentation
 from pptx.dml.color import RGBColor
-from pptx.enum.text import PP_ALIGN, MSO_AUTO_SIZE
+from pptx.enum.text import PP_ALIGN, MSO_AUTO_SIZE, MSO_ANCHOR
 from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Pt, Cm
 
@@ -407,6 +407,10 @@ class NGS_PPT_Generator:
 
         if len(prs.slides) > 0:
             self._fill_clinical_info(prs.slides[0], report_data)
+            
+            # [Added] 기존 템플릿의 Other Biomarkers 섹션 업데이트
+            biomarkers = report_data.get('biomarkers', {})
+            self._update_existing_biomarkers(prs.slides[0], biomarkers)
 
         # QC 및 DNA/RNA 정보는 4번째 페이지(Index 3)에 위치함
         if len(prs.slides) > 3:
@@ -502,11 +506,146 @@ class NGS_PPT_Generator:
             # 3순위: biomarkers 키 내부 검색 (대소문자 호환 추가)
             if value is None and 'biomarkers' in report_data:
                 bio_data = report_data['biomarkers']
-                value = bio_data.get(data_key) or bio_data.get(data_key.upper())
+                # TMB/MSI가 딕셔너리 형태일 경우 value 추출
+                val_obj = bio_data.get(data_key) or bio_data.get(data_key.upper())
+                if isinstance(val_obj, dict):
+                    value = val_obj.get('value', '')
+                else:
+                    value = val_obj
 
             final_value = str(value) if value is not None else ""
 
             self._search_and_fill_cell_below(tables, ppt_label, final_value)
+
+    def _update_existing_biomarkers(self, slide, biomarkers):
+        """
+        기존 템플릿(Slide 1)에 존재하는 'Other Biomarkers' 섹션을 찾아 업데이트합니다.
+        
+        Logic:
+        1. 슬라이드 내의 모든 Shape를 순회하며:
+           - "- Other Biomarkers" 텍스트를 가진 Shape를 찾아 제목 업데이트 (Status Suffix 추가)
+           - TMB/MSI 헤더를 가진 테이블 Shape를 찾아 데이터 셀 업데이트 (값 + 단위, Partial Styling)
+        """
+        if not biomarkers:
+            return
+
+        tmb_data = biomarkers.get('TMB', {})
+        msi_data = biomarkers.get('MSI', {})
+        
+        # 딕셔너리가 아닌 경우(구버전 호환) 처리
+        if not isinstance(tmb_data, dict): tmb_data = {'value': str(tmb_data), 'status': '', 'unit': ''}
+        if not isinstance(msi_data, dict): msi_data = {'value': str(msi_data), 'status': '', 'unit': ''}
+
+        tmb_val = tmb_data.get('value', '')
+        tmb_unit = tmb_data.get('unit', '')
+        
+        msi_val = msi_data.get('value', '')
+        msi_unit = msi_data.get('unit', '')
+        
+        # Status Check
+        is_tmb_high = 'high' in str(tmb_data.get('status', '')).lower()
+        is_msi_high = 'high' in str(msi_data.get('status', '')).lower()
+
+        # Suffix Calculation
+        suffix = ""
+        if is_tmb_high and is_msi_high:
+            suffix = ": TMB-High and MSI-High"
+        elif is_tmb_high:
+            suffix = ": TMB-High"
+        elif is_msi_high:
+            suffix = ": MSI-High"
+
+        # Shape Iteration
+        for shape in slide.shapes:
+            # 1. Update Title
+            if shape.has_text_frame:
+                if "- Other Biomarkers" in shape.text_frame.text:
+                    p = shape.text_frame.paragraphs[0]
+                    
+                    # [Fix] 텍스트 박스 너비를 넓게 조정하여 줄바꿈 방지
+                    # 기존 너비(약 4.6cm)로는 "TMB-High and MSI-High" 추가 시 줄바꿈됨.
+                    shape.width = Cm(17.0)
+                    shape.text_frame.word_wrap = False
+                    
+                    # Suffix (Red/Bold) 추가
+                    if suffix:
+                        run = p.add_run()
+                        run.text = suffix
+                        run.font.name = self.config.FONT_NAME
+                        run.font.size = self.config.FONT_SIZE_HEADER
+                        run.font.bold = True
+                        run.font.color.rgb = self.config.COLOR_RED
+
+            # 2. Update Table
+            if shape.has_table:
+                tbl = shape.table
+                # 헤더 확인 (TMB/MSI가 포함되어 있는지)
+                # 보통 첫 번째 행(Header)의 내용을 검사
+                try:
+                    header_row_text = "".join([cell.text_frame.text for cell in tbl.rows[0].cells])
+                    if "Tumor Mutation Burden" in header_row_text and "Microsatellite Instability" in header_row_text:
+                        # 타겟 테이블 발견
+                        
+                        # TMB Cell (Row 1, Col 0)
+                        # 기존에 "/Megabase" 같은 단위 텍스트가 있을 수 있으므로 덮어쓰기
+                        self._fill_biomarker_cell(tbl.cell(1, 0), tmb_val, tmb_unit, is_tmb_high)
+
+                        # MSI Cell (Row 1, Col 1)
+                        self._fill_biomarker_cell(tbl.cell(1, 1), msi_val, msi_unit, is_msi_high)
+                except Exception:
+                    continue
+        
+    def _set_cell_style_simple(self, cell, is_header=False):
+        """테이블 셀 스타일 유틸리티 (헤더용)"""
+        cell.vertical_anchor = MSO_ANCHOR.MIDDLE
+        p = cell.text_frame.paragraphs[0]
+        p.alignment = PP_ALIGN.CENTER
+        
+        if p.runs:
+            font = p.runs[0].font
+            font.name = self.config.FONT_NAME
+            font.size = Pt(10)
+            font.bold = True
+            font.color.rgb = self.config.COLOR_BLACK
+
+        if is_header:
+            from pptx.dml.color import RGBColor
+            fill = cell.fill
+            fill.solid()
+            fill.fore_color.rgb = RGBColor(220, 230, 241) # 연한 파랑/회색 계열
+
+        self._set_cell_border(cell)
+
+    def _fill_biomarker_cell(self, cell, value, unit, is_high):
+        """바이오마커 셀 채우기 (값 부분만 강조)"""
+        cell.vertical_anchor = MSO_ANCHOR.MIDDLE
+        p = cell.text_frame.paragraphs[0]
+        p.alignment = PP_ALIGN.CENTER
+        p.text = "" # 기존 텍스트 클리어
+
+        # Value
+        run_val = p.add_run()
+        run_val.text = str(value)
+        run_val.font.name = self.config.FONT_NAME
+        run_val.font.size = Pt(10)
+        
+        if is_high:
+            run_val.font.bold = True
+            run_val.font.color.rgb = self.config.COLOR_RED
+        else:
+            run_val.font.bold = False
+            run_val.font.color.rgb = self.config.COLOR_BLACK
+            
+        # Unit (공백 추가)
+        if unit:
+            run_unit = p.add_run()
+            run_unit.text = f" {str(unit)}"
+            run_unit.font.name = self.config.FONT_NAME
+            run_unit.font.size = Pt(10)
+            run_unit.font.bold = False
+            run_unit.font.color.rgb = self.config.COLOR_BLACK
+
+        self._set_cell_border(cell)
 
     def _fill_qc_table(self, slide, report_data):
         qc_data = report_data.get('qc', {})
@@ -775,6 +914,11 @@ class NGS_PPT_Generator:
         # 3. Failed gene 섹션 (Variants 처리 루프 종료 후)
         failed_gene = report_data.get('failed_gene')
         self._draw_failed_gene(layout, failed_gene)
+
+        # 5. Other Biomarkers
+        # [Refactoring] 기존 템플릿(Slide 1)에 있는 섹션을 업데이트하므로 여기서는 그리지 않음.
+        # biomarkers = report_data.get('biomarkers', {})
+        # self._draw_biomarkers(layout, biomarkers)
 
         # Comments 섹션
         comments = report_data.get('comments', [])

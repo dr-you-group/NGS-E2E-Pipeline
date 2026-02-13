@@ -147,9 +147,22 @@ class NGS_EXCEL2DB:
 
     # Other BioMarkers
     def get_Biomarkers(self) -> Dict:
+        """
+        IO 시트에서 TMB, MSI 값을 추출합니다.
+        Value: TMB(Row 0), MSI(Row 7)
+        Status (Categorical): TMB(Row 3), MSI(Row 10) - High/Low 여부 판단용
+        """
         return {
-            'TMB': self.IO['Value'][0] + ' /Megabase',
-            'MSI': self.IO['Value'][7] + ' %',
+            'TMB': {
+                'value': self.IO['Value'][0],
+                'unit': '/Megabase',
+                'status': self.IO['Value'][3]  # Categorical Result (High/Low/Stable etc)
+            },
+            'MSI': {
+                'value': self.IO['Value'][7],
+                'unit': '%',
+                'status': self.IO['Value'][10] # Categorical Result (High/Low/Stable etc)
+            }
         }
 
     # Failed_Gene
