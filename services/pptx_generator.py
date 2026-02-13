@@ -412,6 +412,9 @@ class NGS_PPT_Generator:
             biomarkers = report_data.get('biomarkers', {})
             self._update_existing_biomarkers(prs.slides[0], biomarkers)
 
+            # [Added] 검사기기 등 Diagnostic Info 업데이트
+            self._fill_diagnostic_info(prs, report_data)
+
         # QC 및 DNA/RNA 정보는 4번째 페이지(Index 3)에 위치함
         if len(prs.slides) > 3:
             self._fill_qc_table(prs.slides[3], report_data)
@@ -1598,28 +1601,18 @@ class NGS_PPT_Generator:
                         if value in text: 
                             continue
 
-                        # 템플릿의 기존 텍스트에 공백이 많을 수 있으므로 정리
-                        # 예: "Signed by:              " -> "Signed by:"
-                        # 첫 번째 문단의 모든 런을 순회하며 텍스트 정리
-                        paragraph = shape.text_frame.paragraphs[0]
-                        
-                        # 기존 텍스트가 키워드만 남도록 정리 (오른쪽 공백 제거)
-                        full_text = "".join([run.text for run in paragraph.runs])
-                        if key in full_text:
-                            # 전체 텍스트를 재설정하는 것은 스타일이 깨질 수 있으므로,
-                            # 마지막 런의 텍스트를 rstrip() 하는 방식으로 시도
-                            if paragraph.runs:
-                                last_run = paragraph.runs[-1]
-                                last_run.text = last_run.text.rstrip()
-
-                        # 값 추가
-                        run = paragraph.add_run()
+                        # 스타일(폰트, 사이즈)을 유지하며 추가하기 위해 Run 추가
+                        p = shape.text_frame.paragraphs[0]
+                        run = p.add_run()
                         run.text = f" {value}"
-                        run.font.bold = False # 값은 Bold 처리 안 함
-                        # 폰트 사이즈나 이름은 템플릿 상속 혹은 명시적 지정 가능
-                        # run.font.name = self.config.FONT_NAME 
-                        
-            # 2. 테이블 처리 (분자 접수 번호)
+                        run.font.name = self.config.FONT_NAME
+                        # 기존 텍스트의 폰트 크기를 따라가거나, 기본 Body 사이즈 적용
+                        # 여기서는 Body 사이즈 적용
+                        from pptx.util import Pt
+                        run.font.size = Pt(9) 
+                        run.font.bold = True # 이름 등은 Bold 처리
+
+
             elif shape.has_table:
                 tbl = shape.table
                 try:
@@ -1637,3 +1630,38 @@ class NGS_PPT_Generator:
                                 )
                 except Exception as e:
                     print(f"Footer table update error: {e}")
+
+    def _fill_diagnostic_info(self, prs, report_data):
+        """
+        '검사기기' 정보를 찾아 기입합니다.
+        검사정보 섹션의 텍스트 박스(예: '검사기기 :')를 찾아 뒤에 값을 이어 붙입니다.
+        """
+        diag_info = report_data.get('diagnostic_info', {})
+        target_value = diag_info.get('검사기기', '')
+        
+        if not target_value:
+            return
+
+        # 모든 슬라이드에서 검색 (위치가 명확하지 않으므로 안전하게 전체 검색)
+        for slide in prs.slides:
+            for shape in slide.shapes:
+                if shape.has_text_frame:
+                    for p in shape.text_frame.paragraphs:
+                        # "검사기기" 키워드 포함 여부 확인
+                        if "검사기기" in p.text:
+                            # 이미 값이 들어있는지 확인 (중복 기입 방지)
+                            if target_value in p.text:
+                                continue
+                            
+                            # 값 추가 (공백 한 칸 + 값)
+                            run = p.add_run()
+                            run.text = f" {target_value}"
+                            run.font.name = self.config.FONT_NAME
+                            # 기존 텍스트 스타일을 따라가거나 명시적 설정
+                            # 사용자가 10pt를 요청함 (기본 Body는 9pt이나 이 섹션은 10pt가 적절해 보임)
+                            from pptx.util import Pt
+                            run.font.size = Pt(10)
+                            run.font.bold = False # 값 부분은 Bold 아님 (HTML 참조: span만 label 클래스)
+                            
+                            # 하나 찾으면 종료 (일반적으로 하나만 존재)
+                            return
