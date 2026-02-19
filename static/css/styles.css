@@ -342,6 +342,7 @@ table {
 .info-table td {
     height: 3.2em;
     font-weight: bold;
+    font-size: 8pt !important;
 }
 
 .biomarkers-table td {
@@ -360,8 +361,8 @@ table {
 .split-table-continued td {
     color: var(--text-red) !important;
     font-weight: bold !important;
-    font-size: 9pt !important;
-    /* User requested 9pt */
+    font-size: 8pt !important;
+    /* User requested 8pt */
 }
 
 /* 4.5. 의미 불명/정상(Unknown/Normal) 테이블 - 검은색/Normal */
@@ -372,8 +373,8 @@ table {
 #splice-unknown-table td {
     color: var(--text-black) !important;
     font-weight: normal !important;
-    font-size: 9pt !important;
-    /* Changed from 8pt to 9pt per request */
+    font-size: 8pt !important;
+    /* User requested 8pt */
 }
 
 /* 4.6. 컬럼 너비 설정 (Column Widths) */
@@ -521,8 +522,8 @@ table {
 #splice-clinical-table td:nth-child(4),
 #splice-unknown-table td:nth-child(4) {
     word-break: break-all;
-    font-size: 9pt;
-    /* Changed from 7pt to 9pt per request */
+    font-size: 8pt;
+    /* User requested 8pt */
     line-height: 1.2;
 }
 

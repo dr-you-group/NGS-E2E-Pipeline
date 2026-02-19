@@ -518,7 +518,7 @@ class NGS_PPT_Generator:
 
             final_value = str(value) if value is not None else ""
 
-            self._search_and_fill_cell_below(tables, ppt_label, final_value)
+            self._search_and_fill_cell_below(tables, ppt_label, final_value, font_size=Pt(8))
 
     def _update_existing_biomarkers(self, slide, biomarkers):
         """
@@ -630,7 +630,7 @@ class NGS_PPT_Generator:
         run_val = p.add_run()
         run_val.text = str(value)
         run_val.font.name = self.config.FONT_NAME
-        run_val.font.size = Pt(10)
+        run_val.font.size = Pt(8) # [Changed] 10pt -> 8pt
         
         if is_high:
             run_val.font.bold = True
@@ -644,7 +644,7 @@ class NGS_PPT_Generator:
             run_unit = p.add_run()
             run_unit.text = f" {str(unit)}"
             run_unit.font.name = self.config.FONT_NAME
-            run_unit.font.size = Pt(10)
+            run_unit.font.size = Pt(8) # [Changed] 10pt -> 8pt
             run_unit.font.bold = False
             run_unit.font.color.rgb = self.config.COLOR_BLACK
 
@@ -1128,13 +1128,14 @@ class NGS_PPT_Generator:
                         target_row.cells[c_idx],
                         str(val),
                         is_bold=style_props['bold'],
-                        font_color=style_props['color']
+                        font_color=style_props['color'],
+                        font_size=Pt(8) # [Changed] Explicitly set to 8pt for variants
                     )
 
         table_height = sum([row.height for row in table.rows])
         layout.add_space(table_height + self.config.SPACE_TABLE_BOTTOM)
 
-    def _set_cell_text_preserving_style(self, cell, text, is_bold=False, font_color=None):
+    def _set_cell_text_preserving_style(self, cell, text, is_bold=False, font_color=None, font_size=None):
         """텍스트 입력 전 기존 내용을 초기화하여 중복/깨짐 방지"""
         if not cell.text_frame.paragraphs:
             p = cell.text_frame.add_paragraph()
@@ -1147,7 +1148,12 @@ class NGS_PPT_Generator:
 
         run = p.add_run()
         run.font.name = self.config.FONT_NAME
-        run.font.size = self.config.FONT_SIZE_BODY
+        
+        # [Changed] font_size 파라미터가 있으면 사용, 없으면 Default Body Size (9pt)
+        if font_size:
+            run.font.size = font_size
+        else:
+            run.font.size = self.config.FONT_SIZE_BODY
 
         run.font.bold = is_bold
         if font_color: run.font.color.rgb = font_color
@@ -1190,7 +1196,7 @@ class NGS_PPT_Generator:
 
         layout.add_space(table_height + self.config.SPACE_TABLE_BOTTOM)
 
-    def _search_and_fill_cell_below(self, tables, target_label, value):
+    def _search_and_fill_cell_below(self, tables, target_label, value, font_size=None):
         clean_target = target_label.replace(" ", "").lower()
 
         for table in tables:
@@ -1229,7 +1235,8 @@ class NGS_PPT_Generator:
                                 self._set_cell_text_preserving_style(
                                     target_cell,
                                     final_text,
-                                    is_bold=True
+                                    is_bold=True,
+                                    font_size=font_size
                                 )
                                 return
                         except Exception as e:
