@@ -41,7 +41,12 @@ def download_pptx(specimen_id: str = Form(...), conn: sqlite3.Connection = Depen
         ppt_buffer = generator.generate(report_data)
 
         # 4. 파일 다운로드 응답 (StreamingResponse 사용)
-        filename = f"{specimen_id}.pptx"
+        from datetime import datetime
+        today_str = datetime.now().strftime("%y%m%d")
+        panel_type = report_data.get('panel_type', 'GE') # Default to GE if not present
+        
+        # Desired format: {specimen_id}_{Type}_report_{yymmdd}_auto.pptx
+        filename = f"{specimen_id}_{panel_type}_report_{today_str}_auto.pptx"
 
         return StreamingResponse(
             ppt_buffer,

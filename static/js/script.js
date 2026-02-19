@@ -1035,7 +1035,17 @@ document.addEventListener('DOMContentLoaded', function () {
             // 검체 정보를 파일명으로 사용
             const originalTitle = document.title;
             const specimenId = window.specimenId || 'NGS_보고서';
-            document.title = specimenId;
+            const panelType = window.panelType || 'GE';
+
+            // 날짜 포맷 (YYMMDD)
+            const date = new Date();
+            const year = date.getFullYear().toString().slice(-2);
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            const todayStr = `${year}${month}${day}`;
+
+            // Desired format: {specimen_id}_{panel_type}_report_{yymmdd}_auto
+            document.title = `${specimenId}_${panelType}_report_${todayStr}_auto`;
 
             // 바로 인쇄 다이얼로그 열기
             window.print();
