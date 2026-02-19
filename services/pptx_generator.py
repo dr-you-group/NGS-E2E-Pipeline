@@ -862,6 +862,10 @@ class NGS_PPT_Generator:
                 # [Tracking] 현재 메인 타이틀 업데이트 (페이지 분할 시 반복용)
                 layout.current_main_title = self.config.SECTION_START_MARKERS.get(style_type)
 
+            # [Added] LR-BRCA (Clinical) 데이터가 없으면 섹션 자체를 스킵 (PDF와 동작 일치)
+            if key == 'lr_brca_clinical' and not section_data.get('data'):
+                continue
+
             section_data = report_data.get(key, {})
             rows = section_data.get('data', [])
             headers = section_data.get('headers', [])
@@ -874,7 +878,12 @@ class NGS_PPT_Generator:
                 min_table_height = Cm(0.8)
                 required_height = header_height + min_table_height
 
-                if layout.top + required_height > layout.bottom_limit:
+                # [Changed] Orphan Header Prevention
+                # 헤더(0.8) + 최소 행 높이(약 1.0) 정도의 여유 공간 확인
+                # 부족하면 아예 새 슬라이드로 넘김
+                orphan_threshold = header_height + Cm(1.2)
+                
+                if layout.top + orphan_threshold > layout.bottom_limit:
                     layout.add_new_slide()
 
                 # 먼저 테이블 분할 여부 계산
@@ -885,7 +894,12 @@ class NGS_PPT_Generator:
                 
                 # 분할 시 첫 페이지 제목에 (1/N) 추가
                 display_title = f"{title} (1/{total_pages})" if total_pages > 1 else title
-                self._render_section_header(layout, display_title, highlight_data=highlight_val)
+                
+                # [Changed] VUS 여부 확인 (highlight plain text 처리를 위해)
+                # style_type 변수를 사용 (section_data에는 type 정보가 없을 수 있음)
+                is_clinical = (style_type == 'clinical')
+                
+                self._render_section_header(layout, display_title, highlight_data=highlight_val, is_clinical=is_clinical)
                 
                 if prototype_xml is not None:
                     # 테이블 분할 시 제목과 페이지 번호 표시를 위한 정보 전달
@@ -929,7 +943,7 @@ class NGS_PPT_Generator:
         self._draw_comments(layout, comments, highlight_keywords)
 
     def _draw_main_section_title(self, layout, text, font_size=None, color=None):
-        height = Cm(1.0)
+        height = Cm(0.6)
         layout.check_space(height)
         tb = layout.current_slide.shapes.add_textbox(self.config.MARGIN_LEFT_L1, layout.top, layout.width, height)
         p = tb.text_frame.paragraphs[0]
@@ -969,7 +983,7 @@ class NGS_PPT_Generator:
 
         layout.add_space(height + self.config.SPACE_TITLE_BOTTOM)
 
-    def _render_section_header(self, layout, title, highlight_data=None, is_none=False):
+    def _render_section_header(self, layout, title, highlight_data=None, is_none=False, is_clinical=True):
         height = Cm(0.8)
         layout.check_space(height)
         tb = layout.current_slide.shapes.add_textbox(self.config.MARGIN_LEFT_L2, layout.top, layout.width, height)
@@ -986,25 +1000,37 @@ class NGS_PPT_Generator:
                                 font_size=self.config.FONT_SIZE_HEADER,
                                 color=self.config.COLOR_BLACK)
         elif highlight_data:
+            # [Changed] VUS(is_clinical=False)인 경우: Plain Text (Black, Normal, No Italic)
+            # VCS(is_clinical=True)인 경우: 기존 로직 (Red, Bold, Gene Italic)
+            
+            # 구분자 색상/스타일 결정
+            sep_color = self.config.COLOR_RED if is_clinical else self.config.COLOR_BLACK
+            sep_bold = True if is_clinical else False # VUS는 구분자도 Normal
+            
             # ": " 찍기
-            self._set_run_style(p.add_run(), ": ", is_bold=True,
+            self._set_run_style(p.add_run(), ": ", is_bold=sep_bold,
                                 font_size=self.config.FONT_SIZE_HEADER,
-                                color=self.config.COLOR_RED)
+                                color=sep_color)
 
-            # 1. 단순히 리스트를 하나씩 꺼내서 그림 (로직 없음)
+            # 데이터 순회
             for segment in highlight_data:
-                # 데이터에서 텍스트와 스타일을 꺼냄
                 text = segment['text']
                 style = segment.get('style', 'normal')
 
-                # 스타일이 'italic'이면 True, 아니면 False
-                is_italic = (style == 'italic')
-
-                # 2. 그대로 출력 (조건문 분기 불필요)
-                self._set_run_style(p.add_run(), text, is_bold=True,
-                                    font_size=self.config.FONT_SIZE_HEADER,
-                                    color=self.config.COLOR_RED,
-                                    italic=is_italic)  # 스타일 적용
+                if is_clinical:
+                    # VCS: Red, Bold, Italic(if gene)
+                    is_italic = (style == 'italic')
+                    self._set_run_style(p.add_run(), text, is_bold=True,
+                                        font_size=self.config.FONT_SIZE_HEADER,
+                                        color=self.config.COLOR_RED,
+                                        italic=is_italic)
+                else:
+                    # VUS: Black, Normal, No Italic (Plain Text)
+                    # style 정보(italic 등) 무시하고 강제 평문 출력
+                    self._set_run_style(p.add_run(), text, is_bold=False,
+                                        font_size=self.config.FONT_SIZE_HEADER,
+                                        color=self.config.COLOR_BLACK,
+                                        italic=False) 
 
         layout.add_space(height)
 
