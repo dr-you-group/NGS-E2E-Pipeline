@@ -21,7 +21,7 @@ class PPTReportConfig:
     
     DEFAULT_WIDTH = Cm(19.05)
     BODY_TOP_START = Cm(4.5)
-    BODY_BOTTOM_LIMIT = Cm(18.0)
+    BODY_BOTTOM_LIMIT = Cm(24.5) # [Changed] 기존 18.0cm에서 확장하여 하단 여백 정상화
 
     FONT_NAME = "Malgun Gothic"
     FONT_SIZE_TITLE = Pt(12)
@@ -165,8 +165,8 @@ class LayoutAnalyzer:
                 if "- Other Biomarker" in text:
                     # 해당 텍스트의 상단(Top)에서 0.5cm 위를 한계선으로 설정
                     limit = shape.top - Cm(0.5)
-                    # 기존보다 더 위쪽(작은 값)이면 업데이트
-                    if limit > current_slide_limit:
+                    # 기존 한계선보다 더 위쪽에 있으면(작은 값이면) 업데이트하여 안전 확보
+                    if limit < current_slide_limit:
                         current_slide_limit = limit
 
                 # 섹션 시작 마커 찾기
@@ -986,7 +986,11 @@ class NGS_PPT_Generator:
     def _render_section_header(self, layout, title, highlight_data=None, is_none=False, is_clinical=True):
         height = Cm(0.8)
         layout.check_space(height)
-        tb = layout.current_slide.shapes.add_textbox(self.config.MARGIN_LEFT_L2, layout.top, layout.width, height)
+        
+        # 텍스트 박스 너비를 명시적으로 제한하여 우측 테두리 안쪽에서 안전하게 자동 줄바꿈(word wrap) 유도
+        box_width = layout.width - self.config.MARGIN_LEFT_L2 - Cm(0.5)
+        tb = layout.current_slide.shapes.add_textbox(self.config.MARGIN_LEFT_L2, layout.top, box_width, height)
+        tb.text_frame.word_wrap = True
         p = tb.text_frame.paragraphs[0]
 
         # 1. 제목
@@ -1032,7 +1036,21 @@ class NGS_PPT_Generator:
                                         color=self.config.COLOR_BLACK,
                                         italic=False) 
 
-        layout.add_space(height)
+        # 동적 높이 계산 (Dynamic Height Calculation with constraints)
+        wrapped_lines = 0
+        if highlight_data:
+            total_chars = sum(len(segment['text']) for segment in highlight_data)
+            # 대략적인 한 줄 글자 수 (12pt 맑은 고딕, 17cm 너비 기준 보수적 측정치)
+            chars_per_line = 80 
+            if total_chars > chars_per_line:
+                wrapped_lines = int((total_chars - 1) / chars_per_line)
+                
+        # 최대 3줄(기본 1줄 + 추가 2줄)까지만 공간 할당을 허용
+        capped_wrapped_lines = min(wrapped_lines, 2)
+        
+        # 줄바꿈 1개당 0.5cm씩 추가
+        dynamic_added_height = Cm(0.5) * capped_wrapped_lines
+        layout.add_space(height + dynamic_added_height)
 
     def _set_run_style(self, run, text, is_bold=False, font_size=None, color=None, italic=False):
         """텍스트 스타일 적용 헬퍼 메서드"""
@@ -1045,7 +1063,7 @@ class NGS_PPT_Generator:
 
     def _calculate_table_pages(self, layout, total_rows):
         """테이블이 몇 페이지에 걸쳐 분할될지 미리 계산합니다."""
-        row_height = Cm(0.8)
+        row_height = Cm(0.7)
         header_height = Cm(0.8)
         page_count = 0
         remaining_rows = total_rows
@@ -1076,16 +1094,27 @@ class NGS_PPT_Generator:
                 - is_first: 첫 페이지 여부 (첫 페이지는 별도 렌더링되므로 제목 스킵)
         """
         final_margin = margin_left if margin_left else layout.margin
-        row_height = Cm(0.8)
+        row_height = Cm(0.7)
         header_height = Cm(0.8)
 
         available_height = layout.bottom_limit - layout.top
+        
+        # [DEBUG]
+        from pptx.util import Length
+        avail_cm = Length(available_height).cm if isinstance(available_height, int) else available_height.cm
+        bottom_cm = Length(layout.bottom_limit).cm if isinstance(layout.bottom_limit, int) else layout.bottom_limit.cm
+        top_cm = Length(layout.top).cm if isinstance(layout.top, int) else layout.top.cm
+        
+        print(f"[DEBUG Layout] Table rendering start. Available Height: {avail_cm:.2f}cm (Bottom: {bottom_cm:.2f}cm - Top: {top_cm:.2f}cm)")
 
         if available_height < (header_height + row_height):
+            print(f"[DEBUG Layout] Not enough space for header+1row. Adding new slide.")
             layout.add_new_slide()
             available_height = layout.bottom_limit - layout.top
+            avail_cm = Length(available_height).cm if isinstance(available_height, int) else available_height.cm
 
         max_rows = int((available_height - header_height) / row_height)
+        print(f"[DEBUG Layout] Calculating max_rows: ({avail_cm:.2f} - {header_height.cm:.2f}) / {row_height.cm:.2f} = {max_rows}")
 
         # 페이지 정보 초기화 (첫 호출 시)
         if pagination_info is None:
