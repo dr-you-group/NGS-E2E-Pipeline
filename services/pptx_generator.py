@@ -1060,6 +1060,19 @@ class NGS_PPT_Generator:
         if color: run.font.color.rgb = color
         run.font.bold = is_bold
         run.font.italic = italic
+        
+        # 빨간 밑줄(맞춤법 검사) 끄기
+        rPr = run.font._element
+        if rPr is not None:
+            rPr.set('err', '0')
+            rPr.set('dirty', '0')
+            rPr.set('noProof', '1')
+            
+            # lang 속성에 한국어(ko-KR) 명시
+            from pptx.oxml.xmlchemy import OxmlElement
+            lang = OxmlElement('a:lang')
+            lang.set('val', 'ko-KR')
+            rPr.append(lang)
 
     def _calculate_table_pages(self, layout, total_rows):
         """테이블이 몇 페이지에 걸쳐 분할될지 미리 계산합니다."""
@@ -1317,18 +1330,37 @@ class NGS_PPT_Generator:
         
         layout.add_space(height + self.config.SPACE_SECTION)
 
+    def _get_text_lines(self, text, chars_per_line=130):
+        import unicodedata
+        if not text:
+            return 0
+        total_lines = 0
+        for line in text.split('\n'):
+            w = sum(2 if unicodedata.east_asian_width(c) in 'WF' else 1 for c in line)
+            total_lines += int(w // chars_per_line) + 1
+        return total_lines
 
     def _draw_comments(self, layout, comments, highlight_keywords=None):
         """Comments 섹션과 하단 고지문을 통합하여 그립니다."""
         # 상수 정의 (총 페이지 계산에 필요)
-        LINE_HEIGHT = Cm(0.6) # [Changed] 1.5 Spacing 고려하여 높이 증가 (0.4 -> 0.6)
-        CHARS_PER_LINE = 90
+        LINE_HEIGHT = Cm(0.45) # 8pt font + 1.5 line spacing
+        CHARS_PER_LINE = 130
         FOOTER_TOP = Cm(23.49)
         BODY_BOTTOM_LIMIT = FOOTER_TOP - Cm(0.5)
         if layout.bottom_limit < BODY_BOTTOM_LIMIT:
             BODY_BOTTOM_LIMIT = layout.bottom_limit
-        DISCLAIMER_MAIN_HEIGHT = Cm(3.0)
-        
+        # Main Disclaimer (미리 정의, 높이도 동적 계산)
+        disclaimer_main = (
+            "*본 기관의 유전자 정보 검색 및 해석은 dbSNP, COSMIC, ClinVar, c-bioportal 등의 유전자 정보검색 사이트를 참고로 하고 있습니다. "
+            "또한, 발견된 유전자 변이의 임상적 의미에 대하여, 아래 참고 문헌에 기반한 4단계 시스템 (Tier I: Strong clinical significance, "
+            "Tier II: Potential Clinical significance, Tier III: Unknown Clinical significance, Tier IV: Benign or Likely Benign) 을 "
+            "적용하여 보고하고 있습니다. 또한 normal cell sequencing이 이루어지지 않아 일부 변이의 경우 germline polymorphism의 가능성을 배제할 수 없습니다.\n"
+            "Standards and Guidelines for the Interpretation and Reporting of Sequence Variants in Cancer. A Joint Consensus Recommendation "
+            "of the Association for Molecular Pathology, American Society of Clinical Oncology and College of American Pathologists. "
+            "J Mol Diagn. 2017; 19(1):4-23."
+        )
+        DISCLAIMER_MAIN_HEIGHT = (self._get_text_lines(disclaimer_main, CHARS_PER_LINE) * LINE_HEIGHT) + Cm(0.5) + LINE_HEIGHT
+
         # 총 페이지 수 미리 계산
         if not comments:
             comments_list = []
@@ -1336,6 +1368,21 @@ class NGS_PPT_Generator:
             comments_list = [comments]
         else:
             comments_list = comments
+
+        # 첫 번째 요소(코멘트 1개 또는 고지문)의 높이 계산
+        first_content_height = 0
+        if comments_list:
+            first_comment = comments_list[0]
+            lines = self._get_text_lines(first_comment, CHARS_PER_LINE)
+            first_content_height = (lines * LINE_HEIGHT) + Cm(0.2) + LINE_HEIGHT
+        else:
+            first_content_height = DISCLAIMER_MAIN_HEIGHT
+            
+        header_height = Cm(1.0)
+        
+        # 현재 슬라이드의 남은 공간에 헤더와 첫 번째 요소가 안 들어간다면, 미리 새 슬라이드로 강제 이동
+        if (layout.top + header_height + first_content_height) > BODY_BOTTOM_LIMIT:
+            layout.add_new_slide()
             
         total_pages = self._calculate_comment_pages(
             layout, comments_list, BODY_BOTTOM_LIMIT, LINE_HEIGHT, CHARS_PER_LINE, DISCLAIMER_MAIN_HEIGHT
@@ -1383,8 +1430,8 @@ class NGS_PPT_Generator:
             comments = [comments]
 
         # 상수 정의
-        LINE_HEIGHT = Cm(0.6) # [Changed] 1.5 Spacing 고려하여 높이 증가
-        CHARS_PER_LINE = 90
+        LINE_HEIGHT = Cm(0.45)
+        CHARS_PER_LINE = 130
         BOX_WIDTH = Cm(17.55)
         
         # 하단 Footer (Raw Data 등) 위치
@@ -1394,7 +1441,7 @@ class NGS_PPT_Generator:
         if layout.bottom_limit < BODY_BOTTOM_LIMIT:
              BODY_BOTTOM_LIMIT = layout.bottom_limit
         
-        # Main Disclaimer
+        # Main Disclaimer (이전 단계에서 정의한 것과 동일)
         disclaimer_main = (
             "*본 기관의 유전자 정보 검색 및 해석은 dbSNP, COSMIC, ClinVar, c-bioportal 등의 유전자 정보검색 사이트를 참고로 하고 있습니다. "
             "또한, 발견된 유전자 변이의 임상적 의미에 대하여, 아래 참고 문헌에 기반한 4단계 시스템 (Tier I: Strong clinical significance, "
@@ -1404,7 +1451,7 @@ class NGS_PPT_Generator:
             "of the Association for Molecular Pathology, American Society of Clinical Oncology and College of American Pathologists. "
             "J Mol Diagn. 2017; 19(1):4-23."
         )
-        DISCLAIMER_MAIN_HEIGHT = Cm(3.0)
+        DISCLAIMER_MAIN_HEIGHT = (self._get_text_lines(disclaimer_main, CHARS_PER_LINE) * LINE_HEIGHT) + Cm(0.5) + LINE_HEIGHT
         
         # 총 페이지 수 미리 계산
         total_pages = self._calculate_comment_pages(
@@ -1417,9 +1464,8 @@ class NGS_PPT_Generator:
         
         # 코멘트 배치 루프
         for idx, comment in enumerate(comments):
-            text_len = len(comment)
-            lines = int((text_len / CHARS_PER_LINE) + 1)
-            est_height = (lines * LINE_HEIGHT) + Cm(0.2)
+            lines = self._get_text_lines(comment, CHARS_PER_LINE)
+            est_height = (lines * LINE_HEIGHT) + Cm(0.2) + LINE_HEIGHT
             
             # 공간 체크 (Footer 영역 침범 확인)
             if (layout.top + current_batch_height + est_height) > BODY_BOTTOM_LIMIT:
@@ -1463,13 +1509,12 @@ class NGS_PPT_Generator:
         current_batch_height = 0
         
         for comment in comments:
-            text_len = len(comment)
-            lines = int((text_len / chars_per_line) + 1)
-            est_height = (lines * line_height) + Cm(0.2)
+            lines = self._get_text_lines(comment, chars_per_line)
+            est_height = (lines * line_height) + Cm(0.2) + line_height
             
             if (current_top + current_batch_height + est_height) > body_limit:
                 page_count += 1
-                current_top = self.config.BODY_TOP_START
+                current_top = Cm(0.5)  # add_new_slide sets top to Cm(0.5)
                 current_batch_height = Cm(1.0)  # header height
             
             current_batch_height += est_height
