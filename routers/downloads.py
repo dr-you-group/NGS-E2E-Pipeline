@@ -42,11 +42,25 @@ def download_pptx(specimen_id: str = Form(...), conn: sqlite3.Connection = Depen
 
         # 4. 파일 다운로드 응답 (StreamingResponse 사용)
         from datetime import datetime
-        today_str = datetime.now().strftime("%y%m%d")
+        
         panel_type = report_data.get('panel_type', 'GE') # Default to GE if not present
         
         # Desired format: {specimen_id}_{Type}_report_{yymmdd}_auto.pptx
-        filename = f"{specimen_id}_{panel_type}_report_{today_str}_auto.pptx"
+        # Extract sequence date from report_data and format it
+        formatted_date = ""
+        sequence_date_str = report_data.get('sequence_date', '').strip()
+        
+        if sequence_date_str:
+            try:
+                # Try parsing "2025-12-03" -> "251203"
+                dt = datetime.strptime(sequence_date_str, "%Y-%m-%d")
+                formatted_date = dt.strftime("%y%m%d")
+            except Exception as e:
+                logger.warning(f"Sequence Date 파싱 실패 ({sequence_date_str}): {e}")
+                formatted_date = ""
+                
+        date_suffix = f"_{formatted_date}" if formatted_date else ""
+        filename = f"{specimen_id}_{panel_type}_report{date_suffix}_auto.pptx"
 
         return StreamingResponse(
             ppt_buffer,

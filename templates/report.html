@@ -871,6 +871,7 @@
         // 검체 ID와 패널 타입을 JavaScript로 전달
         window.specimenId = '{{ specimen_id }}';
         window.panelType = '{{ report_data.panel_type }}';
+        window.sequenceDate = '{{ report_data.sequence_date }}'; // sequence date 추가
 
         // Specification 동적 로드
         async function loadSpecification() {
@@ -1212,7 +1213,7 @@
         }
         */
     </script>
-    <script src="/static/js/script.js?v=18.12"></script>
+    <script src="/static/js/script.js?v=18.13"></script>
 
     <!-- PDF 다운로드 스크립트 -->
     <!-- <script src="/static/js/report.js"></script> -->

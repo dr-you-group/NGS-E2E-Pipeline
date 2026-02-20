@@ -182,6 +182,23 @@ class NGS_EXCEL2DB:
         return Comments_List
     
 
+    # Sequence Date
+    def get_Sequence_Date(self) -> str:
+        """분석 일자 (NGS_QC B2 셀) 추출"""
+        try:
+            # NGS_QC가 정상적인 크기를 가졌는지 확인
+            if self.NGS_QC.shape[0] > 1 and self.NGS_QC.shape[1] > 1:
+                val = self.NGS_QC.iloc[1, 1]
+                # pandas NaN 검사
+                if pd.isna(val) or str(val).strip() == '':
+                    return ""
+                return str(val).strip()
+            return ""
+        except Exception as e:
+            print(f"Sequence Date 추출 실패: {e}")
+            return ""
+    
+
     # 검사 정보
     def get_Diagnostic_Info(self) -> Dict:
         InstrumentType = self.NGS_QC[4][1] + " Dx [Illumina]"

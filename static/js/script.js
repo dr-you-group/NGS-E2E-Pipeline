@@ -1037,15 +1037,26 @@ document.addEventListener('DOMContentLoaded', function () {
             const specimenId = window.specimenId || 'NGS_보고서';
             const panelType = window.panelType || 'GE';
 
-            // 날짜 포맷 (YYMMDD)
-            const date = new Date();
-            const year = date.getFullYear().toString().slice(-2);
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const day = date.getDate().toString().padStart(2, '0');
-            const todayStr = `${year}${month}${day}`;
+            // 전달된 Sequence Date 값 확인 (ex: "2025-12-03")
+            const sequenceDateStr = window.sequenceDate ? window.sequenceDate.trim() : '';
+            let formattedDate = '';
+
+            if (sequenceDateStr) {
+                // "YYYY-MM-DD" 형식을 파싱
+                const match = sequenceDateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                if (match) {
+                    const year = match[1].slice(-2); // "2025" -> "25"
+                    const month = match[2];
+                    const day = match[3];
+                    formattedDate = `${year}${month}${day}`;
+                }
+            }
+
+            // 날짜 접미사 결정
+            const dateSuffix = formattedDate ? `_${formattedDate}` : "";
 
             // Desired format: {specimen_id}_{panel_type}_report_{yymmdd}_auto
-            document.title = `${specimenId}_${panelType}_report_${todayStr}_auto`;
+            document.title = `${specimenId}_${panelType}_report${dateSuffix}_auto`;
 
             // 바로 인쇄 다이얼로그 열기
             window.print();

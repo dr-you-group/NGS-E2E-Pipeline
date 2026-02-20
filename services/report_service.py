@@ -28,6 +28,7 @@ def extract_report_data(parser) -> dict:
     report_data["analysis_program"] = parser.get_Analysis_Program()
     report_data["diagnosis_user"] = parser.get_Diagnosis_User_Registration()
     report_data["panel_type"] = parser.panel
+    report_data["sequence_date"] = parser.get_Sequence_Date()
 
     # 2. QC 데이터
     report_data["qc"] = process_table_data(parser.get_QC())
