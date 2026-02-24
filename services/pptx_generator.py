@@ -397,7 +397,10 @@ class NGS_PPT_Generator:
 
     def generate(self, report_data: dict) -> BytesIO:
         panel_type = report_data.get('panel_type', 'GE')
-        template_name = "blank_SA_report.pptx" if panel_type == 'SA' else "blank_GE_report.pptx"
+        is_v2 = report_data.get('is_v2', False)
+        
+        v2_suffix = "_v2" if is_v2 else ""
+        template_name = f"NGS_{panel_type}_report_baseline{v2_suffix}.pptx"
         template_path = os.path.join(self.template_dir, template_name)
 
         if not os.path.exists(template_path):
@@ -419,6 +422,17 @@ class NGS_PPT_Generator:
         if len(prs.slides) > 3:
             self._fill_qc_table(prs.slides[3], report_data)
             self._fill_dna_rna_info(prs.slides[3], report_data)
+            
+            # V2 전용: Tumor Fraction / Ploidy 테이블 채우기
+            if is_v2:
+                print(f"[DEBUG] V2 detected. Calling _fill_v2_qc_table...")
+                print(f"[DEBUG] biomarkers keys: {list(report_data.get('biomarkers', {}).keys())}")
+                self._fill_v2_qc_table(prs.slides[3], report_data)
+                
+                # V2 전용: Batch (Run Name) 채우기
+                self._fill_v2_batch(prs.slides[3], report_data)
+            else:
+                print(f"[DEBUG] is_v2={is_v2}, skipping V2 QC table")
 
 
         analyzer = LayoutAnalyzer(prs)
@@ -594,7 +608,24 @@ class NGS_PPT_Generator:
                         self._fill_biomarker_cell(tbl.cell(1, 0), tmb_val, tmb_unit, is_tmb_high)
 
                         # MSI Cell (Row 1, Col 1)
-                        self._fill_biomarker_cell(tbl.cell(1, 1), msi_val, msi_unit, is_msi_high)
+                        # MSI 값이 40 미만이면 "N/A"로 표시 (단위도 제거)
+                        display_msi_val = msi_val
+                        display_msi_unit = msi_unit
+                        try:
+                            if float(msi_val) < 40:
+                                display_msi_val = 'N/A'
+                                display_msi_unit = ''
+                        except (ValueError, TypeError):
+                            pass  # 숫자가 아닌 경우 원본 유지
+                        self._fill_biomarker_cell(tbl.cell(1, 1), display_msi_val, display_msi_unit, is_msi_high)
+                        
+                        # GIS Cell (Row 1, Col 2) - V2 전용 (3열 이상일 때만)
+                        if len(tbl.columns) >= 3:
+                            gis_data = biomarkers.get('GIS', {})
+                            if isinstance(gis_data, dict):
+                                gis_val = gis_data.get('value', '')
+                                gis_unit = gis_data.get('unit', '')
+                                self._fill_biomarker_cell(tbl.cell(1, 2), gis_val, gis_unit, False)
                 except Exception:
                     continue
         
@@ -682,6 +713,99 @@ class NGS_PPT_Generator:
                         # 마지막 컬럼에 채우기
                         last_idx = len(row.cells) - 1
                         self._set_cell_text_preserving_style(row.cells[last_idx], matched_val, is_bold=True)
+
+    def _fill_v2_qc_table(self, slide, report_data):
+        """V2 전용: Tumor Fraction / Ploidy 값을 두 번째 Q.C 테이블에 채우기"""
+        biomarkers = report_data.get('biomarkers', {})
+        tf_data = biomarkers.get('Tumor_Fraction', {})
+        ploidy_data = biomarkers.get('Ploidy', {})
+        
+        tf_val = str(tf_data.get('value', '')).strip()
+        tf_pathological = str(tf_data.get('pathological', '')).strip()
+        ploidy_val = str(ploidy_data.get('value', '')).strip()
+        
+        print(f"[DEBUG V2 QC] tf_val='{tf_val}', tf_pathological='{tf_pathological}', ploidy_val='{ploidy_val}'")
+        
+        if not tf_val and not ploidy_val:
+            print(f"[DEBUG V2 QC] Both values empty, returning early")
+            return
+        
+        # 슬라이드의 모든 테이블을 순회하며 3열 이상 + 첫 번째 열에 'tumor'가 있는 테이블을 찾음
+        for shape in slide.shapes:
+            if not shape.has_table:
+                continue
+            table = shape.table
+            
+            # 조건 1: 3열 이상인 테이블만 대상
+            if len(table.columns) < 3:
+                continue
+            
+            # 조건 2: 행의 첫 번째 셀에 'tumor' 키워드가 있는지 확인
+            has_tumor_row = False
+            for row in table.rows:
+                first_cell = row.cells[0].text_frame.text.strip().lower()
+                if 'tumor' in first_cell:
+                    has_tumor_row = True
+                    break
+            
+            if not has_tumor_row:
+                print(f"[DEBUG V2 QC] Table skipped (3+cols but no 'tumor' in first col). cols={len(table.columns)}")
+                continue
+            
+            print(f"[DEBUG V2 QC] Found target table! cols={len(table.columns)}, rows={len(table.rows)}")
+            # 해당 테이블 발견 — 각 행을 순회하며 값 채우기
+            filled_count = 0
+            for row in table.rows:
+                first_cell_text = row.cells[0].text_frame.text.strip().lower()
+                print(f"[DEBUG V2 QC] Row first cell: '{first_cell_text}', num cells: {len(row.cells)}")
+                
+                if 'tumor' in first_cell_text:
+                    # Pathological estimation for Tumor fraction
+                    if tf_pathological:
+                        self._set_cell_text_preserving_style(row.cells[1], tf_pathological)
+                    # SNP based estimation for Tumor fraction
+                    self._set_cell_text_preserving_style(row.cells[2], tf_val, is_bold=True)
+                    print(f"[DEBUG V2 QC] -> Filled Tumor Fraction: pathological='{tf_pathological}', snp='{tf_val}'")
+                    filled_count += 1
+                
+                elif 'ploidy' in first_cell_text:
+                    # SNP based estimation for Ploidy
+                    self._set_cell_text_preserving_style(row.cells[2], ploidy_val, is_bold=True)
+                    print(f"[DEBUG V2 QC] -> Filled Ploidy: {ploidy_val}")
+                    filled_count += 1
+            
+            print(f"[DEBUG V2 QC] Total cells filled: {filled_count}")
+            break  # 첫 번째 매칭 테이블에서만 처리
+
+    def _fill_v2_batch(self, slide, report_data):
+        """V2 전용: Batch (Run Name) 값을 'Batch :' 텍스트 뒤에 채우기"""
+        run_name = str(report_data.get('run_name', '')).strip()
+        if not run_name:
+            print("[DEBUG V2 Batch] run_name is empty, skipping")
+            return
+        
+        for shape in slide.shapes:
+            if not shape.has_text_frame:
+                continue
+            for paragraph in shape.text_frame.paragraphs:
+                full_text = paragraph.text
+                if 'Batch' in full_text and ':' in full_text:
+                    # "Batch :" 뒤에 새 run으로 공백 + run_name 붙이기 (Bold 해제)
+                    from pptx.util import Pt
+                    new_run = paragraph.add_run()
+                    new_run.text = ' ' + run_name
+                    new_run.font.bold = False
+                    # 기존 run의 폰트 설정 복사 (크기, 서체)
+                    if paragraph.runs and len(paragraph.runs) > 1:
+                        src_font = paragraph.runs[0].font
+                        if src_font.size:
+                            new_run.font.size = src_font.size
+                        if src_font.name:
+                            new_run.font.name = src_font.name
+                    print(f"[DEBUG V2 Batch] Filled Batch: '{run_name}'")
+                    return
+        
+        print("[DEBUG V2 Batch] 'Batch :' text not found on slide")
 
     def _fill_dna_rna_info(self, slide, report_data):
         drna = report_data.get('drna_qubit', {})

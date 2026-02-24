@@ -11,14 +11,15 @@ async def main_page(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @router.get("/api/specification/{panel_type}")
-async def get_specification(panel_type: str):
+async def get_specification(panel_type: str, is_v2: bool = False):
     """
     패널 타입에 따른 Specification HTML 반환
     """
     if panel_type not in ['GE', 'SA']:
         return JSONResponse({"error": "Invalid panel type"}, status_code=400)
 
-    spec_file = config.TEMPLATE_DIR / f"{panel_type}_Specification.html"
+    v2_suffix = "_v2" if is_v2 else ""
+    spec_file = config.TEMPLATE_DIR / f"{panel_type}_Specification{v2_suffix}.html"
 
     if not spec_file.exists():
         return JSONResponse({"error": "Specification file not found"}, status_code=404)

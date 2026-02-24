@@ -1055,8 +1055,11 @@ document.addEventListener('DOMContentLoaded', function () {
             // 날짜 접미사 결정
             const dateSuffix = formattedDate ? `_${formattedDate}` : "";
 
-            // Desired format: {specimen_id}_{panel_type}_report_{yymmdd}_auto
-            document.title = `${specimenId}_${panelType}_report${dateSuffix}_auto`;
+            // V2 리포트 여부 확인
+            const reportStr = window.isV2 ? "v2report" : "report";
+
+            // Desired format: {specimen_id}_{panel_type}_{reportStr}_{yymmdd}_auto
+            document.title = `${specimenId}_${panelType}_${reportStr}${dateSuffix}_auto`;
 
             // 바로 인쇄 다이얼로그 열기
             window.print();

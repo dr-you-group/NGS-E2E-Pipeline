@@ -26,6 +26,16 @@ class NGS_EXCEL2DB:
         self.Splice = self.df.parse('Splice', dtype=str).fillna('')
         self.IO = self.df.parse('IO', header=1, dtype=str).fillna('')
         self.panel = 'SA' if '.SA.' in self.clinical_dict["검체 유형"] else 'GE'
+        
+        # V2 리포트 여부 확인 (NGS_QC 시트 E4 셀)
+        self.is_v2 = False
+        try:
+            if self.NGS_QC.shape[0] > 3 and self.NGS_QC.shape[1] > 4:
+                cell_e4 = str(self.NGS_QC.iloc[3, 4]).strip()
+                if cell_e4 == "TSO500_v2":
+                    self.is_v2 = True
+        except Exception as e:
+            print(f"V2 판별 중 오류 발생: {e}")
 
     def _parse_highlight_structure(self, highlight_text: str) -> List[Dict[str, Any]]:
         if not highlight_text:
@@ -152,7 +162,7 @@ class NGS_EXCEL2DB:
         Value: TMB(Row 0), MSI(Row 7)
         Status (Categorical): TMB(Row 3), MSI(Row 10) - High/Low 여부 판단용
         """
-        return {
+        biomarkers = {
             'TMB': {
                 'value': self.IO['Value'][0],
                 'unit': '/Megabase',
@@ -164,6 +174,37 @@ class NGS_EXCEL2DB:
                 'status': self.IO['Value'][10] # Categorical Result (High/Low/Stable etc)
             }
         }
+        
+        # V2 전용 추가: Tumor Fraction (B18), Ploidy (B19)
+        if self.is_v2:
+            try:
+                # tumor % 키 디버깅
+                tumor_keys = [k for k in self.clinical_dict.keys() if 'tumor' in str(k).lower()]
+                print(f"[DEBUG] clinical_dict tumor-related keys: {tumor_keys}")
+                pathological_val = ''
+                for k in self.clinical_dict:
+                    if 'tumor' in str(k).lower():
+                        pathological_val = str(self.clinical_dict[k]).strip()
+                        print(f"[DEBUG] Found tumor key: '{k}' -> '{pathological_val}'")
+                        break
+                
+                biomarkers['Tumor_Fraction'] = {
+                    'value': self.IO['Value'][15], # Row 15 -> B18 (SNP based estimation)
+                    'pathological': pathological_val, # Pathological estimation
+                    'unit': ''
+                }
+                biomarkers['Ploidy'] = {
+                    'value': self.IO['Value'][16], # Row 16 -> B19
+                    'unit': ''
+                }
+                biomarkers['GIS'] = {
+                    'value': self.IO['Value'][14], # Row 14 -> B17 (Genomic Instability Score)
+                    'unit': ''
+                }
+            except Exception as e:
+                print(f"V2 Biomarker (Tumor Fraction/Ploidy) 추출 실패: {e}")
+                
+        return biomarkers
 
     # Failed_Gene
     def get_Failed_Gene(self) -> str:
@@ -186,16 +227,31 @@ class NGS_EXCEL2DB:
     def get_Sequence_Date(self) -> str:
         """분석 일자 (NGS_QC B2 셀) 추출"""
         try:
-            # NGS_QC가 정상적인 크기를 가졌는지 확인
             if self.NGS_QC.shape[0] > 1 and self.NGS_QC.shape[1] > 1:
                 val = self.NGS_QC.iloc[1, 1]
-                # pandas NaN 검사
                 if pd.isna(val) or str(val).strip() == '':
                     return ""
                 return str(val).strip()
             return ""
         except Exception as e:
             print(f"Sequence Date 추출 실패: {e}")
+            return ""
+
+
+    # Run Name (V2 전용)
+    def get_Run_Name(self) -> str:
+        """Run Name (NGS_QC B1 셀) 추출 - V2 전용"""
+        if not self.is_v2:
+            return ""
+        try:
+            if self.NGS_QC.shape[0] > 0 and self.NGS_QC.shape[1] > 1:
+                val = self.NGS_QC.iloc[0, 1]
+                if pd.isna(val) or str(val).strip() == '':
+                    return ""
+                return str(val).strip()
+            return ""
+        except Exception as e:
+            print(f"Run Name 추출 실패: {e}")
             return ""
     
 

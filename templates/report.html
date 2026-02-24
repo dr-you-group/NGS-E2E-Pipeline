@@ -74,7 +74,7 @@
             visibility: hidden;
         }
     </style>
-    <link rel="stylesheet" href="/static/css/styles.css?v=30">
+    <link rel="stylesheet" href="/static/css/styles.css?v=34">
 </head>
 
 <body>
@@ -358,8 +358,14 @@
                         <table class="biomarkers-table full-width">
                             <thead>
                                 <tr>
-                                    <th>Tumor Mutational Burden (TMB)</th>
-                                    <th>Microsatellite Instability (MSI)</th>
+                                    <th>{% if report_data.is_v2 %}Tumor Mutational Burden<br>(TMB){% else %}Tumor
+                                        Mutational Burden (TMB){% endif %}</th>
+                                    <th>{% if report_data.is_v2 %}Microsatellite Instability (MSI)<br>(% Unstable MSI
+                                        Sites){% else %}Microsatellite Instability (MSI) (% Unstable MSI Sites){% endif
+                                        %}</th>
+                                    {% if report_data.is_v2 %}
+                                    <th>Genomic Instability Score (GIS)<br>(% LOH + TAI + LST)</th>
+                                    {% endif %}
                                 </tr>
                             </thead>
                             <tbody>
@@ -367,9 +373,13 @@
                                     <td><span class="{% if is_tmb_high %}clinical-highlight{% endif %}">{{
                                             report_data.biomarkers.TMB.value }}</span> {{
                                         report_data.biomarkers.TMB.unit }}</td>
-                                    <td><span class="{% if is_msi_high %}clinical-highlight{% endif %}">{{
-                                            report_data.biomarkers.MSI.value }}</span> {{
-                                        report_data.biomarkers.MSI.unit }}</td>
+                                    <td><span class="{% if is_msi_high %}clinical-highlight{% endif %}">{%
+                                            if report_data.biomarkers.MSI.value | float < 40 %}N/A{% else %}{{
+                                                report_data.biomarkers.MSI.value }}</span> {{
+                                                report_data.biomarkers.MSI.unit }}{% endif %}</td>
+                                    {% if report_data.is_v2 %}
+                                    <td>{{ report_data.biomarkers.GIS.value }}</td>
+                                    {% endif %}
                                 </tr>
                             </tbody>
                         </table>
@@ -576,14 +586,18 @@
                     <div class="info-section">
                         <p><span class="info-label">검사시약 :</span> {% if report_data.panel_type == 'GE' %}AllPrep
                             DNA/RNA
-                            FFPE Kit (50) [Qiagen], TruSight™ Oncology 500 kit [Illumina]{% else %}AllPrep DNA/RNA
-                            FFPE
-                            Kit (50) [Qiagen], TruSight™ Oncology 500 kit [Illumina], TruSight™ RNA Fusion Panel
-                            [Illumina]{% endif %}</p>
+                            FFPE Kit (50) [Qiagen], TruSight™ Oncology 500{% if report_data.is_v2 %} v2{% endif %} kit
+                            [Illumina]{% else %}AllPrep DNA/RNA FFPE Kit (50) [Qiagen], TruSight™ Oncology 500{% if
+                            report_data.is_v2 %} v2{% endif %} kit
+                            [Illumina]<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TruSight™
+                            RNA Fusion Panel [Illumina]{% endif %}</p>
                         <p><span class="info-label">검사방법 :</span> NGS targeted DNA/RNA sequencing (Library : Hybrid
                             capture)</p>
                         <p><span class="info-label">검사기기 :</span> {{ report_data.diagnostic_info.검사기기 }}</p>
                         <p><span class="info-label">Reference genome :</span> Homo_sapiens/ UCSC/ hg19</p>
+                        {% if report_data.is_v2 and report_data.run_name %}
+                        <p><span class="info-label">Batch :</span> {{ report_data.run_name }}</p>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -615,20 +629,44 @@
                 <div class="section">
                     <h2 class="section-title">▣ Q.C</h2>
                     <div class="info-section">
-                        <div class="qc-simple">
-                            <div class="qc-header">
-                                <span class="qc-col-tight">Metric (UOM)</span>
-                                <span class="qc-col-tight">LSL Guideline</span>
-                                <span class="qc-col-tight">Value</span>
+                        <div class="qc-container">
+                            <div class="qc-simple">
+                                <div class="qc-header">
+                                    <span class="qc-col-tight">Metric (UOM)</span>
+                                    <span class="qc-col-tight">LSL Guideline</span>
+                                    <span class="qc-col-tight">Value</span>
+                                </div>
+                                {% if report_data.qc.data %}
+                                {% for row in report_data.qc.data %}
+                                <div class="qc-row-simple">
+                                    <span class="qc-col-tight">{{ row[0] }}</span>
+                                    <span class="qc-col-tight">{{ row[1] }}</span>
+                                    <span class="qc-col-tight">{{ row[2] }}</span>
+                                </div>
+                                {% endfor %}
+                                {% endif %}
                             </div>
-                            {% if report_data.qc.data %}
-                            {% for row in report_data.qc.data %}
-                            <div class="qc-row-simple">
-                                <span class="qc-col-tight">{{ row[0] }}</span>
-                                <span class="qc-col-tight">{{ row[1] }}</span>
-                                <span class="qc-col-tight">{{ row[2] }}</span>
+                            {% if report_data.is_v2 %}
+                            <div class="qc-simple qc-v2-table">
+                                <div class="qc-header">
+                                    <span class="qc-col-tight">Metric</span>
+                                    <span class="qc-col-tight">Pathological<br>estimation</span>
+                                    <span class="qc-col-tight">SNP based<br>estimation</span>
+                                </div>
+                                <div class="qc-row-simple">
+                                    <span class="qc-col-tight">Tumor fraction</span>
+                                    <span class="qc-col-tight">{{ report_data.biomarkers.Tumor_Fraction.pathological or
+                                        '-' }}</span>
+                                    <span class="qc-col-tight qc-col-bold">{{
+                                        report_data.biomarkers.Tumor_Fraction.value }}</span>
+                                </div>
+                                <div class="qc-row-simple">
+                                    <span class="qc-col-tight">Ploidy</span>
+                                    <span class="qc-col-tight">-</span>
+                                    <span class="qc-col-tight qc-col-bold">{{ report_data.biomarkers.Ploidy.value
+                                        }}</span>
+                                </div>
                             </div>
-                            {% endfor %}
                             {% endif %}
                         </div>
                     </div>
@@ -638,7 +676,8 @@
                 <div class="section">
                     <h2 class="section-title">▣ Analysis Program</h2>
                     <div class="info-section">
-                        <p>DRAGEN TSO500 ( Workflow Version : 2.5.2 )</p>
+                        <p>{% if report_data.is_v2 %}DRAGEN TSO500 v2 ( Workflow Version : 2.5.3 ){% else %}DRAGEN
+                            TSO500 ( Workflow Version : 2.5.2 ){% endif %}</p>
                     </div>
                 </div>
 
@@ -721,7 +760,7 @@
     <div class="a4-page page-3">
         <div class="page-border">
             <div class="page-3-content">
-                <div class="gene-content-wrapper" style="margin-top: 15px;">
+                <div class="gene-content-wrapper" style="margin-top: 5px;">
                     <div class="section">
                         <h2 class="section-title">▣ Gene Content in the NGS Sarcoma Panel Assay [DNA]</h2>
                         <div class="gene-content-box" id="sa-gene-content-dna">
@@ -737,7 +776,7 @@
     <div class="a4-page page-4">
         <div class="page-border">
             <div class="page-4-content">
-                <div class="gene-content-wrapper" style="margin-top: 15px;">
+                <div class="gene-content-wrapper" style="margin-top: 5px;">
                     <div class="section">
                         <h2 class="section-title">▣ Gene Content in the NGS Sarcoma Panel Assay [RNA]</h2>
                         <div class="gene-content-box" id="sa-gene-content-rna">
@@ -825,25 +864,32 @@
                         <span class="clinical-highlight">: MSI-High</span>
                         {% endif %}
                     </h3>
-                    <table class="biomarkers-table">
+                    <table class="biomarkers-table full-width">
                         <thead>
                             <tr>
-                                <th>Biomarker</th>
-                                <th>Value</th>
+                                <th>{% if report_data.is_v2 %}Tumor Mutational Burden<br>(TMB){% else %}Tumor Mutational
+                                    Burden (TMB){% endif %}</th>
+                                <th>{% if report_data.is_v2 %}Microsatellite Instability (MSI)<br>(% Unstable MSI
+                                    Sites){% else %}Microsatellite Instability (MSI) (% Unstable MSI Sites){% endif %}
+                                </th>
+                                {% if report_data.is_v2 %}
+                                <th>Genomic Instability Score (GIS)<br>(% LOH + TAI + LST)</th>
+                                {% endif %}
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td>Tumor Mutational Burden (TMB)</td>
                                 <td><span class="{% if is_tmb_high %}clinical-highlight{% endif %}">{{
                                         report_data.biomarkers.TMB.value }}</span> {{ report_data.biomarkers.TMB.unit }}
                                 </td>
-                            </tr>
-                            <tr>
-                                <td>Microsatellite Instability (MSI)</td>
-                                <td><span class="{% if is_msi_high %}clinical-highlight{% endif %}">{{
-                                        report_data.biomarkers.MSI.value }}</span> {{ report_data.biomarkers.MSI.unit }}
+                                <td><span class="{% if is_msi_high %}clinical-highlight{% endif %}">{%
+                                        if report_data.biomarkers.MSI.value | float < 40 %}N/A{% else %}{{
+                                            report_data.biomarkers.MSI.value }}</span> {{
+                                            report_data.biomarkers.MSI.unit }}{% endif %}
                                 </td>
+                                {% if report_data.is_v2 %}
+                                <td>{{ report_data.biomarkers.GIS.value }}</td>
+                                {% endif %}
                             </tr>
                         </tbody>
                     </table>
@@ -872,6 +918,7 @@
         window.specimenId = '{{ specimen_id }}';
         window.panelType = '{{ report_data.panel_type }}';
         window.sequenceDate = '{{ report_data.sequence_date }}'; // sequence date 추가
+        window.isV2 = ('{{ "true" if report_data.is_v2 else "false" }}' === 'true'); // V2 플래그 전달
 
         // Specification 동적 로드
         async function loadSpecification() {
@@ -879,7 +926,7 @@
             if (!specContainer || !window.panelType) return;
 
             try {
-                const response = await fetch(`/api/specification/${window.panelType}?t=${Date.now()}`);
+                const response = await fetch(`/api/specification/${window.panelType}?is_v2=${window.isV2}&t=${Date.now()}`);
                 if (response.ok) {
                     const html = await response.text();
                     specContainer.innerHTML = html;

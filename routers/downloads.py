@@ -60,7 +60,12 @@ def download_pptx(specimen_id: str = Form(...), conn: sqlite3.Connection = Depen
                 formatted_date = ""
                 
         date_suffix = f"_{formatted_date}" if formatted_date else ""
-        filename = f"{specimen_id}_{panel_type}_report{date_suffix}_auto.pptx"
+        
+        # Check if v2 report
+        is_v2 = report_data.get('is_v2', False)
+        report_str = "v2report" if is_v2 else "report"
+        
+        filename = f"{specimen_id}_{panel_type}_{report_str}{date_suffix}_auto.pptx"
 
         return StreamingResponse(
             ppt_buffer,

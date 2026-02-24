@@ -29,6 +29,8 @@ def extract_report_data(parser) -> dict:
     report_data["diagnosis_user"] = parser.get_Diagnosis_User_Registration()
     report_data["panel_type"] = parser.panel
     report_data["sequence_date"] = parser.get_Sequence_Date()
+    report_data["is_v2"] = parser.is_v2  # V2 템플릿 플래그
+    report_data["run_name"] = parser.get_Run_Name()  # V2 전용: Batch Run Name
 
     # 2. QC 데이터
     report_data["qc"] = process_table_data(parser.get_QC())
