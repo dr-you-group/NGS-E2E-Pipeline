@@ -1,6 +1,7 @@
 import copy
 import os
 from io import BytesIO
+from lxml import etree
 
 from pptx import Presentation
 from pptx.dml.color import RGBColor
@@ -608,11 +609,12 @@ class NGS_PPT_Generator:
                         self._fill_biomarker_cell(tbl.cell(1, 0), tmb_val, tmb_unit, is_tmb_high)
 
                         # MSI Cell (Row 1, Col 1)
-                        # MSI 값이 40 미만이면 "N/A"로 표시 (단위도 제거)
+                        # Usable MSI Sites가 40 이하이면 "N/A"로 표시 (단위도 제거)
                         display_msi_val = msi_val
                         display_msi_unit = msi_unit
                         try:
-                            if float(msi_val) < 40:
+                            usable_msi_sites = float(msi_data.get('usable_msi_sites', 0))
+                            if usable_msi_sites <= 40:
                                 display_msi_val = 'N/A'
                                 display_msi_unit = ''
                         except (ValueError, TypeError):
@@ -1131,14 +1133,13 @@ class NGS_PPT_Generator:
             # [Changed] VUS(is_clinical=False)인 경우: Plain Text (Black, Normal, No Italic)
             # VCS(is_clinical=True)인 경우: 기존 로직 (Red, Bold, Gene Italic)
             
-            # 구분자 색상/스타일 결정
-            sep_color = self.config.COLOR_RED if is_clinical else self.config.COLOR_BLACK
-            sep_bold = True if is_clinical else False # VUS는 구분자도 Normal
-            
-            # ": " 찍기
+            # 구분자 색상/스타일 결정 (": "는 항상 검정)
+            sep_bold = True if is_clinical else False
+
+            # ": " 찍기 (항상 검정)
             self._set_run_style(p.add_run(), ": ", is_bold=sep_bold,
                                 font_size=self.config.FONT_SIZE_HEADER,
-                                color=sep_color)
+                                color=self.config.COLOR_BLACK)
 
             # 데이터 순회
             for segment in highlight_data:
@@ -1314,21 +1315,183 @@ class NGS_PPT_Generator:
                                                 margin_left=final_margin, pagination_info=next_info)
 
     def _insert_cloned_table(self, layout, prototype_xml, rows, style_props, margin_left):
-        new_tbl_element = copy.deepcopy(prototype_xml)
-        layout.current_slide.shapes._spTree.insert_element_before(new_tbl_element, 'p:extLst')
+        """add_table()로 네이티브 테이블 생성 후, 프로토타입 서식을 복사하여 적용.
+        deep copy 방식 대신 사용하여 PowerPoint 행 삽입/삭제 호환성 확보."""
+        ns = '{http://schemas.openxmlformats.org/drawingml/2006/main}'
 
-        table_shape = layout.current_slide.shapes[-1]
-        table_shape.top = int(layout.top)
-        table_shape.left = int(margin_left)
-        table = table_shape.table
+        # 1. 프로토타입에서 서식 정보 추출
+        proto_tbl = prototype_xml.find(f'.//{ns}tbl')
+        proto_tblGrid = proto_tbl.find(f'{ns}tblGrid')
+        proto_tblPr = proto_tbl.find(f'{ns}tblPr')
+        proto_rows = proto_tbl.findall(f'{ns}tr')
 
-        current_rows = len(table.rows)
-        needed_rows = len(rows) + 1
+        col_widths = [int(gc.get('w')) for gc in proto_tblGrid.findall(f'{ns}gridCol')]
+        header_row_height = int(proto_rows[0].get('h', '258360'))
+        data_row_height = int(proto_rows[1].get('h', '258360')) if len(proto_rows) > 1 else header_row_height
 
-        if needed_rows > current_rows:
-            for _ in range(needed_rows - current_rows):
-                self._duplicate_last_row(table)
+        # 헤더/데이터 행의 셀 서식 추출 (tcPr, pPr, endParaRPr, bodyPr, rPr)
+        def _extract_cell_formats(tr):
+            tcPrs, pPrs, endParaRPrs, bodyPrs = [], [], [], []
+            for tc in tr.findall(f'{ns}tc'):
+                tcPr = tc.find(f'{ns}tcPr')
+                tcPrs.append(copy.deepcopy(tcPr) if tcPr is not None else None)
+                txBody = tc.find(f'{ns}txBody')
+                if txBody is not None:
+                    bodyPr = txBody.find(f'{ns}bodyPr')
+                    bodyPrs.append(copy.deepcopy(bodyPr) if bodyPr is not None else None)
+                    p = txBody.find(f'{ns}p')
+                    if p is not None:
+                        pPr = p.find(f'{ns}pPr')
+                        endParaRPr = p.find(f'{ns}endParaRPr')
+                        pPrs.append(copy.deepcopy(pPr) if pPr is not None else None)
+                        endParaRPrs.append(copy.deepcopy(endParaRPr) if endParaRPr is not None else None)
+                    else:
+                        pPrs.append(None)
+                        endParaRPrs.append(None)
+                else:
+                    bodyPrs.append(None)
+                    pPrs.append(None)
+                    endParaRPrs.append(None)
+            return tcPrs, pPrs, endParaRPrs, bodyPrs
 
+        header_tcPrs, header_pPrs, header_endParaRPrs, header_bodyPrs = _extract_cell_formats(proto_rows[0])
+        data_tcPrs, data_pPrs, data_endParaRPrs, data_bodyPrs = _extract_cell_formats(proto_rows[1]) if len(proto_rows) > 1 else ([], [], [], [])
+
+        # 헤더 행의 run properties 추출
+        header_rPrs = []
+        for tc in proto_rows[0].findall(f'{ns}tc'):
+            txBody = tc.find(f'{ns}txBody')
+            if txBody is not None:
+                p = txBody.find(f'{ns}p')
+                if p is not None:
+                    r = p.find(f'{ns}r')
+                    if r is not None:
+                        rPr = r.find(f'{ns}rPr')
+                        header_rPrs.append(copy.deepcopy(rPr) if rPr is not None else None)
+                    else:
+                        header_rPrs.append(None)
+                else:
+                    header_rPrs.append(None)
+            else:
+                header_rPrs.append(None)
+
+        # 헤더 텍스트 추출
+        header_texts = []
+        for tc in proto_rows[0].findall(f'{ns}tc'):
+            txBody = tc.find(f'{ns}txBody')
+            text = ''
+            if txBody is not None:
+                for p in txBody.findall(f'{ns}p'):
+                    for r in p.findall(f'{ns}r'):
+                        t = r.find(f'{ns}t')
+                        if t is not None and t.text:
+                            text += t.text
+            header_texts.append(text)
+
+        # 2. add_table()로 네이티브 테이블 생성
+        total_width = sum(col_widths)
+        num_rows = len(rows) + 1
+        num_cols = len(col_widths)
+
+        shape = layout.current_slide.shapes.add_table(
+            num_rows, num_cols,
+            int(margin_left), int(layout.top),
+            total_width, Cm(0.8 * num_rows)
+        )
+        table = shape.table
+        tbl = table._tbl
+
+        # 3. tblPr 교체 (프로토타입의 스타일-프리 tblPr로)
+        old_tblPr = tbl.find(f'{ns}tblPr')
+        if old_tblPr is not None:
+            tbl.replace(old_tblPr, copy.deepcopy(proto_tblPr))
+
+        # 4. tblGrid 교체 (프로토타입의 열 폭으로)
+        old_tblGrid = tbl.find(f'{ns}tblGrid')
+        if old_tblGrid is not None:
+            tbl.replace(old_tblGrid, copy.deepcopy(proto_tblGrid))
+
+        # 5. 각 행/셀에 서식 적용
+        for row_idx in range(num_rows):
+            tr = tbl.findall(f'{ns}tr')[row_idx]
+            if row_idx == 0:
+                tr.set('h', str(header_row_height))
+                tcPr_list, pPr_list, endParaRPr_list, bodyPr_list = header_tcPrs, header_pPrs, header_endParaRPrs, header_bodyPrs
+            else:
+                tr.set('h', str(data_row_height))
+                tcPr_list, pPr_list, endParaRPr_list, bodyPr_list = data_tcPrs, data_pPrs, data_endParaRPrs, data_bodyPrs
+
+            for col_idx, tc in enumerate(tr.findall(f'{ns}tc')):
+                if col_idx >= len(tcPr_list):
+                    break
+
+                # tcPr 교체
+                old_tcPr = tc.find(f'{ns}tcPr')
+                if tcPr_list[col_idx] is not None:
+                    new_tcPr = copy.deepcopy(tcPr_list[col_idx])
+                    if old_tcPr is not None:
+                        tc.replace(old_tcPr, new_tcPr)
+                    else:
+                        tc.insert(0, new_tcPr)
+
+                # txBody 내부 서식 적용
+                txBody = tc.find(f'{ns}txBody')
+                if txBody is not None:
+                    # bodyPr 교체
+                    old_bodyPr = txBody.find(f'{ns}bodyPr')
+                    if col_idx < len(bodyPr_list) and bodyPr_list[col_idx] is not None:
+                        if old_bodyPr is not None:
+                            txBody.replace(old_bodyPr, copy.deepcopy(bodyPr_list[col_idx]))
+
+                    # 각 p 요소의 pPr, endParaRPr 교체
+                    for p in txBody.findall(f'{ns}p'):
+                        if col_idx < len(pPr_list) and pPr_list[col_idx] is not None:
+                            old_pPr = p.find(f'{ns}pPr')
+                            new_pPr = copy.deepcopy(pPr_list[col_idx])
+                            if old_pPr is not None:
+                                p.replace(old_pPr, new_pPr)
+                            else:
+                                p.insert(0, new_pPr)
+
+                        if col_idx < len(endParaRPr_list) and endParaRPr_list[col_idx] is not None:
+                            old_endParaRPr = p.find(f'{ns}endParaRPr')
+                            new_endParaRPr = copy.deepcopy(endParaRPr_list[col_idx])
+                            if old_endParaRPr is not None:
+                                p.replace(old_endParaRPr, new_endParaRPr)
+                            else:
+                                p.append(new_endParaRPr)
+
+        # 6. 헤더 텍스트 채우기 (프로토타입의 rPr 사용)
+        for c_idx, header_text in enumerate(header_texts):
+            if c_idx >= num_cols:
+                break
+            cell = table.cell(0, c_idx)
+            p = cell.text_frame.paragraphs[0]
+
+            # 기존 run 제거
+            for r in list(p._p.findall(f'{ns}r')):
+                p._p.remove(r)
+
+            # 새 run 생성 (endParaRPr 앞에 삽입하여 OOXML 순서 준수)
+            new_r = etree.Element(f'{ns}r')
+            endParaRPr = p._p.find(f'{ns}endParaRPr')
+            if endParaRPr is not None:
+                endParaRPr.addprevious(new_r)
+            else:
+                p._p.append(new_r)
+
+            if c_idx < len(header_rPrs) and header_rPrs[c_idx] is not None:
+                new_r.append(copy.deepcopy(header_rPrs[c_idx]))
+            else:
+                rPr = etree.SubElement(new_r, f'{ns}rPr')
+                rPr.set('lang', 'en-US')
+                rPr.set('sz', '800')
+                rPr.set('b', '1')
+
+            new_t = etree.SubElement(new_r, f'{ns}t')
+            new_t.text = header_text
+
+        # 7. 데이터 텍스트 채우기
         for r_idx, row_data in enumerate(rows):
             target_row = table.rows[r_idx + 1]
             for c_idx, val in enumerate(row_data):
@@ -1338,10 +1501,12 @@ class NGS_PPT_Generator:
                         str(val),
                         is_bold=style_props['bold'],
                         font_color=style_props['color'],
-                        font_size=Pt(8) # [Changed] Explicitly set to 8pt for variants
+                        font_size=Pt(8)
                     )
 
+        # 8. 프레임 높이를 실제 테이블 높이와 동기화
         table_height = sum([row.height for row in table.rows])
+        shape.height = int(table_height)
         layout.add_space(table_height + self.config.SPACE_TABLE_BOTTOM)
 
     def _set_cell_text_preserving_style(self, cell, text, is_bold=False, font_color=None, font_size=None):
@@ -1370,12 +1535,16 @@ class NGS_PPT_Generator:
 
     def _duplicate_last_row(self, table):
         new_row = copy.deepcopy(table._tbl.tr_lst[-1])
+        ns = '{http://schemas.openxmlformats.org/drawingml/2006/main}'
         for tc in new_row.tc_lst:
-            txBody = tc.find('{http://schemas.openxmlformats.org/drawingml/2006/main}txBody')
+            txBody = tc.find(f'{ns}txBody')
             if txBody is not None:
-                p_list = txBody.findall('{http://schemas.openxmlformats.org/drawingml/2006/main}p')
+                p_list = txBody.findall(f'{ns}p')
                 for p in p_list:
                     for child in list(p):
+                        # pPr과 endParaRPr은 보존 (PowerPoint 행 삽입/삭제 호환성)
+                        if child.tag in (f'{ns}pPr', f'{ns}endParaRPr'):
+                            continue
                         p.remove(child)
         table._tbl.append(new_row)
 
@@ -1822,8 +1991,8 @@ class NGS_PPT_Generator:
                         # 기존 텍스트의 폰트 크기를 따라가거나, 기본 Body 사이즈 적용
                         # 여기서는 Body 사이즈 적용
                         from pptx.util import Pt
-                        run.font.size = Pt(9) 
-                        run.font.bold = True # 이름 등은 Bold 처리
+                        run.font.size = Pt(12)
+                        run.font.bold = False
 
 
             elif shape.has_table:

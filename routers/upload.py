@@ -59,10 +59,10 @@ def upload_excel(file: UploadFile = File(...), conn: sqlite3.Connection = Depend
         # 데이터 추출 로직 분리 호출
         report_data = extract_report_data(parser)
 
-        # 검체 정보 확인
-        specimen_id = report_data["clinical_info"].get("검체 정보")
+        # 검체 정보 확인 (specimen_id는 병리번호만 사용)
+        specimen_id = parser.clinical_dict.get("병리번호", "").strip()
         if not specimen_id:
-            raise ValueError("엑셀 파일에서 '검체 정보(Specimen ID)'를 찾을 수 없습니다.")
+            raise ValueError("엑셀 파일에서 '병리번호(Specimen ID)'를 찾을 수 없습니다.")
 
         # 로깅 (print -> logger)
         logger.info(f"\n=== 업로드 처리 시작: {file.filename} ===")

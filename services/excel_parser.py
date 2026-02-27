@@ -37,35 +37,75 @@ class NGS_EXCEL2DB:
         except Exception as e:
             print(f"V2 판별 중 오류 발생: {e}")
 
-    def _parse_highlight_structure(self, highlight_text: str) -> List[Dict[str, Any]]:
+    def _parse_highlight_structure(self, highlight_text: str, gene_names: List[str] = None) -> List[Dict[str, Any]]:
         if not highlight_text:
             return []
+
+        import re
+
+        # 유전자명 기반 정규식 패턴 준비
+        gene_pattern = None
+        if gene_names:
+            # 개별 유전자명 추출 (Fusion의 '-' 구분자 분리 포함), 빈 문자열 제거
+            individual_genes = set()
+            for g in gene_names:
+                if not g:
+                    continue
+                for part in g.split('-'):
+                    stripped = part.strip()
+                    if stripped:
+                        individual_genes.add(stripped)
+
+            if individual_genes:
+                # 길이 순 정렬 (긴 것 우선 매칭)
+                sorted_genes = sorted(individual_genes, key=len, reverse=True)
+                escaped = '|'.join(re.escape(g) for g in sorted_genes)
+                # 유전자명이 ::로 연결된 경우도 하나의 이탤릭 블록으로 처리
+                gene_pattern = re.compile(f'((?:{escaped})(?:::(?:{escaped}))*)')
 
         structured_items = []
         items = highlight_text.split(', ')
 
         for idx, item in enumerate(items):
-            parts = item.split(' ', 1)
+            if gene_pattern:
+                segments = self._split_by_gene_pattern(item, gene_pattern)
+                structured_items.extend(segments)
+            else:
+                # 폴백: 첫 공백 기준 분리 (기존 로직)
+                parts = item.split(' ', 1)
+                structured_items.append({"text": parts[0], "style": "italic"})
+                if len(parts) > 1:
+                    structured_items.append({"text": " " + parts[1], "style": "normal"})
 
-            # 1. 유전자명 (항상 이탤릭)
-            structured_items.append({
-                "text": parts[0],
-                "style": "italic"  # 스타일 정보를 명시적 키워드로 전달
-            })
-
-            # 2. 나머지 상세 내용 (정자체)
-            if len(parts) > 1:
-                structured_items.append({
-                    "text": " " + parts[1],
-                    "style": "normal"
-                })
-
-            # 3. 항목 간 구분자 (쉼표)
+            # 항목 간 구분자 (쉼표)
             if idx < len(items) - 1:
-                structured_items.append({
-                    "text": ", ",
-                    "style": "normal"
-                })
+                structured_items.append({"text": ", ", "style": "normal"})
+
+        return structured_items
+
+    def _split_by_gene_pattern(self, text: str, gene_pattern) -> List[Dict[str, Any]]:
+        """텍스트에서 유전자명을 찾아 이탤릭/정자체 세그먼트로 분리"""
+        segments = []
+        last_end = 0
+
+        for match in gene_pattern.finditer(text):
+            start, end = match.span()
+            if start > last_end:
+                segments.append({"text": text[last_end:start], "style": "normal"})
+            segments.append({"text": match.group(), "style": "italic"})
+            last_end = end
+
+        if last_end < len(text):
+            segments.append({"text": text[last_end:], "style": "normal"})
+
+        # 매칭 없으면 폴백 (첫 공백 기준)
+        if not segments:
+            parts = text.split(' ', 1)
+            segments = [{"text": parts[0], "style": "italic"}]
+            if len(parts) > 1:
+                segments.append({"text": " " + parts[1], "style": "normal"})
+
+        return segments
 
         return structured_items
     
@@ -87,8 +127,10 @@ class NGS_EXCEL2DB:
 
     # 검체정보
     def get_Clinical_Info(self) -> Dict:
+        sub_block = self.clinical_dict.get("Sub.", "").strip()
+        specimen_display = f'{self.clinical_dict["병리번호"]} {sub_block}' if sub_block else self.clinical_dict["병리번호"]
         return {
-            "검체 정보": self.clinical_dict["병리번호"],
+            "검체 정보": specimen_display,
             "성별": self.clinical_dict["성별"],
             "나이": self.clinical_dict["나이"],
             "Unit NO.": self.clinical_dict["Unit NO."],
@@ -109,7 +151,8 @@ class NGS_EXCEL2DB:
     def get_SNV(self, data_type: str) -> Tuple[List[Dict[str, List]], List]:
         SNV_Data = self.SNV[self.SNV['Clinical_significance'] == data_type]
         raw_highlight = ', '.join(SNV_Data[SNV_Data["highlight"] != '']['highlight'].tolist())
-        SNV_Highlight = self._parse_highlight_structure(raw_highlight)
+        gene_names = SNV_Data['Gene'].tolist()
+        SNV_Highlight = self._parse_highlight_structure(raw_highlight, gene_names)
         SNV_Row = ['Gene', 'Consequence', 'AA Change', 'VAF', 'HGVSc', 'HGVSp']
         # VAF 값 소수 2번째 자리까지 반올림 처리
         SNV_Data_processed = SNV_Data[SNV_Row].copy()
@@ -123,7 +166,8 @@ class NGS_EXCEL2DB:
     def get_Fusion(self, data_type:str) -> Tuple[List[Dict[str, List]], List]:
         Fusion_Data = self.Fusion[self.Fusion['Clinical_significance'] == data_type]
         raw_highlight = ', '.join(Fusion_Data[Fusion_Data["highlight"] != '']['highlight'].tolist())
-        Fusion_Highlight = self._parse_highlight_structure(raw_highlight)
+        gene_names = Fusion_Data['Gene fusion'].tolist()
+        Fusion_Highlight = self._parse_highlight_structure(raw_highlight, gene_names)
         Fusion_Row = ['Gene fusion', 'Breakpoint 1', 'Breakpoint 2', 'Fusion supporting reads']
         return Fusion_Highlight, [Fusion_Row] + Fusion_Data[Fusion_Row].values.tolist()
     
@@ -132,7 +176,8 @@ class NGS_EXCEL2DB:
     def get_CNV(self, data_type:str) -> Tuple[List[Dict[str, List]], List]:
         CNV_Data = self.CNV[self.CNV['Clinical_significance'] == data_type]
         raw_highlight = ', '.join(CNV_Data[CNV_Data["highlight"] != '']['highlight'].tolist())
-        CNV_Highlight = self._parse_highlight_structure(raw_highlight)
+        gene_names = CNV_Data['Gene'].tolist()
+        CNV_Highlight = self._parse_highlight_structure(raw_highlight, gene_names)
         CNV_Row = ['Gene', 'Location', 'Fold Change', 'Estimated copy number']
         return CNV_Highlight, [CNV_Row] + CNV_Data[CNV_Row].values.tolist()
 
@@ -141,7 +186,8 @@ class NGS_EXCEL2DB:
     def get_LR_BRCA(self, data_type: str) -> Tuple[List[Dict[str, List]], List]:
         LR_BRCA_Data = self.LR_BRCA[self.LR_BRCA['Clinical_significance'] == data_type]
         raw_highlight = ', '.join(LR_BRCA_Data[LR_BRCA_Data["highlight"] != '']['highlight'].tolist())
-        LR_BRCA_Data_Highlight = self._parse_highlight_structure(raw_highlight)
+        gene_names = LR_BRCA_Data['Gene'].tolist()
+        LR_BRCA_Data_Highlight = self._parse_highlight_structure(raw_highlight, gene_names)
         LR_BRCA_Row = ['Gene', 'Location', 'Affected exon', 'Fold Change', 'Estimated copy number']
         return LR_BRCA_Data_Highlight, [LR_BRCA_Row] + LR_BRCA_Data[LR_BRCA_Row].values.tolist()
 
@@ -150,7 +196,8 @@ class NGS_EXCEL2DB:
     def get_Splice(self, data_type: str) -> Tuple[List[Dict[str, List]], List]:
         Splice_Data = self.Splice[self.Splice['Clinical_significance'] == data_type]
         raw_highlight = ', '.join(Splice_Data[Splice_Data["highlight"] != '']['highlight'].tolist())
-        Splice_Highlight = self._parse_highlight_structure(raw_highlight)
+        gene_names = Splice_Data['Gene'].tolist()
+        Splice_Highlight = self._parse_highlight_structure(raw_highlight, gene_names)
         Splice_Row = ['Gene', 'Affected exon', 'Breakpoint 1', 'Breakpoint 2', 'Splice supporting reads']
         return Splice_Highlight, [Splice_Row] + Splice_Data[Splice_Row].values.tolist()
     
@@ -171,7 +218,8 @@ class NGS_EXCEL2DB:
             'MSI': {
                 'value': self.IO['Value'][7],
                 'unit': '%',
-                'status': self.IO['Value'][10] # Categorical Result (High/Low/Stable etc)
+                'status': self.IO['Value'][10], # Categorical Result (High/Low/Stable etc)
+                'usable_msi_sites': self.IO['Value'][9]  # Usable MSI Sites (B12)
             }
         }
         
