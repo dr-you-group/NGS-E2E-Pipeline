@@ -1198,6 +1198,23 @@ class NGS_PPT_Generator:
             lang.set('val', 'ko-KR')
             rPr.append(lang)
 
+    def _apply_theme_body_latin(self, run):
+        """Latin(영어) 글꼴을 테마 본문 폰트(+mn-lt)로, East Asian(한글)은 명시적 폰트로 설정"""
+        from pptx.oxml.ns import qn
+
+        run.font.name = '+mn-lt'
+
+        rPr = run._r.get_or_add_rPr()
+        ea = rPr.find(qn('a:ea'))
+        if ea is None:
+            ea = OxmlElement('a:ea')
+            latin = rPr.find(qn('a:latin'))
+            if latin is not None:
+                latin.addnext(ea)
+            else:
+                rPr.append(ea)
+        ea.set('typeface', self.config.FONT_NAME)
+
     def _calculate_table_pages(self, layout, total_rows):
         """테이블이 몇 페이지에 걸쳐 분할될지 미리 계산합니다."""
         row_height = Cm(0.7)
@@ -1699,24 +1716,32 @@ class NGS_PPT_Generator:
                          parts = re.split(f"({re.escape(kw)})", comment)
                          for part in parts:
                              is_bold_part = (part == kw)
-                             self._set_run_style(p.add_run(), part, is_bold=is_bold_part, 
+                             run = p.add_run()
+                             self._set_run_style(run, part, is_bold=is_bold_part,
                                                  font_size=Pt(8), color=self.config.COLOR_BLACK)
+                             self._apply_theme_body_latin(run)
                          matched = True
                          break
-            
+
             if not matched:
                 match_col = re.match(r"^([^:]+)(:)(.*)$", comment, re.DOTALL)
                 if match_col:
                     subject = match_col.group(1)
                     colon = match_col.group(2)
                     rest = match_col.group(3)
-                    self._set_run_style(p.add_run(), subject, is_bold=True, 
+                    run_subj = p.add_run()
+                    self._set_run_style(run_subj, subject, is_bold=True,
                                         font_size=Pt(8), color=self.config.COLOR_BLACK)
-                    self._set_run_style(p.add_run(), colon + rest, is_bold=False, 
+                    self._apply_theme_body_latin(run_subj)
+                    run_rest = p.add_run()
+                    self._set_run_style(run_rest, colon + rest, is_bold=False,
                                         font_size=Pt(8), color=self.config.COLOR_BLACK)
+                    self._apply_theme_body_latin(run_rest)
                 else:
-                    self._set_run_style(p.add_run(), comment, is_bold=False, 
+                    run_plain = p.add_run()
+                    self._set_run_style(run_plain, comment, is_bold=False,
                                         font_size=Pt(8), color=self.config.COLOR_BLACK)
+                    self._apply_theme_body_latin(run_plain)
         
         # 메인 고지문 추가
         if main_disclaimer:
@@ -1725,9 +1750,10 @@ class NGS_PPT_Generator:
                 p_spacer.space_before = Pt(12)
             
             p_disc = tf.add_paragraph() if not is_first_paragraph else tf.paragraphs[0]
-            if not is_first_paragraph:
-                p_disc.space_before = Pt(6)
-            
+            p_disc.alignment = PP_ALIGN.JUSTIFY
+            p_disc.space_before = Pt(0)
+            p_disc.line_spacing = 1.5
+
             self._set_run_style(p_disc.add_run(), main_disclaimer, font_size=Pt(8), color=self.config.COLOR_BLACK)
 
         layout.add_space(height)
@@ -1758,52 +1784,6 @@ class NGS_PPT_Generator:
         p2 = tf.add_paragraph()
         p2.space_before = Pt(6)
         self._set_run_style(p2.add_run(), footer_text_2, font_size=Pt(8), color=self.config.COLOR_BLACK)
-
-    def _draw_long_text(self, layout, text, font_size=Pt(8), is_bold_keyword=None, highlight_keywords=None):
-        height = Cm(0.8)
-        layout.check_space(height)
-        tb = layout.current_slide.shapes.add_textbox(layout.margin, layout.top, layout.width, height)
-        p = tb.text_frame.paragraphs[0]
-        
-        matched = False
-        if highlight_keywords:
-            import re
-            keywords_sorted = sorted(highlight_keywords, key=len, reverse=True)
-            for kw in keywords_sorted:
-                if kw in text:
-                     parts = re.split(f"({re.escape(kw)})", text)
-                     for part in parts:
-                         is_bold = (part == kw)
-                         # 폰트 사이즈는 파라미터를 따라감
-                         self._set_run_style(p.add_run(), part, font_size=font_size, color=self.config.COLOR_BLACK, is_bold=is_bold)
-                     matched = True
-                     break
-        
-        if not matched:
-            if is_bold_keyword and is_bold_keyword in text:
-                 # (호환성을 위해 남겨둠)
-                 import re
-                 pattern = f"({re.escape(is_bold_keyword)})"
-                 parts = re.split(pattern, text)
-                 for part in parts:
-                     if not part: continue
-                     is_bold = (part == is_bold_keyword)
-                     self._set_run_style(p.add_run(), part, font_size=font_size, color=self.config.COLOR_BLACK, is_bold=is_bold)
-            else:
-                 # 2순위: Colon 패턴
-                 regex_col = r"^([^:]+)(:)(.*)$"
-                 match_col = re.match(regex_col, text, re.DOTALL)
-                 
-                 if match_col:
-                    subject = match_col.group(1)
-                    colon = match_col.group(2)
-                    rest = match_col.group(3)
-                    self._set_run_style(p.add_run(), subject, is_bold=True, font_size=font_size, color=self.config.COLOR_BLACK)
-                    self._set_run_style(p.add_run(), colon + rest, is_bold=False, font_size=font_size, color=self.config.COLOR_BLACK)
-                 else:
-                    self._set_run_style(p.add_run(), text, font_size=font_size, color=self.config.COLOR_BLACK)
-
-        layout.add_space(height)
 
     def _fill_footer_info(self, slide, report_data):
         """
