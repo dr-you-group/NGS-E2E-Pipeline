@@ -396,6 +396,132 @@ class NGS_PPT_Generator:
             tcPr.append(ln)
         return cell
 
+    def _fix_theme_font_distinction(self, prs):
+        """테마의 majorFont와 minorFont가 동일할 경우, majorFont를 변경하여
+        PowerPoint UI에서 '+본문'/'+제목' 구분이 정상 작동하도록 함.
+        동시에 기존 슬라이드에서 +mj-lt/+mj-ea 참조를 명시적 폰트명으로 변환.
+
+        [개선] 패키지 내 모든 theme 파트를 처리하고, endParaRPr/테이블 셀 포함."""
+        ns = '{http://schemas.openxmlformats.org/drawingml/2006/main}'
+
+        # 1. 패키지 내 모든 theme 파트 수집
+        all_theme_parts = []
+        for part in prs.part.package.iter_parts():
+            if 'theme' in str(part.partname).lower():
+                all_theme_parts.append(part)
+
+        if not all_theme_parts:
+            return
+
+        # 원본 majorFont 정보를 첫 번째 테마에서 가져옴 (슬라이드에서 사용하는 기본 테마)
+        primary_theme = all_theme_parts[0]
+        primary_xml = etree.fromstring(primary_theme.blob)
+        primary_fs = primary_xml.find(f'.//{ns}fontScheme')
+        if primary_fs is None:
+            return
+        primary_major = primary_fs.find(f'{ns}majorFont')
+        if primary_major is None:
+            return
+        primary_major_latin_el = primary_major.find(f'{ns}latin')
+        if primary_major_latin_el is None:
+            return
+        original_major_latin = primary_major_latin_el.get('typeface', '')
+        original_major_hang = ''
+        original_major_ea = ''
+        for font_elem in primary_major.findall(f'{ns}font'):
+            if font_elem.get('script') == 'Hang':
+                original_major_hang = font_elem.get('typeface', '')
+                break
+        ea_el = primary_major.find(f'{ns}ea')
+        if ea_el is not None:
+            original_major_ea = ea_el.get('typeface', '')
+
+        # 2. 기존 슬라이드의 +mj-lt/+mj-ea 참조를 명시적 폰트명으로 변환
+        #    runs + endParaRPr + 테이블 셀 모두 처리
+        replacement_ea = original_major_hang or original_major_ea or original_major_latin
+
+        def _convert_rpr(rPr_elem):
+            """rPr 또는 endParaRPr 내의 +mj 참조를 명시적 폰트명으로 변환"""
+            if rPr_elem is None:
+                return
+            latin = rPr_elem.find(f'{ns}latin')
+            if latin is not None and latin.get('typeface') == '+mj-lt':
+                latin.set('typeface', original_major_latin)
+            ea = rPr_elem.find(f'{ns}ea')
+            if ea is not None and ea.get('typeface') == '+mj-ea':
+                ea.set('typeface', replacement_ea)
+
+        def _process_paragraphs(paragraphs):
+            """paragraph 목록의 모든 run/endParaRPr에서 +mj 참조 변환"""
+            for para in paragraphs:
+                for run in para.runs:
+                    _convert_rpr(run._r.find(f'{ns}rPr'))
+                # endParaRPr도 처리 (이전 코드에서 누락된 부분)
+                _convert_rpr(para._p.find(f'{ns}endParaRPr'))
+
+        for slide in prs.slides:
+            for shape in slide.shapes:
+                if shape.has_text_frame:
+                    _process_paragraphs(shape.text_frame.paragraphs)
+                # 테이블 셀 내의 +mj 참조도 처리
+                if shape.has_table:
+                    for row in shape.table.rows:
+                        for cell in row.cells:
+                            _process_paragraphs(cell.text_frame.paragraphs)
+
+        # 3. 모든 테마의 majorFont를 변경하여 minor와 구분되도록 함
+        for theme_part in all_theme_parts:
+            theme_xml = etree.fromstring(theme_part.blob)
+            font_scheme = theme_xml.find(f'.//{ns}fontScheme')
+            if font_scheme is None:
+                continue
+
+            major_font = font_scheme.find(f'{ns}majorFont')
+            minor_font = font_scheme.find(f'{ns}minorFont')
+            if major_font is None or minor_font is None:
+                continue
+
+            major_latin = major_font.find(f'{ns}latin')
+            minor_latin = minor_font.find(f'{ns}latin')
+            if major_latin is None or minor_latin is None:
+                continue
+
+            # majorFont와 minorFont가 동일할 때만 처리
+            if major_latin.get('typeface') != minor_latin.get('typeface'):
+                continue
+
+            # Latin 변경
+            major_latin.set('typeface', 'Calibri')
+
+            # Hang 스크립트 변경
+            for font_elem in major_font.findall(f'{ns}font'):
+                if font_elem.get('script') == 'Hang':
+                    font_elem.set('typeface', '바탕')
+                    break
+
+            # EA 변경
+            major_ea = major_font.find(f'{ns}ea')
+            if major_ea is not None:
+                major_ea.set('typeface', '바탕')
+
+            # minorFont의 EA가 빈 문자열이면 명시적으로 채움
+            # (빈 EA는 +mn-ea resolve 시 PowerPoint가 "+본문 한글" 판별 불가)
+            minor_ea = minor_font.find(f'{ns}ea')
+            if minor_ea is not None and not minor_ea.get('typeface', '').strip():
+                # Hang 스크립트 폰트와 동일하게 설정
+                minor_hang_face = ''
+                for font_elem in minor_font.findall(f'{ns}font'):
+                    if font_elem.get('script') == 'Hang':
+                        minor_hang_face = font_elem.get('typeface', '')
+                        break
+                if minor_hang_face:
+                    minor_ea.set('typeface', minor_hang_face)
+
+            # 변경된 theme XML 저장
+            theme_part._blob = etree.tostring(
+                theme_xml, xml_declaration=True, encoding='UTF-8', standalone=True
+            )
+
     def generate(self, report_data: dict) -> BytesIO:
         panel_type = report_data.get('panel_type', 'GE')
         is_v2 = report_data.get('is_v2', False)
@@ -408,6 +534,10 @@ class NGS_PPT_Generator:
             raise FileNotFoundError(f"템플릿 파일을 찾을 수 없습니다: {template_path}")
 
         prs = Presentation(template_path)
+
+        # 테마의 majorFont/minorFont가 동일하면 PowerPoint UI에서 "+본문"/"+제목" 구분 불가.
+        # majorFont Latin을 변경하여 "+본문" 표시가 정상 작동하도록 함.
+        self._fix_theme_font_distinction(prs)
 
         if len(prs.slides) > 0:
             self._fill_clinical_info(prs.slides[0], report_data)
@@ -1200,7 +1330,7 @@ class NGS_PPT_Generator:
             rPr.append(lang)
 
     def _apply_theme_body_latin(self, run):
-        """Latin(영어) 글꼴을 테마 본문 폰트(+mn-lt)로, East Asian(한글)은 명시적 폰트로 설정"""
+        """Latin(영어)과 East Asian(한글) 글꼴을 모두 테마 본문 폰트(+mn)로 설정"""
         from pptx.oxml.ns import qn
 
         run.font.name = '+mn-lt'
@@ -1214,7 +1344,7 @@ class NGS_PPT_Generator:
                 latin.addnext(ea)
             else:
                 rPr.append(ea)
-        ea.set('typeface', self.config.FONT_NAME)
+        ea.set('typeface', '+mn-ea')
 
     def _calculate_table_pages(self, layout, total_rows):
         """테이블이 몇 페이지에 걸쳐 분할될지 미리 계산합니다."""

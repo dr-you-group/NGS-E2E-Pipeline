@@ -33,7 +33,7 @@ Excel 기반의 NGS 분석 데이터를 업로드하면, 웹 기반 HTML 보고�
 - **Backend**: [FastAPI](https://fastapi.tiangolo.com/) + [Uvicorn](https://www.uvicorn.org/)
 - **Database**: SQLite
 - **Excel 파싱**: Pandas, openpyxl
-- **PPTX 생성**: python-pptx
+- **PPTX 생성**: python-pptx, lxml
 - **Frontend**: Vanilla HTML/CSS/JavaScript (Jinja2 템플릿)
 
 ---
@@ -47,26 +47,28 @@ NGS-E2E-Pipeline/
 ├── database.py             # SQLite DB 초기화 및 연결 관리
 │
 ├── routers/                # API 라우터 (엔드포인트 정의)
+│   ├── __init__.py
 │   ├── static.py           #   메인 페이지, Specification, Gene Content 조회
 │   ├── reports.py          #   보고서 조회 및 검색 API
 │   ├── upload.py           #   Excel 파일 업로드 및 DB 저장
 │   └── downloads.py        #   PPTX 보고서 다운로드
 │
 ├── services/               # 비즈니스 로직
+│   ├── __init__.py
 │   ├── excel_parser.py     #   NGS Excel 파일 파싱 (NGS_EXCEL2DB 클래스)
 │   ├── report_service.py   #   리포트 데이터 추출 및 가공
 │   ├── pptx_generator.py   #   PPTX 보고서 생성 엔진 (NGS_PPT_Generator)
-│   ├── make_pptx_result.py #   PPTX 결과 생성 유틸리티 (CLI 지원)
 │   └── file_service.py     #   파일 저장/삭제 유틸리티
 │
 ├── templates/              # Jinja2 HTML 템플릿
 │   ├── index.html          #   메인 검색 & 업로드 페이지
 │   ├── report.html         #   HTML 보고서 뷰어
 │   ├── *_Specification*.html   #   패널별 검사 사양 (SA/GE, V1/V2)
-│   └── *_Gene_Content_*.html   #   패널별 유전자 목록 (DNA/RNA)
+│   └── *_Gene_Content_*.html   #   패널별 유전자 목록 (SA: DNA/RNA, GE: DRNA)
 │
 ├── static/                 # 정적 파일
 │   ├── css/styles.css      #   스타일시트
+│   ├── images/             #   이미지 리소스 (로고, Specification/Gene Content 이미지)
 │   └── js/script.js        #   프론트엔드 로직 (검색, 업로드, 페이지네이션)
 │
 ├── resources/              # PPTX 보고서 템플릿
@@ -75,6 +77,7 @@ NGS-E2E-Pipeline/
 │   ├── NGS_SA_report_baseline.pptx
 │   └── NGS_SA_report_baseline_v2.pptx
 │
+├── test.ipynb              # 테스트 노트북
 ├── json/                   # 파싱된 보고서 JSON 백업 (gitignored)
 └── tmp/                    # 임시 파일 저장소 (gitignored)
 ```
@@ -100,7 +103,7 @@ source venv/bin/activate   # macOS/Linux
 # venv\Scripts\activate    # Windows
 
 # 의존성 설치
-pip install fastapi uvicorn pandas openpyxl python-pptx jinja2 python-multipart
+pip install fastapi uvicorn pandas openpyxl python-pptx lxml jinja2 python-multipart
 ```
 
 ### 실행
