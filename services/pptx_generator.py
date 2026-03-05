@@ -1118,11 +1118,11 @@ class NGS_PPT_Generator:
                 # [Tracking] 현재 메인 타이틀 업데이트 (페이지 분할 시 반복용)
                 layout.current_main_title = self.config.SECTION_START_MARKERS.get(style_type)
 
+            section_data = report_data.get(key, {})
+
             # [Added] LR-BRCA (Clinical) 데이터가 없으면 섹션 자체를 스킵 (PDF와 동작 일치)
             if key == 'lr_brca_clinical' and not section_data.get('data'):
                 continue
-
-            section_data = report_data.get(key, {})
             rows = section_data.get('data', [])
             headers = section_data.get('headers', [])
             highlight_val = section_data.get('highlight', [])
@@ -1909,9 +1909,8 @@ class NGS_PPT_Generator:
             
             # 공간 체크 (Footer 영역 침범 확인)
             if (layout.top + current_batch_height + est_height) > BODY_BOTTOM_LIMIT:
-                 # 넘치면 현재 배치 그리기
+                 # 넘치면 현재 배치 그리기 (중간 페이지에는 footer 미포함)
                  self._render_box(layout, current_batch, current_batch_height, BOX_WIDTH, highlight_keywords, main_disclaimer=None)
-                 self._draw_footer_info(layout, FOOTER_TOP)
                  
                  # 다음 페이지 이동
                  layout.add_new_slide()
@@ -1931,7 +1930,6 @@ class NGS_PPT_Generator:
         else:
             if current_batch:
                 self._render_box(layout, current_batch, current_batch_height, BOX_WIDTH, highlight_keywords, main_disclaimer=None)
-                self._draw_footer_info(layout, FOOTER_TOP)
             
             layout.add_new_slide()
             current_page += 1
