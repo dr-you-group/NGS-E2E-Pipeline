@@ -374,7 +374,7 @@
                                             report_data.biomarkers.TMB.value }}</span> {{
                                         report_data.biomarkers.TMB.unit }}</td>
                                     <td><span class="{% if is_msi_high %}clinical-highlight{% endif %}">{%
-                                            if report_data.biomarkers.MSI.value | float < 40 %}N/A{% else %}{{
+                                            if report_data.biomarkers.MSI.usable_msi_sites | default(0) | float <= 40 %}N/A{% else %}{{
                                                 report_data.biomarkers.MSI.value }}</span> {{
                                                 report_data.biomarkers.MSI.unit }}{% endif %}</td>
                                     {% if report_data.is_v2 %}
@@ -883,7 +883,7 @@
                                         report_data.biomarkers.TMB.value }}</span> {{ report_data.biomarkers.TMB.unit }}
                                 </td>
                                 <td><span class="{% if is_msi_high %}clinical-highlight{% endif %}">{%
-                                        if report_data.biomarkers.MSI.value | float < 40 %}N/A{% else %}{{
+                                        if report_data.biomarkers.MSI.usable_msi_sites | default(0) | float <= 40 %}N/A{% else %}{{
                                             report_data.biomarkers.MSI.value }}</span> {{
                                             report_data.biomarkers.MSI.unit }}{% endif %}
                                 </td>

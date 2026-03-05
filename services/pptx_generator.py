@@ -2000,8 +2000,15 @@ class NGS_PPT_Generator:
                 p = tf.paragraphs[0]
                 is_first_paragraph = False
             else:
+                # 코멘트 사이에 8pt 빈 줄 삽입
+                p_blank = tf.add_paragraph()
+                p_blank.space_before = Pt(0)
+                blank_run = p_blank.add_run()
+                blank_run.text = ''
+                blank_run.font.size = Pt(8)
+
                 p = tf.add_paragraph()
-                p.space_before = Pt(6) 
+                p.space_before = Pt(0)
             
             p.alignment = PP_ALIGN.JUSTIFY # [Changed] 양쪽 정렬
             p.line_spacing = 1.5 # [Changed] 줄 간격 1.5
@@ -2046,7 +2053,7 @@ class NGS_PPT_Generator:
         if main_disclaimer:
             if not is_first_paragraph: # 코멘트가 있었다면 띄움
                 p_spacer = tf.add_paragraph()
-                p_spacer.space_before = Pt(12)
+                p_spacer.space_before = Pt(0)
             
             p_disc = tf.add_paragraph() if not is_first_paragraph else tf.paragraphs[0]
             p_disc.alignment = PP_ALIGN.JUSTIFY

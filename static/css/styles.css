@@ -383,34 +383,34 @@ table {
 }
 
 /* 4.6. 컬럼 너비 설정 (Column Widths) */
-/* SNV */
-.data-table th:nth-child(1) {
-    width: 10%;
-}
-
 /* GENE */
-.data-table th:nth-child(2) {
-    width: 18%;
+.data-table th:nth-child(1) {
+    width: 9.6%;
 }
 
 /* MUTATION TYPE */
-.data-table th:nth-child(3) {
-    width: 15%;
+.data-table th:nth-child(2) {
+    width: 20.4%;
 }
 
 /* AA CHANGE */
-.data-table th:nth-child(4) {
-    width: 8%;
+.data-table th:nth-child(3) {
+    width: 14%;
 }
 
 /* VAF */
-.data-table th:nth-child(5) {
-    width: 25%;
+.data-table th:nth-child(4) {
+    width: 7%;
 }
 
 /* HGVSc */
+.data-table th:nth-child(5) {
+    width: 24.5%;
+}
+
+/* HGVSp */
 .data-table th:nth-child(6) {
-    width: 24%;
+    width: 24.5%;
 }
 
 /* HGVSp */
